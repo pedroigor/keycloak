@@ -189,9 +189,8 @@ public class KeycloakOIDCFilter implements Filter {
         nodesRegistrationManagement.tryRegister(deployment);
         OIDCFilterSessionStore tokenStore = new OIDCFilterSessionStore(request, facade, 100000, deployment, idMapper);
         tokenStore.checkCurrentToken();
-
-
-        FilterRequestAuthenticator authenticator = new FilterRequestAuthenticator(deployment, tokenStore, facade, request, 8443);
+        int sslRedirectPort = deployment.getConfidentialPort() != -1 ? deployment.getConfidentialPort() : 8443;
+        FilterRequestAuthenticator authenticator = new FilterRequestAuthenticator(deployment, tokenStore, facade, request, sslRedirectPort);
         AuthOutcome outcome = authenticator.authenticate();
         if (outcome == AuthOutcome.AUTHENTICATED) {
             log.fine("AUTHENTICATED");
