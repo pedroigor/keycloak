@@ -18,7 +18,6 @@
 package org.keycloak.userprofile;
 
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
@@ -68,4 +67,24 @@ public interface UserProfileProvider extends Provider {
      * @return the user profile instance
      */
     UserProfile create(UserProfileContext context, Map<String, ?> attributes, UserModel user);
+
+    /**
+     * Get current UserProfile configuration. JSON formatted file is expected, but
+     * depends on the implementation.
+     *
+     * @return current UserProfile configuration
+     * @see #setConfiguration(String)
+     */
+    String getConfiguration();
+
+    /**
+     * Set new UserProfile configuration. It is persisted inside of the provider.
+     *
+     * @param configuration to be set
+     * @throws RuntimeException if configuration is invalid (exact exception class
+     *                          depends on the implementation) or configuration
+     *                          can't be persisted.
+     * @see #getConfiguration()
+     */
+    void setConfiguration(String configuration);
 }

@@ -71,13 +71,10 @@ public final class ValidationException extends RuntimeException {
                 .anyMatch(error -> names.contains(error.attribute.getKey()));
     }
 
-    void addError(Error error) {
-        List<Error> errors = this.errors.computeIfAbsent(error.getMessage(), (k) -> new ArrayList<>());
-
-        if (errors.isEmpty()) {
-            errors.add(error);
-        }
-    }
+	void addError(Error error) {
+		List<Error> errors = this.errors.computeIfAbsent(error.getMessage(), (k) -> new ArrayList<>());
+		errors.add(error);
+	}
 
     public static class Error {
 

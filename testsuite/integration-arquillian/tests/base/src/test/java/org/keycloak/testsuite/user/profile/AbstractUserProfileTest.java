@@ -30,6 +30,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 import org.keycloak.testsuite.AbstractTestRealmKeycloakTest;
+import org.keycloak.testsuite.user.profile.config.DeclarativeUserProfileProvider;
 import org.keycloak.userprofile.UserProfileProvider;
 
 /**
@@ -38,13 +39,18 @@ import org.keycloak.userprofile.UserProfileProvider;
 public abstract class AbstractUserProfileTest extends AbstractTestRealmKeycloakTest {
 
     protected static void configureAuthenticationSession(KeycloakSession session) {
+        configureSessionRealm(session);
         Set<String> scopes = new HashSet<>();
 
         scopes.add("customer");
 
+        configureAuthenticationSession(session, "client-a", scopes);
+    }
+
+    protected static void configureAuthenticationSession(KeycloakSession session, String clientId, Set<String> requestedScopes) {
         RealmModel realm = session.getContext().getRealm();
 
-        session.getContext().setAuthenticationSession(createAuthenticationSession(realm.getClientByClientId("client-a"), scopes));
+        session.getContext().setAuthenticationSession(createAuthenticationSession(realm.getClientByClientId(clientId), requestedScopes));
     }
 
     protected static RealmModel configureSessionRealm(KeycloakSession session) {
@@ -55,8 +61,8 @@ public abstract class AbstractUserProfileTest extends AbstractTestRealmKeycloakT
         return realm;
     }
 
-    protected static DynamicUserProfileProvider getDynamicUserProfileProvider(KeycloakSession session) {
-        return (DynamicUserProfileProvider) session.getProvider(UserProfileProvider.class, DynamicUserProfileProvider.ID);
+    protected static DeclarativeUserProfileProvider getDynamicUserProfileProvider(KeycloakSession session) {
+        return (DeclarativeUserProfileProvider) session.getProvider(UserProfileProvider.class, DeclarativeUserProfileProvider.ID);
     }
 
     protected static AuthenticationSessionModel createAuthenticationSession(ClientModel client, Set<String> scopes) {

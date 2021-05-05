@@ -17,4 +17,4 @@
 #  */
 #
 
-org.keycloak.testsuite.user.profile.DynamicUserProfileProvider
+org.keycloak.testsuite.user.profile.config.DeclarativeUserProfileProvider

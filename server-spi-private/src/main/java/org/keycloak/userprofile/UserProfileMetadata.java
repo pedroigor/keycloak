@@ -21,7 +21,10 @@ package org.keycloak.userprofile;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -40,30 +43,48 @@ public final class UserProfileMetadata implements Cloneable {
     }
 
     public void addAttributes(AttributeMetadata... metadata) {
+        addAttributes(Arrays.asList(metadata));
+    }
+    
+    public void addAttributes(List<AttributeMetadata> metadata) {
         if (attributes == null) {
             attributes = new ArrayList<>();
         }
-        attributes.addAll(Arrays.asList(metadata));
+        attributes.addAll(metadata);
     }
 
-    public void addAttribute(String name, AttributeValidatorMetadata... validator) {
-        addAttribute(name, Arrays.asList(validator));
+    public AttributeMetadata addAttribute(AttributeMetadata metadata) {
+        addAttributes(Arrays.asList(metadata));
+        return metadata;
+    }
+    
+    public AttributeMetadata addAttribute(String name, AttributeValidatorMetadata... validator) {
+        return addAttribute(name, Arrays.asList(validator));
     }
 
-    public void addAttribute(String name, List<AttributeValidatorMetadata> validators) {
-        addAttributes(new AttributeMetadata(name).addValidator(validators));
+    public AttributeMetadata addAttribute(String name, List<AttributeValidatorMetadata> validators) {
+        return addAttribute(new AttributeMetadata(name).addValidator(validators));
     }
 
-    public void addAttribute(String name, AttributeValidatorMetadata validator, boolean readOnly) {
-        addAttributes(new AttributeMetadata(name, readOnly).addValidator(validator));
+    public AttributeMetadata addAttribute(String name, List<AttributeValidatorMetadata> validator, Predicate<AttributeContext> required) {
+        return addAttribute(new AttributeMetadata(name, AttributeMetadata.ALWAYS_FALSE, required).addValidator(validator));
     }
 
-    public void addAttribute(String name, AttributeValidatorMetadata validator, boolean readOnly, boolean optional) {
-        addAttributes(new AttributeMetadata(name, readOnly, optional).addValidator(validator));
+    public AttributeMetadata addAttribute(String name, List<AttributeValidatorMetadata> validator, Predicate<AttributeContext> readOnly, Predicate<AttributeContext> required) {
+        return addAttribute(new AttributeMetadata(name, readOnly, required).addValidator(validator));
     }
 
-    public void addAttribute(String name, List<String> scopeSelector, AttributeValidatorMetadata validator) {
-        addAttributes(new AttributeMetadata(name, scopeSelector).addValidator(validator));
+    /**
+     * Get existing AttributeMetadata for attribute of given name.
+     * 
+     * @param name of the attribute
+     * @return list of existing metadata for given attribute, never null
+     */
+    public List<AttributeMetadata> getAttribute(String name) {
+        if (attributes == null)
+            return Collections.emptyList();
+        return attributes.stream().filter((c) -> name.equals(c.getName())).collect(Collectors.toList());
+
     }
 
     public UserProfileContext getContext() {
@@ -74,8 +95,10 @@ public final class UserProfileMetadata implements Cloneable {
     public UserProfileMetadata clone() {
         UserProfileMetadata metadata = new UserProfileMetadata(this.context);
 
-        metadata.attributes = new ArrayList<>();
-        metadata.attributes.addAll(new ArrayList<>(this.attributes));
+        //deeply clone AttributeMetadata so we can modify them (add validators etc) 
+        if (attributes != null) {
+            metadata.addAttributes(attributes.stream().map((c)-> c.clone()).collect(Collectors.toList()));
+        }
 
         return metadata;
     }

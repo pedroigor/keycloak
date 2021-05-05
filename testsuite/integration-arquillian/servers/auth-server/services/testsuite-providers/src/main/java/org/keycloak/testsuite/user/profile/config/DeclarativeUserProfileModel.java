@@ -17,7 +17,7 @@
  *
  */
 
-package org.keycloak.testsuite.user.profile;
+package org.keycloak.testsuite.user.profile.config;
 
 import org.keycloak.component.ComponentModel;
 import org.keycloak.userprofile.UserProfileProvider;
@@ -25,10 +25,10 @@ import org.keycloak.userprofile.UserProfileProvider;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class DynamicUserProfileModel extends ComponentModel {
+public class DeclarativeUserProfileModel extends ComponentModel {
 
-    public DynamicUserProfileModel() {
-        setProviderId(DynamicUserProfileProvider.ID);
+    public DeclarativeUserProfileModel() {
+        setProviderId(DeclarativeUserProfileProvider.ID);
         setProviderType(UserProfileProvider.class.getName());
     }
 }

@@ -28,17 +28,13 @@ package org.keycloak.userprofile;
  *
  * @author <a href="mailto:markus.till@bosch.io">Markus Till</a>
  */
-public interface UserProfileContext {
+public enum UserProfileContext {
 
-    UserProfileContext UPDATE_PROFILE = create();
-    UserProfileContext USER_API = create();
-    UserProfileContext ACCOUNT = create();
-    UserProfileContext ACCOUNT_OLD = create();
-    UserProfileContext IDP_REVIEW = create();
-    UserProfileContext REGISTRATION_PROFILE = create();
-    UserProfileContext REGISTRATION_USER_CREATION = create();
-
-    static UserProfileContext create() {
-        return new UserProfileContext() {};
-    }
+    UPDATE_PROFILE,
+    USER_API,
+    ACCOUNT,
+    ACCOUNT_OLD,
+    IDP_REVIEW,
+    REGISTRATION_PROFILE,
+    REGISTRATION_USER_CREATION;
 }

@@ -196,6 +196,16 @@ public abstract class AbstractUserProfileProvider<U extends UserProfileProvider>
 
     }
 
+    @Override
+    public String getConfiguration() {
+        return null;
+    }
+
+    @Override
+    public void setConfiguration(String configuration) {
+
+    }
+
     /**
      * Subclasses can override this method to create their instances of {@link UserProfileProvider}.
      *

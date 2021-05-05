@@ -19,16 +19,18 @@
 
 package org.keycloak.userprofile.legacy;
 
+import java.util.List;
+import java.util.Map;
+
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.services.validation.Validation;
-import org.keycloak.userprofile.UserProfileContext;
+import org.keycloak.userprofile.AttributeContext;
+import org.keycloak.userprofile.AttributeMetadata;
 import org.keycloak.userprofile.AttributeValidatorMetadata;
+import org.keycloak.userprofile.UserProfileContext;
 import org.keycloak.userprofile.validation.Validator;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Functions are supposed to return:
@@ -219,4 +221,58 @@ public class Validators {
                     && session.users().getUserByEmail(session.getContext().getRealm(), value) != null);
         };
     }
+
+    /**
+     * Validate String length based on the configuration if string is not blank.
+     * 
+     * @param config can contain "max" and "min" keys with integer values
+     * @return true if string is blank or conforms min and max configurations
+     */
+    public static final Validator length(final Map<String, Object> config) {
+        return (context) -> {
+            Map.Entry<String, List<String>> attribute = context.getAttribute();
+            List<String> values = attribute.getValue();
+
+            if (values == null || values.isEmpty()) {
+                return true;
+            }
+
+            String value = values.get(0);
+
+            if (Validation.isBlank(value))
+                return true;
+
+            if (config.containsKey("min") && value.length() < (Integer) config.get("min")) {
+                return false;
+            }
+            if (config.containsKey("max") && value.length() > (Integer) config.get("max")) {
+                return false;
+            }
+            return true;
+        };
+    }
+
+    /**
+     * Validator for "required" validation based on evaluation of the {@link AttributeMetadata#isRequired(AttributeContext)}.
+     * 
+     */
+    public static final Validator requiredByAttributeMetadata() {
+        return (context) -> {
+            if(!context.getMetadata().isRequired(context)) {
+                return true;
+            }
+            
+            Map.Entry<String, List<String>> attribute = context.getAttribute();
+            List<String> values = attribute.getValue();
+
+            if (values == null || values.isEmpty()) {
+                return false;
+            }
+            
+            String value = values.get(0);
+
+            return !Validation.isBlank(value);
+        };
+    }
+
 }

@@ -26,6 +26,9 @@ import org.keycloak.userprofile.AttributeContext;
  */
 public interface Validator {
 
+	/**
+	 * @returns true if validation success, false if validation fails
+	 */
     boolean validate(AttributeContext context);
 
 }

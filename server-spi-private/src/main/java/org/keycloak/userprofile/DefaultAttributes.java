@@ -77,7 +77,7 @@ public final class DefaultAttributes extends HashMap<String, List<String>> imple
     private boolean isReadOnlyFromMetadata(String attributeName) {
         AttributeMetadata attributeMetadata = metadataByAttribute.get(attributeName);
 
-        if (attributeMetadata != null && attributeMetadata.isReadOnly()) {
+        if (attributeMetadata != null && attributeMetadata.isReadOnly(createAttributeContext(attributeName, attributeMetadata))) {
             return true;
         }
         return false;
