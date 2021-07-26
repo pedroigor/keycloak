@@ -73,8 +73,14 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.keycloak.testsuite.util.DateTimeAssert.assertTimestampIsCloseToNow;
+
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude;
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer;
 
@@ -1023,4 +1029,51 @@ public class RequiredActionEmailVerificationTest extends AbstractTestRealmKeyclo
         errorPage.assertCurrent();
         assertEquals("The link you clicked is an old stale link and is no longer valid. Maybe you have already verified your email.", errorPage.getError());
     }
+
+    @Test
+    public void verifyEmailSetsLastUpdatedTimestamp() throws IOException, MessagingException {
+        loginPage.open();
+        loginPage.login("test-user@localhost", "password");
+
+        verifyEmailPage.assertCurrent();
+
+        Assert.assertEquals(1, greenMail.getReceivedMessages().length);
+
+        MimeMessage message = greenMail.getReceivedMessages()[0];
+
+        String verificationUrl = getPasswordResetEmailLink(message);
+
+        AssertEvents.ExpectedEvent emailEvent = events.expectRequiredAction(EventType.SEND_VERIFY_EMAIL).detail("email", "test-user@localhost");
+        EventRepresentation sendEvent = emailEvent.assertEvent();
+        String mailCodeId = sendEvent.getDetails().get(Details.CODE_ID);
+
+        UserRepresentation user = testRealm().users().get(testUserId).toRepresentation();
+        assertNotNull(user);
+        assertFalse(user.isEmailVerified());
+        final Long lastUpdatedTimestampBeforeVerify = user.getLastUpdatedTimestamp();
+        assertNotNull(lastUpdatedTimestampBeforeVerify);
+
+        driver.navigate().to(verificationUrl.trim());
+
+        events.expectRequiredAction(EventType.VERIFY_EMAIL)
+                .user(testUserId)
+                .detail(Details.USERNAME, "test-user@localhost")
+                .detail(Details.EMAIL, "test-user@localhost")
+                .detail(Details.CODE_ID, mailCodeId)
+                .assertEvent();
+
+        user = testRealm().users().get(testUserId).toRepresentation();
+        assertNotNull(user);
+        assertTrue(user.isEmailVerified());
+        final Long lastUpdatedTimestampAfterVerify = user.getLastUpdatedTimestamp();
+        assertNotNull(lastUpdatedTimestampAfterVerify);
+        assertTimestampIsCloseToNow(lastUpdatedTimestampAfterVerify);
+        assertThat(lastUpdatedTimestampAfterVerify, greaterThan(lastUpdatedTimestampBeforeVerify));
+
+        appPage.assertCurrent();
+        Assert.assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
+
+        events.expectLogin().user(testUserId).session(mailCodeId).detail(Details.USERNAME, "test-user@localhost").assertEvent();
+    }
+
 }

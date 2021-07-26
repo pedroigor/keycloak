@@ -406,6 +406,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
             return account.setError(Response.Status.BAD_REQUEST, Messages.READ_ONLY_USER).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);
         }
 
+        user.markAsUpdated();
         event.success();
         setReferrerOnPage();
         return account.setSuccess(Messages.ACCOUNT_UPDATED).createResponse(AccountPages.ACCOUNT);

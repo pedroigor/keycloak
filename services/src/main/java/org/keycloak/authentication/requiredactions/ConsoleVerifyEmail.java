@@ -75,7 +75,8 @@ public class ConsoleVerifyEmail implements RequiredActionProvider {
 
     @Override
     public void processAction(RequiredActionContext context) {
-        EventBuilder event = context.getEvent().clone().event(EventType.VERIFY_EMAIL).detail(Details.EMAIL, context.getUser().getEmail());
+        UserModel user = context.getUser();
+        EventBuilder event = context.getEvent().clone().event(EventType.VERIFY_EMAIL).detail(Details.EMAIL, user.getEmail());
         String code = context.getAuthenticationSession().getAuthNote(Constants.VERIFY_EMAIL_CODE);
         if (code == null) {
             requiredActionChallenge(context);
@@ -92,6 +93,8 @@ public class ConsoleVerifyEmail implements RequiredActionProvider {
             event.error(Errors.INVALID_CODE);
             return;
         }
+
+        user.markAsUpdated();
         event.success();
         context.success();
     }

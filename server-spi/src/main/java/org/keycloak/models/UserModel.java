@@ -17,6 +17,7 @@
 
 package org.keycloak.models;
 
+import org.keycloak.common.util.Time;
 import org.keycloak.provider.ProviderEvent;
 
 import org.keycloak.storage.SearchableModelField;
@@ -120,6 +121,22 @@ public interface UserModel extends RoleMapperModel {
     Long getCreatedTimestamp();
     
     void setCreatedTimestamp(Long timestamp);
+
+    /**
+     * Get timestamp of last user update. In case of new users, it will return the timestamp of creation.
+     *
+     * <p>May be null for old users last updated before this feature introduction.</p>
+     */
+    Long getLastUpdatedTimestamp();
+
+    void setLastUpdatedTimestamp(Long timestamp);
+
+    /**
+     * Marks this user as updated.
+     */
+    default void markAsUpdated() {
+        setLastUpdatedTimestamp(Time.currentTimeMillis());
+    }
 
     boolean isEnabled();
 

@@ -89,6 +89,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
@@ -772,7 +773,34 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
     }
 
     @Test
-    public void changeProfileEmailChangeSetsEmailVerified() throws Exception {
+    public void changeProfileSetsLastUpdatedTimestamp() {
+        UserResource userResource = testRealm().users().get(userId);
+        UserRepresentation user = userResource.toRepresentation();
+        Long lastUpdatedTimestampBeforeUpdate = user.getLastUpdatedTimestamp();
+        assertNotNull(lastUpdatedTimestampBeforeUpdate);
+
+        profilePage.open();
+        loginPage.login("test-user@localhost", "password");
+
+        events.expectLogin().client("account").detail(Details.REDIRECT_URI, getAccountRedirectUrl()).assertEvent();
+
+        // email not changed so flag no reset
+        profilePage.updateProfile(profilePage.getFirstName(), "New last", profilePage.getEmail());
+
+        events.expectAccount(EventType.UPDATE_PROFILE).detail(Details.UPDATED_LAST_NAME, "New last").detail(Details.PREVIOUS_LAST_NAME, "Brady").assertEvent();
+
+        user = userResource.toRepresentation();
+        Long lastUpdatedTimestampAfterUpdate = user.getLastUpdatedTimestamp();
+        assertNotNull(lastUpdatedTimestampAfterUpdate);
+        assertThat(lastUpdatedTimestampAfterUpdate, greaterThan(lastUpdatedTimestampBeforeUpdate));
+
+        // reset user for other tests
+        profilePage.updateProfile("Tom", "Brady", "test-user@localhost");
+        events.clear();
+    }
+
+    @Test
+    public void changeProfileEmailChangeSetsEmailVerified() {
         setEditUsernameAllowed(false);
         setRegistrationEmailAsUsername(false);
 
@@ -790,9 +818,9 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
         profilePage.updateProfile(profilePage.getFirstName(), "New last", profilePage.getEmail());
         user = userResource.toRepresentation();
         assertTrue(user.isEmailVerified());
-        
+
         events.expectAccount(EventType.UPDATE_PROFILE).detail(Details.UPDATED_LAST_NAME, "New last").detail(Details.PREVIOUS_LAST_NAME, "Brady").assertEvent();
-        
+
         //email changed, flag must be reeset
         profilePage.updateProfile(profilePage.getFirstName(), profilePage.getLastName(), "new@email.com");
         Assert.assertEquals("new@email.com", profilePage.getEmail());

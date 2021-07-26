@@ -381,7 +381,7 @@ function loadUserStorageLink(realm, user, console, Components, UserStorageOperat
         }
 };
 
-module.controller('UserDetailCtrl', function($scope, realm, user, BruteForceUser, User,
+module.controller('UserDetailCtrl', function($scope, realm, user, $route, BruteForceUser, User,
                                              Components,
                                              UserImpersonation, RequiredActions,
                                              UserStorageOperations,
@@ -491,6 +491,8 @@ module.controller('UserDetailCtrl', function($scope, realm, user, BruteForceUser
                 $scope.changed = false;
                 convertAttributeValuesToString($scope.user);
                 user = angular.copy($scope.user);
+                // reload the route so that lastUpdatedTimestamp will be updated
+                $route.reload();
                 Notifications.success($translate.instant('user.edit.success'));
             });
         }

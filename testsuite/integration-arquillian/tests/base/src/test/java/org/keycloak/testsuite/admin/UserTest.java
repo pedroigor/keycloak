@@ -103,6 +103,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -116,6 +117,7 @@ import static org.junit.Assert.fail;
 import static org.keycloak.testsuite.Assert.assertNames;
 import static org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer.QUARKUS;
 import static org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer.REMOTE;
+import static org.keycloak.testsuite.util.DateTimeAssert.assertTimestampIsCloseToNow;
 
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude;
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer;
@@ -584,6 +586,53 @@ public class UserTest extends AbstractAdminTest {
         rep.setPasswordPolicy(passwordPolicy);
         realm.update(rep);
         response.close();
+    }
+
+    @Test
+    public void createUserSetsCreatedAndLastUpdatedTimestamps() {
+        final String userId = createUser();
+
+        // fetch user and check that timestamps have been set
+        UserRepresentation createdUser = realm.users().get(userId).toRepresentation();
+        assertNotNull(createdUser);
+
+        Long createdTimestamp = createdUser.getCreatedTimestamp();
+        assertNotNull(createdTimestamp);
+        assertTimestampIsCloseToNow(createdTimestamp);
+
+        Long lastUpdatedTimestamp = createdUser.getLastUpdatedTimestamp();
+        assertNotNull(lastUpdatedTimestamp);
+        assertTimestampIsCloseToNow(lastUpdatedTimestamp);
+
+        assertEquals(createdTimestamp, lastUpdatedTimestamp);
+    }
+
+    @Test
+    public void createUserIgnoresInputTimestamps() {
+        UserRepresentation user = new UserRepresentation();
+        user.setUsername("user1");
+        user.setEmail("user1@localhost");
+        long inputTimestamp = 123456L;
+        user.setCreatedTimestamp(inputTimestamp);
+        user.setLastUpdatedTimestamp(inputTimestamp);
+
+        String userId = createUser(user);
+
+        // fetch user and check that input timestamps have been ignored
+        UserRepresentation createdUser = realm.users().get(userId).toRepresentation();
+        assertNotNull(createdUser);
+
+        Long createdTimestamp = createdUser.getCreatedTimestamp();
+        assertNotNull(createdTimestamp);
+        assertNotEquals(inputTimestamp, createdTimestamp.longValue());
+        assertTimestampIsCloseToNow(createdTimestamp);
+
+        Long lastUpdatedTimestamp = createdUser.getLastUpdatedTimestamp();
+        assertNotNull(lastUpdatedTimestamp);
+        assertNotEquals(inputTimestamp, lastUpdatedTimestamp.longValue());
+        assertTimestampIsCloseToNow(lastUpdatedTimestamp);
+
+        assertEquals(createdTimestamp, lastUpdatedTimestamp);
     }
 
     private List<String> createUsers() {
@@ -1958,6 +2007,56 @@ public class UserTest extends AbstractAdminTest {
         assertEquals(PasswordPolicy.HASH_ITERATIONS_DEFAULT, updatedCredential.getPasswordCredentialData().getHashIterations());
         assertNotEquals("EFGH", updatedCredential.getPasswordSecretData().getValue());
         assertEquals(CredentialRepresentation.PASSWORD, updatedCredential.getType());
+    }
+
+    @Test
+    @AuthServerContainerExclude(AuthServer.REMOTE)
+    public void updateUserSetsLastUpdatedTimestamp() {
+        final String id = createUser();
+
+        UserResource userResource = realm.users().get(id);
+        UserRepresentation userRep = userResource.toRepresentation();
+        Long initialLastUpdatedTimestamp = userRep.getLastUpdatedTimestamp();
+        assertNotNull(initialLastUpdatedTimestamp);
+        userRep.setAttributes(Collections.singletonMap("key", Collections.singletonList("value")));
+
+        updateUser(userResource, userRep);
+        userRep = userResource.toRepresentation();
+        Long lastUpdatedTimestampAfterUpdate = userRep.getLastUpdatedTimestamp();
+        assertNotNull(lastUpdatedTimestampAfterUpdate);
+        assertTimestampIsCloseToNow(lastUpdatedTimestampAfterUpdate);
+        assertThat(lastUpdatedTimestampAfterUpdate, greaterThan(initialLastUpdatedTimestamp));
+    }
+
+    @Test
+    public void updateUserIgnoresInputTimestamps() {
+        String userId = createUser();
+
+        UserResource userResource = realm.users().get(userId);
+        UserRepresentation createdUser = userResource.toRepresentation();
+        assertNotNull(createdUser);
+
+        Long createdTimestamp = createdUser.getCreatedTimestamp();
+        assertNotNull(createdTimestamp);
+
+        // update user and check that input timestamps have been ignored
+        UserRepresentation userUpdateRep = new UserRepresentation();
+        long inputTimestamp = 123456L;
+        userUpdateRep.setCreatedTimestamp(inputTimestamp);
+        userUpdateRep.setLastUpdatedTimestamp(inputTimestamp);
+        userUpdateRep.setAttributes(Collections.singletonMap("key", Collections.singletonList("value")));
+        userResource.update(userUpdateRep);
+
+        UserRepresentation updatedUser = userResource.toRepresentation();
+
+        assertNotNull(updatedUser.getCreatedTimestamp());
+        assertNotEquals(inputTimestamp, updatedUser.getCreatedTimestamp().longValue());
+        assertEquals(createdTimestamp, updatedUser.getCreatedTimestamp());
+
+        Long lastUpdatedTimestamp = updatedUser.getLastUpdatedTimestamp();
+        assertNotNull(lastUpdatedTimestamp);
+        assertNotEquals(inputTimestamp, lastUpdatedTimestamp.longValue());
+        assertTimestampIsCloseToNow(lastUpdatedTimestamp);
     }
 
     @Test

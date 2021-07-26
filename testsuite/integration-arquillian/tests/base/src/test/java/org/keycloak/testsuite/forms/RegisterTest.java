@@ -42,9 +42,14 @@ import javax.mail.internet.MimeMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.jgroups.util.Util.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.keycloak.testsuite.util.DateTimeAssert.assertTimestampIsCloseToNow;
+
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer;
 
 /**
@@ -329,22 +334,36 @@ public class RegisterTest extends AbstractTestRealmKeycloakTest {
         assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
 
         String userId = events.expectRegister(username, "registerUserSuccess@email").assertEvent().getUserId();
+        assertLoginEvent(userId, username);
         assertUserRegistered(userId, username.toLowerCase(), "registerusersuccess@email");
     }
 
     private void assertUserRegistered(String userId, String username, String email) {
-        events.expectLogin().detail("username", username.toLowerCase()).user(userId).assertEvent();
+        assertUserRegistered(userId, username, email, "firstName", "lastName");
+    }
 
+    protected void assertUserRegistered(String userId, String username, String email, String firstName, String lastName) {
         UserRepresentation user = getUser(userId);
         Assert.assertNotNull(user);
-        Assert.assertNotNull(user.getCreatedTimestamp());
-        // test that timestamp is current with 10s tollerance
-        Assert.assertTrue((System.currentTimeMillis() - user.getCreatedTimestamp()) < 10000);
+        assertInitialUserTimestamps(user);
         // test user info is set from form
         assertEquals(username.toLowerCase(), user.getUsername());
         assertEquals(email.toLowerCase(), user.getEmail());
-        assertEquals("firstName", user.getFirstName());
-        assertEquals("lastName", user.getLastName());
+        assertEquals(firstName, user.getFirstName());
+        assertEquals(lastName, user.getLastName());
+    }
+
+    protected void assertLoginEvent(String userId, String username) {
+        events.expectLogin().detail("username", username.toLowerCase()).user(userId).assertEvent();
+    }
+
+    private static void assertInitialUserTimestamps(UserRepresentation user) {
+        Assert.assertNotNull(user.getCreatedTimestamp());
+        Assert.assertNotNull(user.getLastUpdatedTimestamp());
+        assertTimestampIsCloseToNow(user.getCreatedTimestamp());
+        assertTimestampIsCloseToNow(user.getLastUpdatedTimestamp());
+        // test that timestamps are the same
+        Assert.assertEquals(user.getCreatedTimestamp(), user.getLastUpdatedTimestamp());
     }
 
     @Test
@@ -365,7 +384,11 @@ public class RegisterTest extends AbstractTestRealmKeycloakTest {
             verifyEmailPage.assertCurrent();
 
             String userId = events.expectRegister("registerUserSuccessWithEmailVerification", "registerUserSuccessWithEmailVerification@email").assertEvent().getUserId();
-
+            assertUserRegistered(userId, "registerUserSuccessWithEmailVerification", "registerUserSuccessWithEmailVerification@email");
+            UserRepresentation user = getUser(userId);
+            assertFalse(user.isEmailVerified());
+            final Long lastUpdatedTimestampBeforeVerify = user.getLastUpdatedTimestamp();
+            assertNotNull(lastUpdatedTimestampBeforeVerify);
             {
                 assertTrue("Expecting verify email", greenMail.waitForIncomingEmail(1000, 1));
 
@@ -385,12 +408,18 @@ public class RegisterTest extends AbstractTestRealmKeycloakTest {
               .user(userId)
               .assertEvent();
 
-            assertUserRegistered(userId, "registerUserSuccessWithEmailVerification", "registerUserSuccessWithEmailVerification@email");
+            assertLoginEvent(userId, "registerUserSuccessWithEmailVerification");
+            user = getUser(userId);
+            assertNotNull(user);
+            assertTrue(user.isEmailVerified());
+            final Long lastUpdatedTimestampAfterVerify = user.getLastUpdatedTimestamp();
+            assertNotNull(lastUpdatedTimestampAfterVerify);
+            assertTimestampIsCloseToNow(lastUpdatedTimestampAfterVerify);
+            assertThat(lastUpdatedTimestampAfterVerify, greaterThan(lastUpdatedTimestampBeforeVerify));
 
             appPage.assertCurrent();
             assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
 
-            // test that timestamp is current with 10s tollerance
             // test user info is set from form
         } finally {
             realm.setVerifyEmail(origVerifyEmail);
@@ -416,6 +445,11 @@ public class RegisterTest extends AbstractTestRealmKeycloakTest {
 
             String userId = events.expectRegister("registerUserSuccessWithEmailVerificationWithResend", "registerUserSuccessWithEmailVerificationWithResend@email").assertEvent().getUserId();
 
+            assertUserRegistered(userId, "registerUserSuccessWithEmailVerificationWithResend", "registerUserSuccessWithEmailVerificationWithResend@email");
+            UserRepresentation user = getUser(userId);
+            assertFalse(user.isEmailVerified());
+            final Long lastUpdatedTimestampBeforeVerify = user.getLastUpdatedTimestamp();
+            assertNotNull(lastUpdatedTimestampBeforeVerify);
             {
                 assertTrue("Expecting verify email", greenMail.waitForIncomingEmail(1000, 1));
 
@@ -445,12 +479,18 @@ public class RegisterTest extends AbstractTestRealmKeycloakTest {
               .user(userId)
               .assertEvent();
 
-            assertUserRegistered(userId, "registerUserSuccessWithEmailVerificationWithResend", "registerUserSuccessWithEmailVerificationWithResend@email");
+            assertLoginEvent(userId, "registerUserSuccessWithEmailVerificationWithResend");
+            user = getUser(userId);
+            assertNotNull(user);
+            Assert.assertTrue(user.isEmailVerified());
+            final Long lastUpdatedTimestampAfterVerify = user.getLastUpdatedTimestamp();
+            assertNotNull(lastUpdatedTimestampAfterVerify);
+            assertTimestampIsCloseToNow(lastUpdatedTimestampAfterVerify);
+            assertThat(lastUpdatedTimestampAfterVerify, greaterThan(lastUpdatedTimestampBeforeVerify));
 
             appPage.assertCurrent();
             assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
 
-            // test that timestamp is current with 10s tollerance
             // test user info is set from form
         } finally {
             realm.setVerifyEmail(origVerifyEmail);
@@ -605,9 +645,7 @@ public class RegisterTest extends AbstractTestRealmKeycloakTest {
 
             UserRepresentation user = getUser(userId);
             Assert.assertNotNull(user);
-            Assert.assertNotNull(user.getCreatedTimestamp());
-            // test that timestamp is current with 10s tollerance
-            Assert.assertTrue((System.currentTimeMillis() - user.getCreatedTimestamp()) < 10000);
+            assertInitialUserTimestamps(user);
 
         } finally {
             configureRealmRegistrationEmailAsUsername(false);

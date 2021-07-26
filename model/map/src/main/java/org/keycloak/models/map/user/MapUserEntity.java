@@ -48,6 +48,7 @@ public class MapUserEntity implements AbstractEntity, UpdatableEntity {
     private String username;
     private String firstName;
     private Long createdTimestamp;
+    private Long lastUpdatedTimestamp;
     private String lastName;
     private String email;
     private boolean enabled;
@@ -125,6 +126,15 @@ public class MapUserEntity implements AbstractEntity, UpdatableEntity {
     public void setCreatedTimestamp(Long createdTimestamp) {
         this.updated |= !Objects.equals(this.createdTimestamp, createdTimestamp);
         this.createdTimestamp = createdTimestamp;
+    }
+
+    public Long getLastUpdatedTimestamp() {
+        return lastUpdatedTimestamp;
+    }
+
+    public void setLastUpdatedTimestamp(Long lastUpdatedTimestamp) {
+        this.updated |= !Objects.equals(this.lastUpdatedTimestamp, lastUpdatedTimestamp);
+        this.lastUpdatedTimestamp = lastUpdatedTimestamp;
     }
 
     public String getLastName() {

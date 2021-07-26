@@ -32,6 +32,7 @@ import org.keycloak.services.managers.RealmManager;
 import org.keycloak.testsuite.AbstractTestRealmKeycloakTest;
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude;
 import org.keycloak.testsuite.arquillian.annotation.ModelTest;
+import org.keycloak.testsuite.util.DateTimeAssert;
 import org.keycloak.testsuite.util.RealmBuilder;
 
 import java.util.ArrayList;
@@ -49,7 +50,10 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.keycloak.testsuite.util.DateTimeAssert.assertTimestampIsCloseToNow;
+
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer;
 
 /**
@@ -83,8 +87,10 @@ public class UserModelTest extends AbstractTestRealmKeycloakTest {
             user.setLastName("last-name");
             user.setEmail("email");
             assertNotNull(user.getCreatedTimestamp());
-            // test that timestamp is current with 10s tollerance
-            Assert.assertTrue((System.currentTimeMillis() - user.getCreatedTimestamp()) < 10000);
+            assertNotNull(user.getLastUpdatedTimestamp());
+            assertTimestampIsCloseToNow(user.getCreatedTimestamp());
+            assertTimestampIsCloseToNow(user.getLastUpdatedTimestamp());
+            assertEquals(user.getCreatedTimestamp(), user.getLastUpdatedTimestamp());
 
             user.addRequiredAction(RequiredAction.CONFIGURE_TOTP);
             user.addRequiredAction(RequiredAction.UPDATE_PASSWORD);

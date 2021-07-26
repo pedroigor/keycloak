@@ -157,6 +157,18 @@ public class UserAdapter implements CachedUserModel.Streams {
     }
 
     @Override
+    public Long getLastUpdatedTimestamp() {
+        if (updated != null) return updated.getLastUpdatedTimestamp();
+        return cached.getLastUpdatedTimestamp();
+    }
+
+    @Override
+    public void setLastUpdatedTimestamp(Long timestamp) {
+        getDelegateForUpdate();
+        updated.setLastUpdatedTimestamp(timestamp);
+    }
+
+    @Override
     public boolean isEnabled() {
         if (updated != null) return updated.isEnabled();
         return cached.isEnabled();

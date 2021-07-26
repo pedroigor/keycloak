@@ -53,6 +53,7 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
     public static String EMAIL_ATTRIBUTE = "EMAIL";
     public static String EMAIL_VERIFIED_ATTRIBUTE = "EMAIL_VERIFIED";
     public static String CREATED_TIMESTAMP_ATTRIBUTE = "CREATED_TIMESTAMP";
+    public static String LAST_UPDATED_TIMESTAMP_ATTRIBUTE = "LAST_UPDATED_TIMESTAMP";
     public static String ENABLED_ATTRIBUTE = "ENABLED";
 
 
@@ -312,6 +313,18 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
             setSingleAttribute(CREATED_TIMESTAMP_ATTRIBUTE, Long.toString(timestamp));
         }
 
+    }
+
+    @Override
+    public Long getLastUpdatedTimestamp() {
+        String val = getFirstAttribute(LAST_UPDATED_TIMESTAMP_ATTRIBUTE);
+        return val == null ? null : Long.valueOf(val);
+    }
+
+    @Override
+    public void setLastUpdatedTimestamp(Long timestamp) {
+        String val = timestamp == null ? null : Long.toString(timestamp);
+        setSingleAttribute(LAST_UPDATED_TIMESTAMP_ATTRIBUTE, val);
     }
 
     @Override

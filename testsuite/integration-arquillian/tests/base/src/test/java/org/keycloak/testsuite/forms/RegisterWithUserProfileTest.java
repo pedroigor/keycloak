@@ -104,6 +104,8 @@ public class RegisterWithUserProfileTest extends RegisterTest {
         assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
 
         String userId = events.expectRegister("registerUserSuccessLastNameOptional", "registerUserSuccessLastNameOptional@email").assertEvent().getUserId();
+
+        assertLoginEvent(userId, "registerUserSuccessLastNameOptional");
         assertUserRegistered(userId, "registerUserSuccessLastNameOptional", "registerusersuccesslastnameoptional@email", "firstName", "");
     }
 
@@ -125,6 +127,7 @@ public class RegisterWithUserProfileTest extends RegisterTest {
         assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
 
         String userId = events.expectRegister("registerUserSuccessLastNameRequiredForScope_notRequested", "registerUserSuccessLastNameRequiredForScope_notRequested@email").assertEvent().getUserId();
+        assertLoginEvent(userId, "registerUserSuccessLastNameRequiredForScope_notRequested");
         assertUserRegistered(userId, "registerUserSuccessLastNameRequiredForScope_notRequested", "registerusersuccesslastnamerequiredforscope_notrequested@email", "firstName", "");
     }
 
@@ -198,6 +201,7 @@ public class RegisterWithUserProfileTest extends RegisterTest {
         assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
 
         String userId = events.expectRegister("registerUserSuccessLastNameLengthValidation", "registerUserSuccessLastNameLengthValidation@email").assertEvent().getUserId();
+        assertLoginEvent(userId, "registerUserSuccessLastNameLengthValidation");
         assertUserRegistered(userId, "registerUserSuccessLastNameLengthValidation", "registerusersuccesslastnamelengthvalidation@email", "firstName", "last");
     }
 
@@ -500,22 +504,6 @@ public class RegisterWithUserProfileTest extends RegisterTest {
         assertEquals("FirstAA", user.getFirstName());
         assertEquals("LastAA", user.getLastName());
         assertEquals(null, user.firstAttribute(ATTRIBUTE_DEPARTMENT));
-    }
-
-
-    private void assertUserRegistered(String userId, String username, String email, String firstName, String lastName) {
-        events.expectLogin().detail("username", username.toLowerCase()).user(userId).assertEvent();
-
-        UserRepresentation user = getUser(userId);
-        Assert.assertNotNull(user);
-        Assert.assertNotNull(user.getCreatedTimestamp());
-        // test that timestamp is current with 10s tollerance
-        Assert.assertTrue((System.currentTimeMillis() - user.getCreatedTimestamp()) < 10000);
-        // test user info is set from form
-        assertEquals(username.toLowerCase(), user.getUsername());
-        assertEquals(email.toLowerCase(), user.getEmail());
-        assertEquals(firstName, user.getFirstName());
-        assertEquals(lastName, user.getLastName());
     }
     
     protected void setUserProfileConfiguration(String configuration) {

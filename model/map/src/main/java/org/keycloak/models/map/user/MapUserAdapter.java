@@ -75,6 +75,16 @@ public abstract class MapUserAdapter extends AbstractUserModel<MapUserEntity> {
     }
 
     @Override
+    public Long getLastUpdatedTimestamp() {
+        return entity.getLastUpdatedTimestamp();
+    }
+
+    @Override
+    public void setLastUpdatedTimestamp(Long timestamp) {
+        entity.setLastUpdatedTimestamp(timestamp);
+    }
+
+    @Override
     public boolean isEnabled() {
         return entity.isEnabled();
     }
