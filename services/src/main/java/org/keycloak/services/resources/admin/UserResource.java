@@ -181,7 +181,6 @@ public class UserResource {
             profile.update(rep.getAttributes() != null);
             updateUserFromRep(profile, user, rep, session, true);
             RepresentationToModel.createCredentials(rep, session, realm, user, true);
-            user.markAsUpdated();
 
             // we need to do it here as the attributes would be overwritten by what is in the rep
             if (wasPermanentlyLockedOut) {

@@ -95,7 +95,6 @@ public class VerifyEmailActionTokenHandler extends AbstractActionTokenHandler<Ve
         // verify user email as we know it is valid as this entry point would never have gotten here.
         user.setEmailVerified(true);
         user.removeRequiredAction(RequiredAction.VERIFY_EMAIL);
-        user.markAsUpdated();
         authSession.removeRequiredAction(RequiredAction.VERIFY_EMAIL);
 
         event.success();

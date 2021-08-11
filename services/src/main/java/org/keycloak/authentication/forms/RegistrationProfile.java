@@ -33,14 +33,13 @@ import org.keycloak.models.utils.FormMessage;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.services.validation.Validation;
-import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileContext;
-import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.userprofile.ValidationException;
-
-import java.util.List;
+import org.keycloak.userprofile.UserProfile;
+import org.keycloak.userprofile.UserProfileProvider;
 
 import javax.ws.rs.core.MultivaluedMap;
+import java.util.List;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -95,10 +94,6 @@ public class RegistrationProfile implements FormAction, FormActionFactory {
         UserModel user = context.getUser();
         UserProfileProvider provider = context.getSession().getProvider(UserProfileProvider.class);
         provider.create(UserProfileContext.REGISTRATION_PROFILE, context.getHttpRequest().getDecodedFormParameters(), user).update();
-        /*
-         * don't set lastUpdatedTimestamp here, it should have been already set on user creation in action
-         * "registration-user-creation"
-         */
     }
 
     @Override

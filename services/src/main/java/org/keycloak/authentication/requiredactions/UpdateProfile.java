@@ -87,7 +87,6 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
                     event.detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, user.getEmail());
                 }
             });
-            user.markAsUpdated();
 
             context.success();
         } catch (ValidationException pve) {

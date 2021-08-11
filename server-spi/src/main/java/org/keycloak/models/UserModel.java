@@ -17,7 +17,6 @@
 
 package org.keycloak.models;
 
-import org.keycloak.common.util.Time;
 import org.keycloak.provider.ProviderEvent;
 
 import org.keycloak.storage.SearchableModelField;
@@ -130,13 +129,6 @@ public interface UserModel extends RoleMapperModel {
     Long getLastUpdatedTimestamp();
 
     void setLastUpdatedTimestamp(Long timestamp);
-
-    /**
-     * Marks this user as updated.
-     */
-    default void markAsUpdated() {
-        setLastUpdatedTimestamp(Time.currentTimeMillis());
-    }
 
     boolean isEnabled();
 

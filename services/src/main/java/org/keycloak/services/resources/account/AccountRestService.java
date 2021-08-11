@@ -199,16 +199,14 @@ public class AccountRestService {
     public Response updateAccount(UserRepresentation rep) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        UserModel user = auth.getUser();
-        event.event(EventType.UPDATE_PROFILE).client(auth.getClient()).user(user);
+        event.event(EventType.UPDATE_PROFILE).client(auth.getClient()).user(auth.getUser());
 
         UserProfileProvider profileProvider = session.getProvider(UserProfileProvider.class);
-        UserProfile profile = profileProvider.create(UserProfileContext.ACCOUNT, rep.toAttributes(), user);
+        UserProfile profile = profileProvider.create(UserProfileContext.ACCOUNT, rep.toAttributes(), auth.getUser());
 
         try {
 
             profile.update();
-            user.markAsUpdated();
 
             event.success();
 

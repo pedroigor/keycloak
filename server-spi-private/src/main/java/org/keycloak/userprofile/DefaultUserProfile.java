@@ -19,6 +19,9 @@
 
 package org.keycloak.userprofile;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +31,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.keycloak.common.util.Time;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelException;
 import org.keycloak.models.UserModel;
@@ -85,19 +89,27 @@ public final class DefaultUserProfile implements UserProfile {
 
         user = userSupplier.apply(this.attributes);
 
-        return updateInternal(user, false);
+        return updateInternal(user, false, Collections.emptyList());
     }
 
     @Override
-    public void update(boolean removeAttributes, BiConsumer<String, UserModel>... changeListener) {
+    public void update(boolean removeAttributes, BiConsumer<String, UserModel>... listeners) {
         if (!validated) {
             validate();
         }
 
-        updateInternal(user, removeAttributes, changeListener);
+        List<BiConsumer<String, UserModel>> allListeners = new ArrayList<>();
+
+        allListeners.add(createUserUpdateListener());
+
+        if (listeners != null) {
+            allListeners.addAll(Arrays.asList(listeners));
+        }
+
+        updateInternal(user, removeAttributes, allListeners);
     }
 
-    private UserModel updateInternal(UserModel user, boolean removeAttributes, BiConsumer<String, UserModel>... changeListener) {
+    private UserModel updateInternal(UserModel user, boolean removeAttributes, List<BiConsumer<String, UserModel>> changeListener) {
         if (user == null) {
             throw new RuntimeException("No user model provided for persisting changes");
         }
@@ -115,11 +127,11 @@ public final class DefaultUserProfile implements UserProfile {
 
                 if (currentValue.size() != updatedValue.size() || !currentValue.containsAll(updatedValue)) {
                     user.setAttribute(name, updatedValue);
-                    
+
                     if(UserModel.EMAIL.equals(name) && metadata.getContext().isResetEmailVerified()) {
                         user.setEmailVerified(false);
                     }
-                    
+
                     for (BiConsumer<String, UserModel> listener : changeListener) {
                         listener.accept(name, user);
                     }
@@ -138,7 +150,12 @@ public final class DefaultUserProfile implements UserProfile {
                     if (this.attributes.isReadOnly(attr)) {
                         continue;
                     }
+
                     user.removeAttribute(attr);
+
+                    for (BiConsumer<String, UserModel> listener : changeListener) {
+                        listener.accept(attr, user);
+                    }
                 }
             }
         } catch (ModelException me) {
@@ -154,5 +171,9 @@ public final class DefaultUserProfile implements UserProfile {
     @Override
     public Attributes getAttributes() {
         return attributes;
+    }
+
+    protected BiConsumer<String, UserModel> createUserUpdateListener() {
+        return new DefaultAttributeChangeListener(session);
     }
 }
