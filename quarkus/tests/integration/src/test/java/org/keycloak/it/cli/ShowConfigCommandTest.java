@@ -23,9 +23,10 @@ import org.keycloak.it.junit5.extension.CLITest;
 
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
+import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers;
 
 @CLITest
-class ShowConfigCommandTest {
+public class ShowConfigCommandTest {
 
     @Test
     @Launch({ "show-config" })

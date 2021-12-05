@@ -24,6 +24,7 @@ import static org.keycloak.quarkus.runtime.Environment.forceTestLaunchMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
@@ -37,9 +38,15 @@ import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 
 public class CLITestExtension extends QuarkusMainTestExtension {
-
+    private static final String DIST_TYPE_SYSPROP = "kc.quarkus.tests.dist";
     private KeycloakDistribution dist;
 
+    public CLITestExtension(){
+        //so tests annotated with @RawDistOnly don't get ignored when running locally from IDE or without -Dkc.quarkus.tests.dist set up.
+        if(System.getProperty(DIST_TYPE_SYSPROP) == null) {
+            System.setProperty(DIST_TYPE_SYSPROP, "");
+        }
+    }
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         DistributionTest distConfig = getDistributionConfig(context);
@@ -73,23 +80,13 @@ public class CLITestExtension extends QuarkusMainTestExtension {
     }
 
     @Override
-    public void afterAll(ExtensionContext context) throws Exception {
-        if (dist != null) {
-            // just to make sure the server is stopped after all tests
-            dist.stop();
-        }
-        super.afterAll(context);
-    }
-
-    private KeycloakDistribution createDistribution(DistributionTest config) {
-        return DistributionType.getCurrent().orElse(RAW).newInstance(config);
-    }
-
-    @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         DistributionTest distConfig = getDistributionConfig(context);
 
         if (distConfig != null) {
+            if (System.getProperty(DIST_TYPE_SYSPROP) == null || System.getProperty(DIST_TYPE_SYSPROP).equals("")) {
+                System.setProperty(DIST_TYPE_SYSPROP, "raw");
+            }
             if (BEFORE_ALL.equals(distConfig.reInstall())) {
                 dist = createDistribution(distConfig);
             }
@@ -98,6 +95,24 @@ public class CLITestExtension extends QuarkusMainTestExtension {
         }
 
         super.beforeAll(context);
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) throws Exception {
+        if (dist != null) {
+            //make sure sysprop raw gets unset after tests in class annotated with @DistributionTest finished in raw mode.
+            if (System.getProperty(DIST_TYPE_SYSPROP) != null && System.getProperty(DIST_TYPE_SYSPROP).equals("raw")) {
+                System.setProperty(DIST_TYPE_SYSPROP,"");
+            }
+
+            // just to make sure the server is stopped after all tests
+            dist.stop();
+        }
+        super.afterAll(context);
+    }
+
+    private KeycloakDistribution createDistribution(DistributionTest config) {
+        return org.keycloak.it.junit5.extension.DistributionType.getCurrent().orElse(RAW).newInstance(config);
     }
 
     @Override
@@ -123,10 +138,10 @@ public class CLITestExtension extends QuarkusMainTestExtension {
                 exitCode = result.exitCode();
             }
 
-            return CLIResult.create(outputStream, errStream, exitCode, isDistribution);
+            return CLIResult.create(outputStream, errStream, exitCode);
         }
 
-        // for now, not support for manual launching using QuarkusMainLauncher
+        // for now, no support for manual launching using QuarkusMainLauncher
         throw new RuntimeException("Parameter type [" + type + "] not supported");
     }
 
@@ -162,5 +177,9 @@ public class CLITestExtension extends QuarkusMainTestExtension {
 
     private DistributionTest getDistributionConfig(ExtensionContext context) {
         return context.getTestClass().get().getDeclaredAnnotation(DistributionTest.class);
+    }
+
+    public static String getTestRunType() {
+        return System.getProperty(DIST_TYPE_SYSPROP).isBlank() ? "clitest" : System.getProperty(DIST_TYPE_SYSPROP);
     }
 }
