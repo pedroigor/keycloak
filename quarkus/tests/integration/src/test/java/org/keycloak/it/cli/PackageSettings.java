@@ -11,8 +11,7 @@ import org.keycloak.it.junit5.extension.CLITestExtension;
  * Note: Creates the directories if they don't exist yet.
  * **/
 public class PackageSettings {
-    String currentRunType = CLITestExtension.getTestRunType() == "clitest" ? CLITestExtension.getTestRunType() : CLITestExtension.getTestRunType() + "dist";
 
-    public String UseApprovalSubdirectory = "approvals/"+ currentRunType + "/help";
+    public String UseApprovalSubdirectory = "approvals/cli/help";
     public String ApprovalBaseDirectory = "../resources";
 }
