@@ -25,7 +25,7 @@ import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 
 @CLITest
-class ShowConfigCommandTest {
+public class ShowConfigCommandTest {
 
     @Test
     @Launch({ "show-config" })

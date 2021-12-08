@@ -123,10 +123,10 @@ public class CLITestExtension extends QuarkusMainTestExtension {
                 exitCode = result.exitCode();
             }
 
-            return CLIResult.create(outputStream, errStream, exitCode, isDistribution);
+            return CLIResult.create(outputStream, errStream, exitCode);
         }
 
-        // for now, not support for manual launching using QuarkusMainLauncher
+        // for now, no support for manual launching using QuarkusMainLauncher
         throw new RuntimeException("Parameter type [" + type + "] not supported");
     }
 

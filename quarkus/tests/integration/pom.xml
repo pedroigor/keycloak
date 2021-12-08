@@ -32,6 +32,11 @@
     <artifactId>keycloak-quarkus-integration-tests</artifactId>
     <packaging>jar</packaging>
 
+    <properties>
+        <kc.quarkus.tests.dist>raw</kc.quarkus.tests.dist>
+        <approvaltests.version>12.3.2</approvaltests.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.keycloak</groupId>
@@ -64,6 +69,11 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.approvaltests</groupId>
+            <artifactId>approvaltests</artifactId>
+            <version>${approvaltests.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -72,15 +82,24 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <systemProperties>
-                        <property>
-                            <name>kc.quarkus.tests.dist</name>
-                            <value>${kc.quarkus.tests.dist}</value>
-                        </property>
-                    </systemProperties>
+                    <systemPropertyVariables>
+                        <kc.quarkus.tests.dist>${kc.quarkus.tests.dist}</kc.quarkus.tests.dist>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <kc.quarkus.tests.dist>raw</kc.quarkus.tests.dist>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
