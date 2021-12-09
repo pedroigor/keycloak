@@ -25,6 +25,8 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.keycloak.quarkus.runtime.Environment;
 
+import static org.keycloak.quarkus.runtime.Environment.isTestLaunchMode;
+
 public class KeycloakConfigSourceProvider implements ConfigSourceProvider {
 
     private static final List<ConfigSource> CONFIG_SOURCES = new ArrayList<>();
