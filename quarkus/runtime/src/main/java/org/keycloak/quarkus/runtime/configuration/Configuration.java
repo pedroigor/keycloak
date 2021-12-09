@@ -39,17 +39,12 @@ import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers;
  */
 public final class Configuration {
 
-    private static volatile SmallRyeConfig CONFIG;
-
     private Configuration() {
 
     }
 
     public static synchronized SmallRyeConfig getConfig() {
-        if (CONFIG == null) {
-            CONFIG = (SmallRyeConfig) SmallRyeConfigProviderResolver.instance().getConfig();
-        }
-        return CONFIG;
+        return (SmallRyeConfig) SmallRyeConfigProviderResolver.instance().getConfig();
     }
 
     public static Optional<String> getBuildTimeProperty(String name) {

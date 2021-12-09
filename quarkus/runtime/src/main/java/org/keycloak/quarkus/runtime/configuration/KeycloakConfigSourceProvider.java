@@ -65,6 +65,7 @@ public class KeycloakConfigSourceProvider implements ConfigSourceProvider {
 
     @Override
     public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
+        reload();
         return CONFIG_SOURCES;
     }
 }

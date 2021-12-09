@@ -32,7 +32,9 @@ import org.keycloak.it.utils.KeycloakDistribution;
 import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.cli.command.Start;
 import org.keycloak.quarkus.runtime.cli.command.StartDev;
+import org.keycloak.quarkus.runtime.configuration.KeycloakPropertiesConfigSource;
 
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.junit.QuarkusMainTestExtension;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
@@ -44,10 +46,18 @@ public class CLITestExtension extends QuarkusMainTestExtension {
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         DistributionTest distConfig = getDistributionConfig(context);
+        Launch launch = context.getRequiredTestMethod().getAnnotation(Launch.class);
+
+        if (launch != null) {
+            for (String arg : launch.value()) {
+                if (arg.contains("--config-file")) {
+                    String substring = arg.substring(arg.indexOf('=') + 1);
+                    System.setProperty(KeycloakPropertiesConfigSource.KEYCLOAK_CONFIG_FILE_PROP, substring);
+                }
+            }
+        }
 
         if (distConfig != null) {
-            Launch launch = context.getRequiredTestMethod().getAnnotation(Launch.class);
-
             if (launch != null) {
                 if (dist == null) {
                     dist = createDistribution(distConfig);
@@ -71,6 +81,8 @@ public class CLITestExtension extends QuarkusMainTestExtension {
         }
 
         super.afterEach(context);
+        QuarkusConfigFactory.setConfig(null);
+        System.getProperties().remove(KeycloakPropertiesConfigSource.KEYCLOAK_CONFIG_FILE_PROP);
     }
 
     @Override
