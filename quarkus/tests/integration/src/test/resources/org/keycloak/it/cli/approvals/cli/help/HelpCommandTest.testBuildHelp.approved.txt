@@ -25,14 +25,15 @@ Options:
 
 Cluster:
 
---cluster <mode>     Specifies clustering configuration. The specified value points to the
-                       infinispan configuration file prefixed with the 'cluster-` inside the
-                       distribution configuration directory. Value 'local' effectively disables
-                       clustering and use infinispan caches in the local mode. Value 'default'
-                       enables clustering for infinispan caches. Default: default.
---cluster-stack <stack>
+--cache <type>       Defines the cache mechanism for high-availability. By default, a 'ispn' cache
+                       is used to create a cluster between multiple server nodes. A 'local' cache
+                       disables clustering and is intended for development and testing purposes.
+                       Default: ispn.
+--cache-config-file <file>
+                     Defines the file from which cache configuration should be loaded from.
+--cache-stack <stack>
                      Define the default stack to use for cluster communication and node discovery.
-                       Default: udp.
+                       This option only takes effect if 'cache' is set to 'ispn'. Default: udp.
 
 Database:
 
