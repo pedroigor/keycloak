@@ -152,9 +152,9 @@ public class KeycloakQuarkusServerDeployableContainer implements DeployableConta
 
         commands.add("./kc.sh");
         commands.add("start");
-        commands.add("-Dquarkus.http.root-path=/auth");
         commands.add("--auto-build");
         commands.add("--http-enabled=true");
+        commands.add("--http-relative-path=/auth");
 
         if (Boolean.parseBoolean(System.getProperty("auth.server.debug", "false"))) {
             commands.add("--debug");
