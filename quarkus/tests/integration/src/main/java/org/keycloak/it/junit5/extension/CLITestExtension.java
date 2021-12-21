@@ -23,6 +23,7 @@ import static org.keycloak.quarkus.runtime.Environment.forceTestLaunchMode;
 import static org.keycloak.quarkus.runtime.cli.command.Main.CONFIG_FILE_LONG_NAME;
 import static org.keycloak.quarkus.runtime.cli.command.Main.CONFIG_FILE_SHORT_NAME;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,7 @@ public class CLITestExtension extends QuarkusMainTestExtension {
 
     private static final String KEY_VALUE_SEPARATOR = "[= ]";
     private KeycloakDistribution dist;
+    private final List<String> testSysProps = new ArrayList<>();
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
@@ -59,12 +61,15 @@ public class CLITestExtension extends QuarkusMainTestExtension {
                     Pattern kvSeparator = Pattern.compile(KEY_VALUE_SEPARATOR);
                     String[] cfKeyValue = kvSeparator.split(arg);
                     System.setProperty(KeycloakPropertiesConfigSource.KEYCLOAK_CONFIG_FILE_PROP, cfKeyValue[1]);
+                } else if (arg.startsWith("-D")) {
+                    String name = arg.substring(2, arg.indexOf('='));
+                    String value = arg.substring(arg.indexOf('=') + 1);
+                    setProperty(name, value);
                 }
             }
         }
 
         if (distConfig != null) {
-
             if (launch != null) {
                 if (dist == null) {
                     dist = createDistribution(distConfig);
@@ -73,6 +78,7 @@ public class CLITestExtension extends QuarkusMainTestExtension {
             }
         } else {
             configureProfile(context);
+            configureDatabase(context);
             super.beforeEach(context);
         }
     }
@@ -98,6 +104,9 @@ public class CLITestExtension extends QuarkusMainTestExtension {
         System.getProperties().remove(Environment.PROFILE);
         System.getProperties().remove("quarkus.profile");
         TestConfigArgsConfigSource.setCliArgs(new String[0]);
+        for (String property : testSysProps) {
+            System.getProperties().remove(property);
+        }
     }
 
     @Override
@@ -176,6 +185,27 @@ public class CLITestExtension extends QuarkusMainTestExtension {
         } else if (cliArgs.contains(StartDev.NAME)) {
             Environment.forceDevProfile();
         }
+    }
+
+    private void configureDatabase(ExtensionContext context) {
+        StartDatabase database = context.getTestClass().orElse(Object.class).getDeclaredAnnotation(StartDatabase.class);
+
+        if (database != null) {
+            configureDevServices();
+            setProperty("kc.db", database.db());
+            setProperty("kc.db.password", "Password1!");
+        }
+    }
+
+    private void configureDevServices() {
+        setProperty("quarkus.vault.devservices.enabled", Boolean.FALSE.toString());
+        setProperty("quarkus.datasource.devservices.enabled", Boolean.TRUE.toString());
+        setProperty("quarkus.devservices.enabled", Boolean.TRUE.toString());
+    }
+
+    private void setProperty(String name, String value) {
+        System.setProperty(name, value);
+        testSysProps.add(name);
     }
 
     private List<String> getCliArgs(ExtensionContext context) {
