@@ -22,8 +22,6 @@ import java.sql.Connection;
 
 import javax.xml.parsers.SAXParserFactory;
 
-import liquibase.database.core.MariaDBDatabase;
-import liquibase.database.core.MySQLDatabase;
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
@@ -71,7 +69,6 @@ public class QuarkusLiquibaseConnectionProvider implements LiquibaseConnectionPr
 
     protected void baseLiquibaseInitialization(KeycloakSession session) {
         resourceAccessor = new ClassLoaderResourceAccessor(getClass().getClassLoader());
-        FastServiceLocator locator = (FastServiceLocator) ServiceLocator.getInstance();
 
         JpaConnectionProviderFactory jpaConnectionProvider = (JpaConnectionProviderFactory) session
                 .getKeycloakSessionFactory().getProviderFactory(JpaConnectionProvider.class);
@@ -80,18 +77,18 @@ public class QuarkusLiquibaseConnectionProvider implements LiquibaseConnectionPr
         try (Connection connection = jpaConnectionProvider.getConnection()) {
             Database database = DatabaseFactory.getInstance()
                     .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-            if (database.getDatabaseProductName().equals(MySQLDatabase.PRODUCT_NAME)) {
+            if (database.getDatabaseProductName().equals("MySQL")) {
                 // Adding CustomVarcharType for MySQL 8 and newer
-                DataTypeFactory.getInstance().register(MySQL8VarcharType.class);
+                DataTypeFactory.getInstance().register(new MySQL8VarcharType());
 
                 ChangeLogHistoryServiceFactory.getInstance().register(new CustomChangeLogHistoryService());
-            } else if (database.getDatabaseProductName().equals(MariaDBDatabase.PRODUCT_NAME)) {
+            } else if (database.getDatabaseProductName().equals("MariaDB")) {
                 // Adding CustomVarcharType for MySQL 8 and newer
-                DataTypeFactory.getInstance().register(MySQL8VarcharType.class);
+                DataTypeFactory.getInstance().register(new MySQL8VarcharType());
             }
 
             DatabaseFactory.getInstance().clearRegistry();
-            locator.register(database);
+            DatabaseFactory.getInstance().register(database);
         } catch (Exception cause) {
             throw new RuntimeException("Failed to configure Liquibase database", cause);
         }

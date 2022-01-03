@@ -66,7 +66,7 @@ limitations under the License.
             <column name="name"/>
             <column name="VALUE(255)" valueComputed="VALUE(255)"/>
         </createIndex>
-        <modifySql dbms="postgresql">
+        <modifySql dbms="postgresql,cockroachdb">
             <replace replace="VALUE(255)" with="(value::varchar(250))"/>
         </modifySql>
     </changeSet>

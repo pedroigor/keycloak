@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.keycloak.quarkus.runtime.storage.database.liquibase;
+package org.keycloak.connections.jpa.updater.liquibase.log;
 
 import java.util.logging.Level;
 

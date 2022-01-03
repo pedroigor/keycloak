@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
+import liquibase.Scope;
 import org.jboss.logging.Logger;
 import org.keycloak.common.util.reflections.Reflections;
 import org.keycloak.connections.jpa.entityprovider.JpaEntityProvider;
@@ -159,8 +159,8 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
                 statementsToExecute.add(new SetNullableStatement(database.getLiquibaseCatalogName(), database.getLiquibaseSchemaName(),
                         changelogTable.getName(), DEPLOYMENT_ID_COLUMN, "VARCHAR(10)", false));
 
-                ExecutorService executorService = ExecutorService.getInstance();
-                Executor executor = executorService.getExecutor(liquibase.getDatabase());
+                ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
+                Executor executor = executorService.getExecutor("jdbc", liquibase.getDatabase());
 
                 for (SqlStatement sql : statementsToExecute) {
                     executor.execute(sql);
@@ -204,22 +204,23 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
     private void outputChangeLogTableCreationScript(Liquibase liquibase, final Writer exportWriter) throws DatabaseException {
         Database database = liquibase.getDatabase();
 
-        Executor oldTemplate = ExecutorService.getInstance().getExecutor(database);
-        LoggingExecutor executor = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), exportWriter, database);
-        ExecutorService.getInstance().setExecutor(database, executor);
+        ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
+        Executor oldTemplate = executorService.getExecutor("jdbc", database);
+        LoggingExecutor loggingExecutor = new LoggingExecutor(executorService.getExecutor("jdbc", database), exportWriter, database);
+        executorService.setExecutor("jdbc", database, loggingExecutor);
 
-        executor.comment("*********************************************************************");
-        executor.comment("* Keycloak database creation script - apply this script to empty DB *");
-        executor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
+        loggingExecutor.comment("*********************************************************************");
+        loggingExecutor.comment("* Keycloak database creation script - apply this script to empty DB *");
+        loggingExecutor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
 
-        executor.execute(new CreateDatabaseChangeLogTableStatement());
+        loggingExecutor.execute(new CreateDatabaseChangeLogTableStatement());
         // DatabaseChangeLogLockTable is created before this code is executed and recreated if it does not exist automatically
         // in org.keycloak.connections.jpa.updater.liquibase.lock.CustomLockService.init() called indirectly from
         // KeycloakApplication constructor (search for waitForLock() call). Hence it is not included in the creation script.
 
-        executor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
+        loggingExecutor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
 
-        ExecutorService.getInstance().setExecutor(database, oldTemplate);
+        executorService.setExecutor("jdbc", database, oldTemplate);
     }
 
     @Override
@@ -291,16 +292,11 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
     @SuppressWarnings("unchecked")
     private List<ChangeSet> getLiquibaseUnrunChangeSets(Liquibase liquibase) {
         // we don't need to fetch change sets if they were previously obtained
-        return changeSets.computeIfAbsent(liquibase.getChangeLogFile(), new Function<String, List<ChangeSet>>() {
-            @Override
-            public List<ChangeSet> apply(String s) {
-                // TODO tracked as: https://issues.jboss.org/browse/KEYCLOAK-3730
-                // TODO: When https://liquibase.jira.com/browse/CORE-2919 is resolved, replace the following two lines with:
-                // List<ChangeSet> changeSets = liquibase.listUnrunChangeSets((Contexts) null, new LabelExpression(), false);
-                Method listUnrunChangeSets = Reflections.findDeclaredMethod(Liquibase.class, "listUnrunChangeSets", Contexts.class, LabelExpression.class, boolean.class);
-
-                return Reflections
-                        .invokeMethod(true, listUnrunChangeSets, List.class, liquibase, (Contexts) null, new LabelExpression(), false);
+        return changeSets.computeIfAbsent(liquibase.getChangeLogFile(), s -> {
+            try {
+                return liquibase.listUnrunChangeSets((Contexts) null, new LabelExpression(), false);
+            } catch (LiquibaseException e) {
+                throw new RuntimeException(e);
             }
         });
     }

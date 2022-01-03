@@ -20,6 +20,7 @@ package org.keycloak.connections.jpa.updater.liquibase;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
+import liquibase.Scope;
 import liquibase.changelog.ChangeLogHistoryService;
 import liquibase.changelog.ChangeLogHistoryServiceFactory;
 import liquibase.changelog.ChangeSet;
@@ -100,7 +101,7 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
             if (file != null) {
                 exportWriter = new FileWriter(file);
             }
-            updateChangeSet(liquibase, connection, exportWriter);
+            updateChangeSet(liquibase, exportWriter);
 
             // Run update for each custom JpaEntityProvider
             Set<JpaEntityProvider> jpaProviders = session.getAllProviders(JpaEntityProvider.class);
@@ -110,7 +111,7 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
                     String factoryId = jpaProvider.getFactoryId();
                     String changelogTableName = JpaUtils.getCustomChangelogTableName(factoryId);
                     liquibase = getLiquibaseForCustomProviderUpdate(connection, defaultSchema, customChangelog, jpaProvider.getClass().getClassLoader(), changelogTableName);
-                    updateChangeSet(liquibase, connection, exportWriter);
+                    updateChangeSet(liquibase, exportWriter);
                 }
             }
         } catch (LiquibaseException | IOException | SQLException e) {
@@ -128,7 +129,8 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
         }
     }
 
-    protected void updateChangeSet(Liquibase liquibase, Connection connection, Writer exportWriter) throws LiquibaseException, SQLException {
+    @SuppressWarnings("unchecked")
+    protected void updateChangeSet(Liquibase liquibase, Writer exportWriter) throws LiquibaseException, SQLException {
         String changelog = liquibase.getChangeLogFile();
         Database database = liquibase.getDatabase();
         Table changelogTable = SnapshotGeneratorFactory.getInstance().getDatabaseChangeLogTable(new SnapshotControl(database, false, Table.class, Column.class), database);
@@ -152,8 +154,8 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
                 statementsToExecute.add(new SetNullableStatement(database.getLiquibaseCatalogName(), database.getLiquibaseSchemaName(),
                         changelogTable.getName(), DEPLOYMENT_ID_COLUMN, "VARCHAR(10)", false));
 
-                ExecutorService executorService = ExecutorService.getInstance();
-                Executor executor = executorService.getExecutor(liquibase.getDatabase());
+                ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
+                Executor executor = executorService.getExecutor("jdbc", liquibase.getDatabase());
 
                 for (SqlStatement sql : statementsToExecute) {
                     executor.execute(sql);
@@ -179,7 +181,7 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
                 if (ranChangeSets.isEmpty()) {
                     outputChangeLogTableCreationScript(liquibase, exportWriter);
                 }
-                liquibase.update((Contexts) null, new LabelExpression(), exportWriter, false);
+                liquibase.update(null, new LabelExpression(), exportWriter, false);
             } else {
                 liquibase.update((Contexts) null);
             }
@@ -197,22 +199,23 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
     private void outputChangeLogTableCreationScript(Liquibase liquibase, final Writer exportWriter) throws DatabaseException {
         Database database = liquibase.getDatabase();
 
-        Executor oldTemplate = ExecutorService.getInstance().getExecutor(database);
-        LoggingExecutor executor = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), exportWriter, database);
-        ExecutorService.getInstance().setExecutor(database, executor);
+        ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
+        Executor oldTemplate = executorService.getExecutor("jdbc", database);
+        LoggingExecutor loggingExecutor = new LoggingExecutor(oldTemplate, exportWriter, database);
+        executorService.setExecutor("jdbc", database, loggingExecutor);
 
-        executor.comment("*********************************************************************");
-        executor.comment("* Keycloak database creation script - apply this script to empty DB *");
-        executor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
+        loggingExecutor.comment("*********************************************************************");
+        loggingExecutor.comment("* Keycloak database creation script - apply this script to empty DB *");
+        loggingExecutor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
 
-        executor.execute(new CreateDatabaseChangeLogTableStatement());
+        loggingExecutor.execute(new CreateDatabaseChangeLogTableStatement());
         // DatabaseChangeLogLockTable is created before this code is executed and recreated if it does not exist automatically
         // in org.keycloak.connections.jpa.updater.liquibase.lock.CustomLockService.init() called indirectly from
         // KeycloakApplication constructor (search for waitForLock() call). Hence it is not included in the creation script.
 
-        executor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
+        loggingExecutor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
 
-        ExecutorService.getInstance().setExecutor(database, oldTemplate);
+        executorService.setExecutor("jdbc", database, oldTemplate);
     }
 
     @Override
@@ -279,13 +282,8 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
         ChangeLogHistoryServiceFactory.getInstance().register(new CustomChangeLogHistoryService());
     }
 
-    @SuppressWarnings("unchecked")
-    private List<ChangeSet> getLiquibaseUnrunChangeSets(Liquibase liquibase) {
-        // TODO tracked as: https://issues.jboss.org/browse/KEYCLOAK-3730
-        // TODO: When https://liquibase.jira.com/browse/CORE-2919 is resolved, replace the following two lines with:
-        // List<ChangeSet> changeSets = liquibase.listUnrunChangeSets((Contexts) null, new LabelExpression(), false);
-        Method listUnrunChangeSets = Reflections.findDeclaredMethod(Liquibase.class, "listUnrunChangeSets", Contexts.class, LabelExpression.class, boolean.class);
-        return Reflections.invokeMethod(true, listUnrunChangeSets, List.class, liquibase, (Contexts) null, new LabelExpression(), false);
+    private List<ChangeSet> getLiquibaseUnrunChangeSets(Liquibase liquibase) throws LiquibaseException {
+        return liquibase.listUnrunChangeSets(null, new LabelExpression(), false);
     }
 
     private Liquibase getLiquibaseForKeycloakUpdate(Connection connection, String defaultSchema) throws LiquibaseException {

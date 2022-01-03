@@ -78,7 +78,6 @@ class LiquibaseProcessor {
             }
         }
 
-        services.put(Logger.class.getName(), Arrays.asList(KeycloakLogger.class.getName()));
         services.put(LockService.class.getName(), Arrays.asList(DummyLockService.class.getName()));
         services.put(ChangeLogParser.class.getName(), Arrays.asList(XMLChangeLogSAXParser.class.getName()));
         services.get(SqlGenerator.class.getName()).add(CustomInsertLockRecordGenerator.class.getName());
