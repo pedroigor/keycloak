@@ -17,6 +17,7 @@
 
 package org.keycloak.quarkus.runtime.storage.database.liquibase;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,13 +48,15 @@ public class FastServiceLocator extends StandardServiceLocator {
         }
 
         List<T> ret = new ArrayList<>();
+
         for (String i : found) {
             try {
-                ret.add((T) Class.forName(i, false, Thread.currentThread().getContextClassLoader()));
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                ret.add((T) Class.forName(i, false, Thread.currentThread().getContextClassLoader()).getDeclaredConstructor().newInstance());
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to find liquibase implementation.", e);
             }
         }
+
         return ret;
     }
 
@@ -65,15 +68,5 @@ public class FastServiceLocator extends StandardServiceLocator {
 
     public void initServices(final Map<String, List<String>> services) {
         this.services = services;
-
-        // register only the implementations related to the chosen db
-        for (String databaseImpl : services.get(Database.class.getName())) {
-            try {
-                DatabaseFactory.getInstance().register(((Database) getClass().getClassLoader().loadClass(databaseImpl)
-                        .getDeclaredConstructor().newInstance()));
-            } catch (Exception cause) {
-                throw new RuntimeException("Failed to load database implementation", cause);
-            }
-        }
     }
 }
