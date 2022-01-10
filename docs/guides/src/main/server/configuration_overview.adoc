@@ -1,0 +1,105 @@
+<#import "/templates/guide.adoc" as tmpl>
+<#import "/templates/kc.adoc" as kc>
+<#import "/templates/options.adoc" as opts>
+
+<@tmpl.guide
+title="Configuring Keycloak"
+summary="An overview of the server configuration">
+
+In this guide, you will learn the core concepts around the server configuration and how to configure the server using the different
+configuration options available. You will also learn how to properly configure the server to achieve an optimal runtime for faster
+startup and low memory footprint.
+
+== Configuration Options
+
+All the available configuration options can be found by either running the `help` command for individual commands:
+
+<@kc.all parameters="--help"/>
+
+Or by looking at all the configuration options at the http://link_to_all_config[all-config] page.
+
+These options can be set using different formats:
+
+.Command-line argument
+<@kc.all parameters="--<category>-<sub-category>-<property>=<value>"/>
+
+.Environment variable
+```
+export KC_CATEGORY_SUB_CATEGORY_PROPERTY=<value>
+```
+
+.Properties at `conf/keycloak.properties`
+```
+<category>.<sub-category>.<property>=<value>
+```
+
+The format you should use is use-case specific but most of the time it should be enough to use the CLI.
+
+[NOTE]
+If you are unsure about the format of a specific property, consider looking at the http://link_to_all_config[all-config] page.
+
+If a same configuration option is defined in several places/format, the effective value should be resolved respecting the following order:
+
+. Command-line arguments
+. Environment variables
+. Properties
+
+== Using placeholders
+
+You should be able to use placeholders to dynamically change the value of configuration options when configuring or starting the server.
+
+== Configuring the server for optimal runtime
+
+Some configuration options are narrowed to a specific command or configuration stage. This clear separation is one of the key aspects
+of the server configuration and related to a series of optimizations that are done in order to deliver the best runtime when starting and running the server.
+
+By looking at the individual configuration options at this http://link_to_all_config[page], you will notice that some options require a `build`, in other words
+they can only be set when running the `build` command. You can also check all options that require a build by looking at the `help-all` message of the `build` command:
+
+<@kc.build parameters="--help-all"/>
+
+[NOTE]
+By default, the `help` message for the `build` command only shows the options that require a build. The `help-all` gives you a list of all the available options.
+
+The `build` command is responsible for producing an immutable and optimized server image (similar concept to building a container image). In addition to persisting
+any configuration option you have set, this command will also perform a series of optimizations to deliver the best runtime when starting and running the server. Basically,
+a lot of processing that would usually happen when starting/running the server is no longer necessary and the server can start and run faster.
+
+Some optimizations performed by the `build` command are:
+
+* Closed-world assumption about installed providers, hence no need to re-create the registry everytime the server starts
+* Configuration files (e.g.: clustering) are pre-parsed to reduce IO when starting the server
+* Database specific resources are configured and prepared to run against a specific database vendor
+* By persisting configuration options into the server image, the server does not any additional step to interpret configuration options and (re)configure itself
+
+There are many more optimizations, most of them performed by http://quarkus.ui[Quarkus] itself. Just keep in mind that this additional step is a key aspect to achieve the optimal runtime,
+ideally when running Keycloak as a container.
+
+Once you run the `build` command, you won't need to set configuration options again (they are now persisted) so that you can just `start` the server:
+
+.Building an optimized server image
+<@kc.build parameters="--db=postgres --db-url-host=keycloak-postgres --db-username=keycloak --db-password=change_me --hostname mykeycloak.acme.com"/>
+
+.Starting the server
+<@kc.start/>
+
+As a rule of thumb, prefer building a server image to achieve the optimal runtime as well as running the `start` command without any parameter for faster startup time.
+
+=== Overriding settings
+
+Once you have built a server image using the `build` command, you should be able to override any property that is available from the `start` command.
+
+For instance, if you have built an image as follows:
+
+<@kc.build parameters="--db=postgres --db-url-host=keycloak-postgres --db-username=keycloak --db-password=change_me --hostname mykeycloak.acme.com"/>
+
+You should be able to override the `db-username`, `hostname`, or any other property available to the `start` command:
+
+<@kc.start parameters="--db-username foo --hostname newkeycloak.acme.com"/>
+
+As a result, the server should start using all the configuration options previously set using the `build` command but overriding those that you explicitly
+set when starting the server.
+
+== Conclusion
+
+</@tmpl.guide>
