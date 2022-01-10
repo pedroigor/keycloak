@@ -17,6 +17,7 @@
 
 package org.keycloak.quarkus.runtime.cli.command;
 
+import static org.keycloak.quarkus.runtime.Environment.getCurrentOrPersistedProfile;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getBuildTimeProperty;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getConfigValue;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getPropertyNames;
@@ -59,7 +60,7 @@ public final class ShowConfig extends AbstractCommand implements Runnable {
 
         if (configArgs != null) {
             Map<String, Set<String>> properties = getPropertiesByGroup();
-            String profile = getProfile();
+            String profile = getCurrentOrPersistedProfile();
 
             printRunTimeConfig(properties, profile);
 
@@ -83,7 +84,14 @@ public final class ShowConfig extends AbstractCommand implements Runnable {
         spec.commandLine().getOut().printf("Current Profile: %s%n", profile == null ? "none" : profile);
 
         spec.commandLine().getOut().println("Runtime Configuration:");
-        properties.get(MicroProfileConfigProvider.NS_KEYCLOAK).stream().sorted()
+
+        //TODO: When profile property is declared also without profile, the non-profile property is shown,
+        // but the profile property is actually used. it's the case e.g. "kc.db=postgres" and "%dev.kc.db=h2-file"
+        // where the value kc.db=postgres is shown but
+        // the value %dev.kc.db=h2-file is actually used. Change the display behaviour to show the
+        // applied value in the runtime config. Result should be "kc.db=h2-file" when the dev profile is the currently used profile.
+        properties.get(MicroProfileConfigProvider.NS_KEYCLOAK).stream()
+                .sorted()
                 .filter(name -> {
                     String canonicalFormat = canonicalFormat(name);
 
