@@ -162,6 +162,7 @@ public final class QuarkusJpaConnectionProviderFactory implements JpaConnectionP
             //KEYCLOAK-19521 - We should think about a solution which doesn't involve another db lookup in the future.
             MigrationModel model = session.getProvider(DeploymentStateProvider.class).getMigrationModel();
             Version.RESOURCES_VERSION = model.getResourcesTag();
+            importRealms();
         }
     }
 

@@ -27,6 +27,9 @@ public abstract class AbstractStartCommand extends AbstractCommand implements Ru
     public static final String AUTO_BUILD_OPTION_LONG = "--auto-build";
     public static final String AUTO_BUILD_OPTION_SHORT = "-b";
 
+    @CommandLine.Mixin
+    StartMixin startMixin;
+
     @Override
     public void run() {
         doBeforeRun();
