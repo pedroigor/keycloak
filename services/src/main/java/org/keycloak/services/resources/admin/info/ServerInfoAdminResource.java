@@ -34,7 +34,7 @@ import org.keycloak.protocol.ClientInstallationProvider;
 import org.keycloak.protocol.LoginProtocol;
 import org.keycloak.protocol.LoginProtocolFactory;
 import org.keycloak.protocol.ProtocolMapper;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.ServerInfoAwareProviderFactory;
@@ -135,10 +135,10 @@ public class ServerInfoAdminResource {
                     if (ServerInfoAwareProviderFactory.class.isAssignableFrom(pi.getClass())) {
                         provider.setOperationalInfo(((ServerInfoAwareProviderFactory) pi).getOperationalInfo());
                     }
-                    if (pi instanceof ConfiguredProvider) {
+                    if (pi instanceof UserConfigurableProvider) {
                         ComponentTypeRepresentation rep = new ComponentTypeRepresentation();
                         rep.setId(pi.getId());
-                        ConfiguredProvider configured = (ConfiguredProvider)pi;
+                        UserConfigurableProvider configured = (UserConfigurableProvider)pi;
                         rep.setHelpText(configured.getHelpText());
                         List<ProviderConfigProperty> configProperties = configured.getConfigProperties();
                         if (configProperties == null) configProperties = Collections.EMPTY_LIST;

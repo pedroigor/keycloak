@@ -17,6 +17,7 @@
 
 package org.keycloak.quarkus.deployment;
 
+import static org.keycloak.quarkus.deployment.Providers.getProviderManager;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getPropertyNames;
 import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_QUARKUS;
 import static org.keycloak.quarkus.runtime.configuration.QuarkusPropertiesConfigSource.QUARKUS_PROPERTY_ENABLED;
@@ -83,6 +84,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.jetbrains.annotations.NotNull;
 import org.keycloak.Config;
 import org.keycloak.quarkus.runtime.QuarkusProfile;
 import org.keycloak.quarkus.runtime.configuration.PersistedConfigSource;
@@ -441,14 +443,7 @@ class KeycloakProcessor {
             Map<String, ProviderFactory> preConfiguredProviders) {
         Config.init(new MicroProfileConfigProvider());
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-
-        KeycloakDeploymentInfo keycloakDeploymentInfo = KeycloakDeploymentInfo.create()
-                .name("classpath")
-                .services()
-                // .themes() // handling of .jar based themes is already supported by Keycloak.x
-                .themeResources();
-
-        ProviderManager pm = new ProviderManager(keycloakDeploymentInfo, classLoader);
+        ProviderManager pm = getProviderManager(classLoader);
         Map<Spi, Map<Class<? extends Provider>, Map<String, ProviderFactory>>> factories = new HashMap<>();
 
         for (Spi spi : pm.loadSpis()) {

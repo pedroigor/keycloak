@@ -15,21 +15,20 @@
  * limitations under the License.
  */
 
-package org.keycloak.services.clientpolicy.executor;
+package org.keycloak.quarkus.runtime;
 
-import org.keycloak.common.Profile;
-import org.keycloak.provider.UserConfigurableProvider;
-import org.keycloak.provider.EnvironmentDependentProviderFactory;
-import org.keycloak.provider.ProviderFactory;
+import org.keycloak.provider.KeycloakDeploymentInfo;
+import org.keycloak.provider.ProviderManager;
 
-/** 
- * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
- */
-public interface ClientPolicyExecutorProviderFactory extends ProviderFactory<ClientPolicyExecutorProvider>,
-        UserConfigurableProvider, EnvironmentDependentProviderFactory {
+public final class Providers {
 
-    @Override
-    default boolean isSupported() {
-        return Profile.isFeatureEnabled(Profile.Feature.CLIENT_POLICIES);
+    public static ProviderManager getProviderManager(ClassLoader classLoader) {
+        KeycloakDeploymentInfo keycloakDeploymentInfo = KeycloakDeploymentInfo.create()
+                .name("classpath")
+                .services()
+                // .themes() // handling of .jar based themes is already supported by Keycloak.x
+                .themeResources();
+
+        return new ProviderManager(keycloakDeploymentInfo, classLoader);
     }
 }

@@ -25,9 +25,8 @@ import java.util.Locale;
 import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
-import org.keycloak.utils.StringUtil;
 import org.keycloak.validate.AbstractStringValidator;
 import org.keycloak.validate.ValidationContext;
 import org.keycloak.validate.ValidationError;
@@ -37,7 +36,7 @@ import org.keycloak.validate.ValidatorConfig;
 /**
  * A date validator that only takes into account the format associated with the current locale.
  */
-public class LocalDateValidator extends AbstractStringValidator implements ConfiguredProvider {
+public class LocalDateValidator extends AbstractStringValidator implements UserConfigurableProvider {
 
     public static final LocalDateValidator INSTANCE = new LocalDateValidator();
 

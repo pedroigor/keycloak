@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2021 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,12 +19,6 @@ package org.keycloak.provider;
 
 import java.util.List;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- * @version $Revision: 1 $
- */
-public interface ConfiguredProvider {
-    String getHelpText();
-
+public interface ConfigurableProvider {
     List<ProviderConfigProperty> getConfigProperties();
 }

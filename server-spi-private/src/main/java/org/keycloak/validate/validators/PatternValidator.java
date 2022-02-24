@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.validate.AbstractStringValidator;
 import org.keycloak.validate.ValidationContext;
@@ -36,7 +36,7 @@ import org.keycloak.validate.ValidatorConfig;
  * Validate String against configured RegEx pattern - accepts plain string and collection of strings, for basic behavior
  * like null/blank values handling and collections support see {@link AbstractStringValidator}.
  */
-public class PatternValidator extends AbstractStringValidator implements ConfiguredProvider {
+public class PatternValidator extends AbstractStringValidator implements UserConfigurableProvider {
 
     public static final String ID = "pattern";
 

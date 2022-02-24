@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.utils.StringUtil;
 import org.keycloak.validate.AbstractSimpleValidator;
@@ -37,7 +37,7 @@ import org.keycloak.validate.ValidatorConfig;
  * 
  * @author Vlastimil Elias <velias@redhat.com>
  */
-public abstract class AbstractNumberValidator extends AbstractSimpleValidator implements ConfiguredProvider {
+public abstract class AbstractNumberValidator extends AbstractSimpleValidator implements UserConfigurableProvider {
 
     public static final String MESSAGE_INVALID_NUMBER = "error-invalid-number";
     public static final String MESSAGE_NUMBER_OUT_OF_RANGE = "error-number-out-of-range";

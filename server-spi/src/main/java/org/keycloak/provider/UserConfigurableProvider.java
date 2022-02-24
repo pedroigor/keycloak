@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.component;
 
-import org.keycloak.provider.UserConfigurableProvider;
+package org.keycloak.provider;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public interface ConfiguredComponent extends UserConfigurableProvider {
+public interface UserConfigurableProvider extends ConfigurableProvider {
+    String getHelpText();
 }

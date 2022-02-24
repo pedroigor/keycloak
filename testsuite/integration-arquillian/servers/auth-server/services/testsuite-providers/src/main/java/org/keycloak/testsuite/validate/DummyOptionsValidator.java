@@ -19,7 +19,7 @@ package org.keycloak.testsuite.validate;
 import java.util.Collections;
 import java.util.List;
 
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.validate.SimpleValidator;
 import org.keycloak.validate.ValidationContext;
@@ -28,7 +28,7 @@ import org.keycloak.validate.ValidatorConfig;
 /**
  * Dummy Options validator for User Profile configuration tests.
  */
-public class DummyOptionsValidator implements SimpleValidator, ConfiguredProvider {
+public class DummyOptionsValidator implements SimpleValidator, UserConfigurableProvider {
 
     public static final String ID = "dummyOptions";
 

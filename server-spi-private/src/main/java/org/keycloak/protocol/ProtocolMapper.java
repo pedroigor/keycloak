@@ -21,7 +21,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ProtocolMapperContainerModel;
 import org.keycloak.models.ProtocolMapperModel;
 import org.keycloak.models.RealmModel;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 
@@ -29,7 +29,7 @@ import org.keycloak.provider.ProviderFactory;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public interface ProtocolMapper extends Provider, ProviderFactory<ProtocolMapper>,ConfiguredProvider {
+public interface ProtocolMapper extends Provider, ProviderFactory<ProtocolMapper>, UserConfigurableProvider {
     String getProtocol();
     String getDisplayCategory();
     String getDisplayType();

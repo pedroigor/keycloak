@@ -18,14 +18,15 @@
 package org.keycloak.services.clientpolicy.condition;
 
 import org.keycloak.common.Profile;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
-public interface ClientPolicyConditionProviderFactory extends ProviderFactory<ClientPolicyConditionProvider>, ConfiguredProvider, EnvironmentDependentProviderFactory {
+public interface ClientPolicyConditionProviderFactory extends ProviderFactory<ClientPolicyConditionProvider>,
+        UserConfigurableProvider, EnvironmentDependentProviderFactory {
 
     @Override
     default boolean isSupported() {

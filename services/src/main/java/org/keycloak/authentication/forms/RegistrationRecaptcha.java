@@ -38,7 +38,7 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.FormMessage;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.messages.Messages;
@@ -60,7 +60,7 @@ import org.apache.http.util.EntityUtils;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public class RegistrationRecaptcha implements FormAction, FormActionFactory, ConfiguredProvider {
+public class RegistrationRecaptcha implements FormAction, FormActionFactory, UserConfigurableProvider {
     public static final String G_RECAPTCHA_RESPONSE = "g-recaptcha-response";
     public static final String RECAPTCHA_REFERENCE_CATEGORY = "recaptcha";
     public static final String SITE_KEY = "site.key";

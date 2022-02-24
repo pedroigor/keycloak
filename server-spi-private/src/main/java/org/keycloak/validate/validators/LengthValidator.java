@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.validate.AbstractStringValidator;
 import org.keycloak.validate.ValidationContext;
@@ -38,7 +38,7 @@ import org.keycloak.validate.ValidatorConfig;
  * <p>
  * Configuration have to be always provided, with at least one of {@link #KEY_MIN} and {@link #KEY_MAX}.
  */
-public class LengthValidator extends AbstractStringValidator implements ConfiguredProvider {
+public class LengthValidator extends AbstractStringValidator implements UserConfigurableProvider {
 
     public static final LengthValidator INSTANCE = new LengthValidator();
 

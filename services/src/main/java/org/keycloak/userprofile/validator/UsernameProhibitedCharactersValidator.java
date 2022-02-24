@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.validate.AbstractStringValidator;
 import org.keycloak.validate.ValidationContext;
@@ -33,7 +33,7 @@ import org.keycloak.validate.ValidatorConfig;
  * Validates against hardcoded RegEx pattern - accepts plain string and collection of strings, for basic behavior
  * like null/blank values handling and collections support see {@link AbstractStringValidator}.
  */
-public class UsernameProhibitedCharactersValidator extends AbstractStringValidator implements ConfiguredProvider {
+public class UsernameProhibitedCharactersValidator extends AbstractStringValidator implements UserConfigurableProvider {
 
     public static final String ID = "username-prohibited-characters";
 

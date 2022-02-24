@@ -18,13 +18,13 @@
 package org.keycloak.authentication;
 
 import org.keycloak.models.AuthenticationExecutionModel;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public interface ConfigurableAuthenticatorFactory extends ConfiguredProvider {
+public interface ConfigurableAuthenticatorFactory extends UserConfigurableProvider {
 
     AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED,

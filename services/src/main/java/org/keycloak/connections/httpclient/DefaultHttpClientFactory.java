@@ -30,11 +30,15 @@ import org.keycloak.common.util.EnvUtil;
 import org.keycloak.common.util.KeystoreUtil;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.provider.ConfigurableProvider;
+import org.keycloak.provider.ProviderConfigProperty;
+import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.truststore.TruststoreProvider;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.util.EntityUtils;
@@ -60,7 +64,7 @@ import static org.keycloak.utils.StringUtil.isBlank;
  * </p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
-public class DefaultHttpClientFactory implements HttpClientFactory {
+public class DefaultHttpClientFactory implements HttpClientFactory, ConfigurableProvider {
 
     private static final Logger logger = Logger.getLogger(DefaultHttpClientFactory.class);
     private static final String configScope = "keycloak.connectionsHttpClient.default.";
@@ -244,4 +248,28 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         return value;
     }
 
+    @Override
+    public List<ProviderConfigProperty> getConfigProperties() {
+        return ProviderConfigurationBuilder.create()
+                .property()
+                .name("socket-timeout-millis")
+                .helpText("The description for socket-timeout-millis")
+                .defaultValue(5000L)
+                .add()
+                .property()
+                .name("establish-connection-timeout-millis")
+                .helpText("The description for establish-connection-timeout-millis")
+                .defaultValue(-1L)
+                .add()
+                .property()
+                .name("max-pooled-per-route")
+                .helpText("The description for max-pooled-per-route")
+                .defaultValue(64)
+                .add()
+                .property()
+                .name("connection-pool-size")
+                .helpText("The description for connection-pool-size")
+                .add()
+                .build();
+    }
 }

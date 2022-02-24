@@ -20,6 +20,7 @@ public class Context {
     public Context(File srcDir) throws IOException {
         this.srcDir = srcDir;
         this.options = new Options();
+        new ProviderOptions();
         this.features = new Features();
 
         this.guides = new LinkedList<>();

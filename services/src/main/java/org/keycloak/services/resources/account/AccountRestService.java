@@ -64,7 +64,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserConsentModel;
 import org.keycloak.models.UserModel;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.representations.account.ClientRepresentation;
 import org.keycloak.representations.account.ConsentRepresentation;
 import org.keycloak.representations.account.ConsentScopeRepresentation;
@@ -189,7 +189,7 @@ public class AccountRestService {
     private Map<String, Map<String, Object>> toValidatorMetadata(AttributeMetadata am){
         // we return only validators which are instance of ConfiguredProvider. Others are expected as internal.
         return am.getValidators() == null ? null : am.getValidators().stream()
-                .filter(avm -> (Validators.validator(session, avm.getValidatorId()) instanceof ConfiguredProvider))
+                .filter(avm -> (Validators.validator(session, avm.getValidatorId()) instanceof UserConfigurableProvider))
                 .collect(Collectors.toMap(AttributeValidatorMetadata::getValidatorId, AttributeValidatorMetadata::getValidatorConfig));
     }
     

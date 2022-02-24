@@ -18,7 +18,7 @@ package org.keycloak.component;
 
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderFactory;
@@ -31,7 +31,8 @@ import java.util.Map;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public interface ComponentFactory<CreatedType, ProviderType extends Provider> extends ProviderFactory<ProviderType>, ConfiguredProvider {
+public interface ComponentFactory<CreatedType, ProviderType extends Provider> extends ProviderFactory<ProviderType>,
+        UserConfigurableProvider {
     CreatedType create(KeycloakSession session, ComponentModel model);
 
     @Override

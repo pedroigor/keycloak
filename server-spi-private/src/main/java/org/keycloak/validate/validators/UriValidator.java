@@ -16,7 +16,7 @@
  */
 package org.keycloak.validate.validators;
 
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.validate.SimpleValidator;
 import org.keycloak.validate.ValidationContext;
@@ -37,7 +37,7 @@ import java.util.Set;
  * URI validation - accepts {@link URI}, {@link URL} and single String. Null input is valid, use other validators (like
  * {@link NotBlankValidator} or {@link NotEmptyValidator} to force field as required.
  */
-public class UriValidator implements SimpleValidator, ConfiguredProvider {
+public class UriValidator implements SimpleValidator, UserConfigurableProvider {
 
     public static final UriValidator INSTANCE = new UriValidator();
 

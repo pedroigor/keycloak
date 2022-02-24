@@ -16,7 +16,7 @@
  */
 package org.keycloak.validate.validators;
 
-import org.keycloak.provider.ConfiguredProvider;
+import org.keycloak.provider.UserConfigurableProvider;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
@@ -26,7 +26,7 @@ import org.keycloak.validate.ValidatorConfig;
  * 
  * @author Vlastimil Elias <velias@redhat.com>
  */
-public class IntegerValidator extends AbstractNumberValidator implements ConfiguredProvider {
+public class IntegerValidator extends AbstractNumberValidator implements UserConfigurableProvider {
 
     public static final String ID = "integer";
     public static final IntegerValidator INSTANCE = new IntegerValidator();
