@@ -92,7 +92,7 @@ public interface RealmResource {
 
     @Path("client-description-converter")
     @POST
-    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN })
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     ClientRepresentation convertClientDescription(String description);
 

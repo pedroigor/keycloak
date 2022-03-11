@@ -43,13 +43,9 @@ import static org.keycloak.OAuth2Constants.PASSWORD;
  */
 public class Keycloak implements AutoCloseable {
 
-    private static final ResteasyClientProvider CLIENT_PROVIDER = resolveResteasyClientProvider();
+    private static volatile ResteasyClientProvider CLIENT_PROVIDER = resolveResteasyClientProvider();
 
     private static ResteasyClientProvider resolveResteasyClientProvider() {
-        if (useDefaultResteasyClientProvider()) {
-            return createDefaultResteasyClientProvider();
-        }
-
         Iterator<ResteasyClientProvider> providers = ServiceLoader.load(ResteasyClientProvider.class).iterator();
 
         if (providers.hasNext()) {
@@ -65,16 +61,20 @@ public class Keycloak implements AutoCloseable {
         return createDefaultResteasyClientProvider();
     }
 
-    private static boolean useDefaultResteasyClientProvider() {
-        return Boolean.getBoolean("kc.admin-client.use-default-resteasy-provider");
-    }
-
     private static ResteasyClientProvider createDefaultResteasyClientProvider() {
         try {
             return (ResteasyClientProvider) Keycloak.class.getClassLoader().loadClass("org.keycloak.admin.client.spi.ResteasyClientClassicProvider").getDeclaredConstructor().newInstance();
         } catch (Exception cause) {
             throw new RuntimeException("Could not instantiate default client provider", cause);
         }
+    }
+
+    public static void setClientProvider(ResteasyClientProvider provider) {
+        CLIENT_PROVIDER = provider;
+    }
+
+    public static ResteasyClientProvider getClientProvider() {
+        return CLIENT_PROVIDER;
     }
 
     private final Config config;
