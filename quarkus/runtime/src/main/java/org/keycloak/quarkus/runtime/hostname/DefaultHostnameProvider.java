@@ -51,6 +51,9 @@ public final class DefaultHostnameProvider implements HostnameProvider, Hostname
     private String adminHostName;
     private Boolean strictBackChannel;
     private boolean hostnameEnabled;
+    private int frontEndPort;
+    private int frontEndAdminPort;
+    private boolean strictHttps;
 
     @Override
     public String getScheme(UriInfo originalUriInfo, UrlType urlType) {
@@ -97,10 +100,24 @@ public final class DefaultHostnameProvider implements HostnameProvider, Hostname
 
     @Override
     public int getPort(UriInfo originalUriInfo, UrlType urlType) {
+        if (FRONTEND.equals(urlType) && frontEndPort != -1) {
+            return frontEndPort;
+        }
+
+        if (ADMIN.equals(urlType) && frontEndAdminPort != -1) {
+            return frontEndAdminPort;
+        }
+
         Integer port = forNonStrictBackChannel(originalUriInfo, urlType, this::getPort, this::getPort);
 
         if (port != null) {
             return port;
+        }
+
+        boolean hostnameEnabled = this.hostnameEnabled;
+
+        if (ADMIN.equals(urlType)) {
+            hostnameEnabled = adminHostName != null;
         }
 
         if (hostnameEnabled && !noProxy) {
@@ -115,7 +132,7 @@ public final class DefaultHostnameProvider implements HostnameProvider, Hostname
     public int getPort(UriInfo originalUriInfo) {
         KeycloakSession session = Resteasy.getContextData(KeycloakSession.class);
         int requestPort = session.getContext().getContextObject(HttpRequest.class).getUri().getBaseUri().getPort();
-        return noProxy ? defaultTlsPort : requestPort;
+        return noProxy && strictHttps ? defaultTlsPort : requestPort;
     }
 
     private <T> T forNonStrictBackChannel(UriInfo originalUriInfo, UrlType urlType,
@@ -202,17 +219,19 @@ public final class DefaultHostnameProvider implements HostnameProvider, Hostname
 
         hostnameEnabled = frontChannelHostName != null;
 
-        Boolean strictHttps = config.getBoolean("strict-https", false);
+        strictHttps = config.getBoolean("strict-https", false);
 
         if (strictHttps) {
             defaultHttpScheme = "https";
         }
 
         defaultPath = config.get("path");
-        noProxy = Configuration.getConfigValue("kc.proxy").getValue().equals("false");
+        noProxy = Configuration.getConfigValue("kc.proxy").getValue().equals("none");
         defaultTlsPort = Integer.parseInt(Configuration.getConfigValue("kc.https-port").getValue());
         adminHostName = config.get("admin");
         strictBackChannel = config.getBoolean("strict-backchannel", false);
+        frontEndPort = config.getInt("proxy-port");
+        frontEndAdminPort = config.getInt("proxy-admin-port");
 
         LOGGER.infov("Hostname settings: FrontEnd: {0}, Strict HTTPS: {1}, Path: {2}, Strict BackChannel: {3}, Admin: {4}",
                 frontChannelHostName == null ? "<request>" : frontChannelHostName,

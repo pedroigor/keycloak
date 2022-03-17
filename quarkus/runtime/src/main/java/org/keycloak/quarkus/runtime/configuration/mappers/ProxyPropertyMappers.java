@@ -26,6 +26,20 @@ final class ProxyPropertyMappers {
                                 "Possible values are: " + String.join(",",possibleProxyValues))
                         .paramLabel("mode")
                         .category(ConfigCategory.PROXY)
+                        .build(),
+                builder().from("proxy-port")
+                        .to("kc.spi-hostname-default-proxy-port")
+                        .defaultValue("-1")
+                        .description("The port exposed by the proxy to access both frontend and backend URLs.")
+                        .paramLabel("port")
+                        .category(ConfigCategory.PROXY)
+                        .build(),
+                builder().from("proxy-admin-port")
+                        .to("kc.spi-hostname-default-proxy-admin-port")
+                        .defaultValue("-1")
+                        .description("The port exposed by the proxy to access admin URL.")
+                        .paramLabel("port")
+                        .category(ConfigCategory.PROXY)
                         .build()
         };
     }
