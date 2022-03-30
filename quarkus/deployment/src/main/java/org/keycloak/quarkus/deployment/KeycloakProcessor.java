@@ -54,6 +54,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
+import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.Consume;
@@ -68,7 +69,6 @@ import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
-import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentCustomizerBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
@@ -132,6 +132,7 @@ import org.keycloak.representations.provider.ScriptProviderDescriptor;
 import org.keycloak.representations.provider.ScriptProviderMetadata;
 import org.keycloak.quarkus.runtime.integration.web.NotFoundHandler;
 import org.keycloak.services.ServicesLogger;
+import org.keycloak.services.resources.KeycloakApplication;
 import org.keycloak.theme.ClasspathThemeResourceProviderFactory;
 import org.keycloak.theme.FolderThemeProviderFactory;
 import org.keycloak.theme.ThemeResourceSpi;
@@ -486,17 +487,8 @@ class KeycloakProcessor {
     }
 
     @BuildStep
-    void configureResteasy(BuildProducer<ResteasyDeploymentCustomizerBuildItem> deploymentCustomizerProducer) {
-        deploymentCustomizerProducer.produce(new ResteasyDeploymentCustomizerBuildItem(new Consumer<ResteasyDeployment>() {
-            @Override
-            public void accept(ResteasyDeployment resteasyDeployment) {
-                // we need to explicitly set the application to avoid errors at build time due to the application
-                // from keycloak-services also being added to the index
-                resteasyDeployment.setApplicationClass(QuarkusKeycloakApplication.class.getName());
-                // we need to disable the sanitizer to avoid escaping text/html responses from the server
-                resteasyDeployment.setProperty(ResteasyContextParameters.RESTEASY_DISABLE_HTML_SANITIZER, Boolean.TRUE);
-            }
-        }));
+    void configureResteasy(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> buildTimeConditionBuildItemBuildProducer) {
+        buildTimeConditionBuildItemBuildProducer.produce(new BuildTimeConditionBuildItem(index.getIndex().getClassByName(DotName.createSimple(KeycloakApplication.class.getName())), false));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
