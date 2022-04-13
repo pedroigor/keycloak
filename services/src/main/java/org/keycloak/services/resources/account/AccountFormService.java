@@ -758,7 +758,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
     @Path("resource/{resource_id}/grant")
     @POST
-    public Response grantPermission(@PathParam("resource_id") String resourceId, @FormParam("action") String action, @FormParam("permission_id") String[] permissionId, @FormParam("requester") String requester) {
+    public Response grantPermission(@PathParam("resource_id") String resourceId, @FormParam("action") String action, @FormParam("permission_id") List<String> permissionId, @FormParam("requester") String requester) {
         MultivaluedMap<String, String> formData = request.getDecodedFormParameters();
 
         if (auth == null) {
@@ -788,7 +788,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
         boolean isRevokePolicyAll = "revokePolicyAll".equals(action);
 
         if (isRevokePolicy || isRevokePolicyAll) {
-            List<String> ids = new ArrayList<>(Arrays.asList(permissionId));
+            List<String> ids = new ArrayList<>(permissionId);
             Iterator<String> iterator = ids.iterator();
             PolicyStore policyStore = authorization.getStoreFactory().getPolicyStore();
             ResourceServer resourceServer = authorization.getStoreFactory().getResourceServerStore().findByClient(client);
@@ -848,7 +848,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
                 PermissionTicket ticket = iterator.next();
 
                 if (isGrant) {
-                    if (permissionId != null && permissionId.length > 0 && !Arrays.asList(permissionId).contains(ticket.getId())) {
+                    if (permissionId != null && permissionId.size() > 0 && !permissionId.contains(ticket.getId())) {
                         continue;
                     }
                 }
@@ -857,7 +857,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
                     ticket.setGrantedTimestamp(System.currentTimeMillis());
                     iterator.remove();
                 } else if (isDeny || isRevoke) {
-                    if (permissionId != null && permissionId.length > 0 && Arrays.asList(permissionId).contains(ticket.getId())) {
+                    if (permissionId != null && permissionId.size() > 0 && permissionId.contains(ticket.getId())) {
                         iterator.remove();
                     }
                 }
@@ -883,7 +883,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
     @Path("resource/{resource_id}/share")
     @POST
-    public Response shareResource(@PathParam("resource_id") String resourceId, @FormParam("user_id") String[] userIds, @FormParam("scope_id") String[] scopes) {
+    public Response shareResource(@PathParam("resource_id") String resourceId, @FormParam("user_id") List<String> userIds, @FormParam("scope_id") List<String> scopes) {
         MultivaluedMap<String, String> formData = request.getDecodedFormParameters();
 
         if (auth == null) {
@@ -904,7 +904,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
             return ErrorResponse.error("Invalid resource", Response.Status.BAD_REQUEST);
         }
 
-        if (userIds == null || userIds.length == 0) {
+        if (userIds == null || userIds.size() == 0) {
             setReferrerOnPage();
             return account.setError(Status.BAD_REQUEST, Messages.MISSING_PASSWORD).createResponse(AccountPages.PASSWORD);
         }
@@ -935,7 +935,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
             final String userId = user.getId();
 
             if (tickets.isEmpty()) {
-                if (scopes != null && scopes.length > 0) {
+                if (scopes != null && scopes.size() > 0) {
                     for (String scopeId : scopes) {
                         Scope scope = scopeStore.findById(realm, resourceServer, scopeId);
                         PermissionTicket ticket = ticketStore.create(resourceServer, resource, scope, userId);
@@ -952,8 +952,8 @@ public class AccountFormService extends AbstractSecuredLocalService {
                         }
                     }
                 }
-            } else if (scopes != null && scopes.length > 0) {
-                List<String> grantScopes = new ArrayList<>(Arrays.asList(scopes));
+            } else if (scopes != null && scopes.size() > 0) {
+                List<String> grantScopes = new ArrayList<>(scopes);
                 Set<String> alreadyGrantedScopes = tickets.stream()
                         .map(PermissionTicket::getScope)
                         .map(Scope::getId)
@@ -974,7 +974,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
     @Path("resource")
     @POST
-    public Response processResourceActions(@FormParam("resource_id") String[] resourceIds, @FormParam("action") String action) {
+    public Response processResourceActions(@FormParam("resource_id") List<String> resourceIds, @FormParam("action") String action) {
         MultivaluedMap<String, String> formData = request.getDecodedFormParameters();
 
         if (auth == null) {
