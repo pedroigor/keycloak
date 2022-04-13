@@ -99,7 +99,7 @@ public class AccountLoader {
         }
     }
 
-    @Path("{version : v\\d[0-9a-zA-Z_\\-]*}")
+//    @Path("{version : v\\d[0-9a-zA-Z_\\-]*}")
     @Produces(MediaType.APPLICATION_JSON)
     public Object getVersionedAccountRestService(final @PathParam("version") String version) {
         if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
