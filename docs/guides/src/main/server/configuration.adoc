@@ -166,17 +166,19 @@ Once the first user with administrative rights exists, you can use the UI or the
 
 You are able to use placeholders to resolve the configuration option value from environment variables.
 
-.Use a placeholder to resolve the host from an environment variable
-```
-db-url-host=${r"${MY_DB_HOST}"}
-```
+.Using a placeholder to resolve the host from an environment variable
+[source, bash]
+----
+db-url-host="${r"${MY_DB_HOST}"}"
+----
 
 You are also able to default to a specific value if the environment variable can not be resolved:
 
 .Setting a default value
-```
-db-url-host=${r"${MY_DB_HOST:mydb}"}
-```
+[source, bash]
+----
+db-url-host="${r"${MY_DB_HOST:mydb}"}"
+----
 
 == Unsupported server options
 
