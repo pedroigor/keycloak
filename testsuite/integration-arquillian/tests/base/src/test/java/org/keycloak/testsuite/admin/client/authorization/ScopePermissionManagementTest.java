@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.keycloak.admin.client.resource.AuthorizationResource;
 import org.keycloak.admin.client.resource.ScopePermissionResource;
 import org.keycloak.admin.client.resource.ScopePermissionsResource;
+import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Logic;
 import org.keycloak.representations.idm.authorization.ScopePermissionRepresentation;
@@ -58,6 +59,22 @@ public class ScopePermissionManagementTest extends AbstractPolicyManagementTest 
 
         representation.setName("Read Permission");
         representation.setDescription("description");
+        representation.setDecisionStrategy(DecisionStrategy.CONSENSUS);
+        representation.setLogic(Logic.NEGATIVE);
+        representation.addScope("read", "write");
+        representation.addPolicy("Only Marta Policy");
+
+        assertCreated(authorization, representation);
+    }
+
+    @Test
+    public void testCreateScopePermissionWithType() {
+        AuthorizationResource authorization = getClient().authorization();
+        ScopePermissionRepresentation representation = new ScopePermissionRepresentation();
+
+        representation.setName(KeycloakModelUtils.generateId());
+        representation.setDescription("description");
+        representation.setResourceType("foo");
         representation.setDecisionStrategy(DecisionStrategy.CONSENSUS);
         representation.setLogic(Logic.NEGATIVE);
         representation.addScope("read", "write");
@@ -152,6 +169,9 @@ public class ScopePermissionManagementTest extends AbstractPolicyManagementTest 
             ScopePermissionRepresentation created = response.readEntity(ScopePermissionRepresentation.class);
             ScopePermissionResource permission = permissions.findById(created.getId());
             assertRepresentation(representation, permission);
+            if (representation.getResourceType() != null) {
+                assertEquals(representation.getResourceType(), created.getResourceType());
+            }
         }
     }
 
