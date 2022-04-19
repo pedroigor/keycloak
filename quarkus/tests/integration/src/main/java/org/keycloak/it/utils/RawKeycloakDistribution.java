@@ -129,7 +129,7 @@ public final class RawKeycloakDistribution implements KeycloakDistribution {
                     }
                 }
                 keycloak.destroyForcibly();
-                throw new RuntimeException("Failed to stop the server", cause);
+//                throw new RuntimeException("Failed to stop the server", cause);
             }
         }
 
@@ -363,11 +363,15 @@ public final class RawKeycloakDistribution implements KeycloakDistribution {
     }
 
     private void readOutput() {
+        if (keycloak == null) {
+            return;
+        }
+
         try (
                 BufferedReader outStream = new BufferedReader(new InputStreamReader(keycloak.getInputStream()));
                 BufferedReader errStream = new BufferedReader(new InputStreamReader(keycloak.getErrorStream()));
         ) {
-            while (keycloak.isAlive()) {
+            while (keycloak != null && keycloak.isAlive()) {
                 readStream(outStream, outputStream);
                 readStream(errStream, errorStream);
             }

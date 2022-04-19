@@ -10,7 +10,7 @@ final class HealthPropertyMappers {
     public static PropertyMapper[] getHealthPropertyMappers() {
         return new PropertyMapper[] {
                 builder().from("health-enabled")
-                        .to("quarkus.datasource.health.enabled")
+                        .to("quarkus.health.extensions.enabled")
                         .isBuildTimeProperty(true)
                         .defaultValue(Boolean.FALSE.toString())
                         .description("If the server should expose health check endpoints. If enabled, health checks are available at the '/health', '/health/ready' and '/health/live' endpoints.")

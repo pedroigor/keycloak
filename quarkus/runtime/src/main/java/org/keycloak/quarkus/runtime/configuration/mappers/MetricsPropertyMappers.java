@@ -10,7 +10,7 @@ final class MetricsPropertyMappers {
     public static PropertyMapper[] getMetricsPropertyMappers() {
         return new PropertyMapper[] {
                 builder().from("metrics-enabled")
-                        .to("quarkus.datasource.metrics.enabled")
+                        .to("quarkus.smallrye-metrics.extensions.enabled")
                         .isBuildTimeProperty(true)
                         .defaultValue(Boolean.FALSE.toString())
                         .description("If the server should expose metrics. If enabled, metrics are available at the '/metrics' endpoint.")
