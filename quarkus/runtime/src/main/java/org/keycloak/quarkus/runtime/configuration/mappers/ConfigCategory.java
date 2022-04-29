@@ -12,6 +12,7 @@ public enum ConfigCategory {
     METRICS("Metrics", 80),
     PROXY("Proxy", 90),
     VAULT("Vault", 100),
+    STORAGE("Storage", 110),
     LOGGING("Logging", 110),
     GENERAL("General", 999);
 

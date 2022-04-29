@@ -3,6 +3,7 @@ package org.keycloak.quarkus.runtime.configuration.mappers;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
+import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.storage.database.Database;
 
 import java.util.Optional;
@@ -103,6 +104,15 @@ final class DatabasePropertyMappers {
                         .defaultValue(String.valueOf(100))
                         .description("The maximum size of the connection pool.")
                         .paramLabel("size")
+                        .build(),
+                builder().from("db-enabled")
+                        .to("kc.spi-connections-jpa-quarkus-enabled")
+                        .defaultValue(Boolean.TRUE.toString())
+                        .description("If the legacy database storage should be enabled.")
+                        .hidden(true)
+                        .paramLabel("size")
+                        .transformer(DatabasePropertyMappers::isLegacyStorageEnabled)
+                        .isBuildTimeProperty(true)
                         .build()
         };
     }
@@ -162,5 +172,16 @@ final class DatabasePropertyMappers {
         }
 
         return Database.getDialect(db).orElse(Database.getDialect("dev-file").get());
+    }
+
+    private static String isLegacyStorageEnabled(String s, ConfigSourceInterceptorContext context) {
+        String storage = Configuration.getRawValue("kc.storage");
+
+        if (storage == null) {
+            return Boolean.TRUE.toString();
+        }
+
+        // disables legacy store if a storage mechanism is set
+        return Boolean.FALSE.toString();
     }
 }

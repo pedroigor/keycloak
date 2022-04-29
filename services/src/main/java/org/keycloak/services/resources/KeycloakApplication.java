@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
 import org.keycloak.common.util.Resteasy;
+import org.keycloak.common.util.StringPropertyReplacer;
 import org.keycloak.config.ConfigProviderFactory;
 import org.keycloak.exportimport.ExportImportManager;
 import org.keycloak.models.KeycloakSession;
@@ -63,12 +64,13 @@ import javax.ws.rs.core.Application;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -125,26 +127,7 @@ public class KeycloakApplication extends Application {
     protected void startup() {
         KeycloakApplication.sessionFactory = createSessionFactory();
 
-        ExportImportManager[] exportImportManager = new ExportImportManager[1];
-
-        KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
-            @Override
-            public void run(KeycloakSession session) {
-                DBLockManager dbLockManager = new DBLockManager(session);
-                dbLockManager.checkForcedUnlock();
-                DBLockProvider dbLock = dbLockManager.getDBLock();
-                dbLock.waitForLock(DBLockProvider.Namespace.KEYCLOAK_BOOT);
-                try {
-                    exportImportManager[0] = bootstrap();
-                } finally {
-                    dbLock.releaseLock();
-                }
-            }
-        });
-                
-        if (exportImportManager[0].isRunExport()) {
-            exportImportManager[0].runExport();
-        }
+        bootstrap();
 
         KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
 
@@ -170,48 +153,65 @@ public class KeycloakApplication extends Application {
     protected ExportImportManager bootstrap() {
         ExportImportManager[] exportImportManager = new ExportImportManager[1];
 
-        logger.debug("bootstrap");
         KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
             @Override
             public void run(KeycloakSession session) {
-                // TODO what is the purpose of following piece of code? Leaving it as is for now.
-                JtaTransactionManagerLookup lookup = (JtaTransactionManagerLookup) sessionFactory.getProviderFactory(JtaTransactionManagerLookup.class);
-                if (lookup != null) {
-                    if (lookup.getTransactionManager() != null) {
-                        try {
-                            Transaction transaction = lookup.getTransactionManager().getTransaction();
-                            logger.debugv("bootstrap current transaction? {0}", transaction != null);
-                            if (transaction != null) {
-                                logger.debugv("bootstrap current transaction status? {0}", transaction.getStatus());
+                DBLockManager dbLockManager = new DBLockManager(session);
+                dbLockManager.checkForcedUnlock();
+                DBLockProvider dbLock = dbLockManager.getDBLock();
+                dbLock.waitForLock(DBLockProvider.Namespace.KEYCLOAK_BOOT);
+                try {
+                    logger.debug("bootstrap");
+                    KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
+                        @Override
+                        public void run(KeycloakSession session) {
+                            // TODO what is the purpose of following piece of code? Leaving it as is for now.
+                            JtaTransactionManagerLookup lookup = (JtaTransactionManagerLookup) sessionFactory.getProviderFactory(JtaTransactionManagerLookup.class);
+                            if (lookup != null) {
+                                if (lookup.getTransactionManager() != null) {
+                                    try {
+                                        Transaction transaction = lookup.getTransactionManager().getTransaction();
+                                        logger.debugv("bootstrap current transaction? {0}", transaction != null);
+                                        if (transaction != null) {
+                                            logger.debugv("bootstrap current transaction status? {0}", transaction.getStatus());
+                                        }
+                                    } catch (SystemException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                }
                             }
-                        } catch (SystemException e) {
-                            throw new RuntimeException(e);
+                            // TODO up here ^^
+
+                            ApplianceBootstrap applianceBootstrap = new ApplianceBootstrap(session);
+                            exportImportManager[0] = new ExportImportManager(session);
+
+                            boolean createMasterRealm = applianceBootstrap.isNewInstall();
+                            if (exportImportManager[0].isRunImport() && exportImportManager[0].isImportMasterIncluded()) {
+                                createMasterRealm = false;
+                            }
+
+                            if (createMasterRealm) {
+                                applianceBootstrap.createMasterRealm();
+                            }
                         }
+                    });
+
+                    if (exportImportManager[0].isRunImport()) {
+                        exportImportManager[0].runImport();
+                    } else {
+                        importRealms();
                     }
-                }
-                // TODO up here ^^
 
-                ApplianceBootstrap applianceBootstrap = new ApplianceBootstrap(session);
-                exportImportManager[0] = new ExportImportManager(session);
-
-                boolean createMasterRealm = applianceBootstrap.isNewInstall();
-                if (exportImportManager[0].isRunImport() && exportImportManager[0].isImportMasterIncluded()) {
-                    createMasterRealm = false;
-                }
-
-                if (createMasterRealm) {
-                    applianceBootstrap.createMasterRealm();
+                    importAddUser();
+                } finally {
+                    dbLock.releaseLock();
                 }
             }
         });
 
-        if (exportImportManager[0].isRunImport()) {
-            exportImportManager[0].runImport();
-        } else {
-            importRealms();
+        if (exportImportManager[0].isRunExport()) {
+            exportImportManager[0].runExport();
         }
-
-        importAddUser();
 
         return exportImportManager[0];
     }
@@ -273,8 +273,14 @@ public class KeycloakApplication extends Application {
                 String file = tokenizer.nextToken().trim();
                 RealmRepresentation rep;
                 try {
-                    rep = loadJson(new FileInputStream(file), RealmRepresentation.class);
-                } catch (FileNotFoundException e) {
+                    rep = JsonSerialization.readValue(StringPropertyReplacer.replaceProperties(
+                            new String(Files.readAllBytes(Paths.get(file))), new StringPropertyReplacer.PropertyResolver() {
+                                @Override
+                                public String resolve(String property) {
+                                    return Optional.ofNullable(System.getenv(property)).orElse(null);
+                                }
+                            }), RealmRepresentation.class);
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
                 importRealm(rep, "file " + file);
@@ -375,13 +381,4 @@ public class KeycloakApplication extends Application {
             }
         }
     }
-
-    private static <T> T loadJson(InputStream is, Class<T> type) {
-        try {
-            return JsonSerialization.readValue(is, type);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to parse json", e);
-        }
-    }
-
 }

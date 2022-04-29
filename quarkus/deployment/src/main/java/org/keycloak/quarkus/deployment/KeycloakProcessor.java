@@ -18,6 +18,7 @@
 package org.keycloak.quarkus.deployment;
 
 import static org.keycloak.quarkus.runtime.Providers.getProviderManager;
+import static org.keycloak.quarkus.runtime.configuration.Configuration.getOptionalBooleanValue;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getPropertyNames;
 import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_QUARKUS;
 import static org.keycloak.quarkus.runtime.configuration.QuarkusPropertiesConfigSource.QUARKUS_PROPERTY_ENABLED;
@@ -79,6 +80,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
+import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -224,6 +226,14 @@ class KeycloakProcessor {
                         .setInitListener(recorder.createUnitListener(properties.getProperty(AvailableSettings.DATASOURCE))));
             }
         }
+    }
+
+    @BuildStep(onlyIf = IsLegacyStoreEnabled.class)
+    void produceDefaultPersistenceUnit(BuildProducer<PersistenceXmlDescriptorBuildItem> producer) {
+        ParsedPersistenceXmlDescriptor descriptor = PersistenceXmlParser.locateIndividualPersistenceUnit(
+                Thread.currentThread().getContextClassLoader().getResource("default-persistence.xml"));
+
+        producer.produce(new PersistenceXmlDescriptorBuildItem(descriptor));
     }
 
     private void configureJpaProperties(ParsedPersistenceXmlDescriptor descriptor, HibernateOrmConfig config,
@@ -677,10 +687,10 @@ class KeycloakProcessor {
     }
 
     private boolean isMetricsEnabled() {
-        return Configuration.getOptionalBooleanValue(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX.concat("metrics-enabled")).orElse(false);
+        return getOptionalBooleanValue(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX.concat("metrics-enabled")).orElse(false);
     }
 
     private boolean isHealthEnabled() {
-        return Configuration.getOptionalBooleanValue(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX.concat("health-enabled")).orElse(false);
+        return getOptionalBooleanValue(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX.concat("health-enabled")).orElse(false);
     }
 }

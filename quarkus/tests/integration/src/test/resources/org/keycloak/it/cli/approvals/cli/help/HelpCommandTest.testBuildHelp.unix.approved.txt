@@ -47,7 +47,7 @@ Transaction:
 
 Feature:
 
---features <feature> Enables a set of one or more features.
+--features <feature> Enables a set of one or more features. Default: .
 --features-disabled <feature>
                      Disables a set of one or more features.
 
@@ -72,6 +72,9 @@ Metrics:
 Vault:
 
 --vault <provider>   Enables a vault provider.
+
+Storage:
+
 
 Examples:
 

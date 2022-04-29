@@ -7,9 +7,9 @@ import org.keycloak.quarkus.runtime.Environment;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
 
-final class ClusteringPropertyMappers {
+final class CachePropertyMappers {
 
-    private ClusteringPropertyMappers() {
+    private CachePropertyMappers() {
     }
 
     public static PropertyMapper[] getClusteringPropertyMappers() {
@@ -58,11 +58,39 @@ final class ClusteringPropertyMappers {
                         })
                         .paramLabel("file")
                         .isBuildTimeProperty(true)
+                        .build(),
+                builder().from("cache-realm-enabled")
+                        .to("kc.spi-realm-cache-enabled")
+                        .mapFrom("storage-realm")
+                        .transformer(CachePropertyMappers::isCacheAreaEnabledForStorage)
+                        .type(Boolean.class)
+                        .isBuildTimeProperty(true)
+                        .hidden(true)
+                        .build(),
+                builder().from("cache-authorization-enabled")
+                        .to("kc.spi-authorization-cache-enabled")
+                        .mapFrom("storage-realm")
+                        .transformer(CachePropertyMappers::isCacheAreaEnabledForStorage)
+                        .type(Boolean.class)
+                        .isBuildTimeProperty(true)
+                        .hidden(true)
+                        .build(),
+                builder().from("cache-user-cache-enabled")
+                        .to("kc.spi-user-cache-cache-enabled")
+                        .mapFrom("storage-realm")
+                        .transformer(CachePropertyMappers::isCacheAreaEnabledForStorage)
+                        .type(Boolean.class)
+                        .isBuildTimeProperty(true)
+                        .hidden(true)
                         .build()
         };
     }
 
     private static PropertyMapper.Builder builder() {
         return PropertyMapper.builder(ConfigCategory.CLUSTERING);
+    }
+
+    private static String isCacheAreaEnabledForStorage(String storage, ConfigSourceInterceptorContext context) {
+        return "map".equals(storage) ? Boolean.FALSE.toString() : Boolean.TRUE.toString();
     }
 }
