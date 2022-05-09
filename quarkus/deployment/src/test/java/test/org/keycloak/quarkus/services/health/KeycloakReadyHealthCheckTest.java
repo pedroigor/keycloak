@@ -16,19 +16,29 @@
  */
 package test.org.keycloak.quarkus.services.health;
 
+import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.QuarkusUnitTest;
+import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import javax.inject.Inject;
 import java.sql.SQLException;
 
 import static io.restassured.RestAssured.given;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class KeycloakReadyHealthCheckTest {
+
+    @Inject
+    AgroalDataSource agroalDataSource;
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -36,6 +46,7 @@ public class KeycloakReadyHealthCheckTest {
                     .addAsResource("keycloak.conf", "META-INF/keycloak.conf"));
 
     @Test
+    @Order(1)
     public void testLivenessUp() {
         given()
             .when().get("/health/live")
@@ -45,11 +56,31 @@ public class KeycloakReadyHealthCheckTest {
     }
 
     @Test
+    @Order(2)
     public void testReadinessUp() throws SQLException {
         given()
             .when().get("/health/ready")
             .then()
                 .statusCode(200)
                 .body(Matchers.containsString("UP"));
+    }
+
+    @Test
+    // Make sure this test is executed as last
+    @Order(3)
+    public void testReadinessDown() {
+        agroalDataSource.close();
+        Awaitility.await()
+                .untilAsserted(() -> {
+                    try {
+                        assertTrue(agroalDataSource.getConnection().isClosed());
+                    } catch (SQLException ex) {
+                        // skip
+                    }});
+        given()
+                .when().get("/health/ready")
+                .then()
+                .statusCode(503)
+                .body(Matchers.containsString("DOWN"));
     }
 }

@@ -24,7 +24,7 @@ import org.keycloak.it.junit5.extension.DistributionTest;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.containsString;
 
-@DistributionTest(keepAlive =true)
+@DistributionTest
 public class HealthDistTest {
 
     @Test
