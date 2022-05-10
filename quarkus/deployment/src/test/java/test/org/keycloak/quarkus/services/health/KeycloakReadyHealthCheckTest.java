@@ -37,8 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class KeycloakReadyHealthCheckTest {
 
-    @Inject
-    AgroalDataSource agroalDataSource;
+    // @Inject
+    // AgroalDataSource agroalDataSource;
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
