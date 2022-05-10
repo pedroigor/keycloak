@@ -77,10 +77,13 @@ public class KeycloakReadyHealthCheckTest {
                     } catch (SQLException ex) {
                         // skip
                     }});
-        given()
-                .when().get("/health/ready")
-                .then()
-                .statusCode(503)
-                .body(Matchers.containsString("DOWN"));
+        Awaitility.await()
+                .ignoreExceptions()
+                .untilAsserted(() ->
+                    given()
+                            .when().get("/health/ready")
+                            .then()
+                            .statusCode(503)
+                            .body(Matchers.containsString("DOWN")));
     }
 }
