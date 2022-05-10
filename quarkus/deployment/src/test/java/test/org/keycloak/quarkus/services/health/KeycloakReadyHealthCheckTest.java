@@ -65,25 +65,25 @@ public class KeycloakReadyHealthCheckTest {
                 .body(Matchers.containsString("UP"));
     }
 
-    @Test
-    // Make sure this test is executed as last
-    @Order(3)
-    public void testReadinessDown() {
-        agroalDataSource.close();
-        Awaitility.await()
-                .untilAsserted(() -> {
-                    try {
-                        assertTrue(agroalDataSource.getConnection().isClosed());
-                    } catch (SQLException ex) {
-                        // skip
-                    }});
-        Awaitility.await()
-                .ignoreExceptions()
-                .untilAsserted(() ->
-                    given()
-                            .when().get("/health/ready")
-                            .then()
-                            .statusCode(503)
-                            .body(Matchers.containsString("DOWN")));
-    }
+//    @Test
+//    // Make sure this test is executed as last
+//    @Order(3)
+//    public void testReadinessDown() {
+//        agroalDataSource.close();
+//        Awaitility.await()
+//                .untilAsserted(() -> {
+//                    try {
+//                        assertTrue(agroalDataSource.getConnection().isClosed());
+//                    } catch (SQLException ex) {
+//                        // skip
+//                    }});
+//        Awaitility.await()
+//                .ignoreExceptions()
+//                .untilAsserted(() ->
+//                    given()
+//                            .when().get("/health/ready")
+//                            .then()
+//                            .statusCode(503)
+//                            .body(Matchers.containsString("DOWN")));
+//    }
 }
