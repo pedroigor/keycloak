@@ -411,7 +411,6 @@ public final class Picocli {
                         .description(description)
                         .paramLabel(mapper.getParamLabel())
                         .completionCandidates(expectedValues)
-                        .parameterConsumer(PropertyMapperParameterConsumer.INSTANCE)
                         .hidden(mapper.isHidden());
 
                 if (mapper.getDefaultValue().isPresent()) {
@@ -422,6 +421,11 @@ public final class Picocli {
                     optBuilder.type(mapper.getType());
                 } else {
                     optBuilder.type(String.class);
+                }
+
+                // TODO? should we improve the parameter consumer for other types too
+                if (optBuilder.type().isInstance(String.class)) {
+                    optBuilder.parameterConsumer(PropertyMapperParameterConsumer.INSTANCE);
                 }
 
                 argGroupBuilder.addArg(optBuilder.build());

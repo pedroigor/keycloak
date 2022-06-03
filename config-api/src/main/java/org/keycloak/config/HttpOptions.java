@@ -1,5 +1,7 @@
 package org.keycloak.config;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -45,7 +47,6 @@ public class HttpOptions {
         required
     }
 
-    // TODO: testme from command line
     public final static Option httpsClientAuth = new OptionBuilder<>("https-client-auth", ClientAuth.class)
             .category(OptionCategory.HTTP)
             .description("Configures the server to require/request client authentication. Possible Values: none, request, required.")
@@ -64,21 +65,20 @@ public class HttpOptions {
             .defaultValue("TLSv1.3")
             .build();
 
-    // TODO: testme, should it be a File?
-    public final static Option httpsCertificateFile = new OptionBuilder<>("https-certificate-file", String.class)
+    public final static Option httpsCertificateFile = new OptionBuilder<>("https-certificate-file", File.class)
             .category(OptionCategory.HTTP)
             .description("The file path to a server certificate or certificate chain in PEM format.")
             .build();
 
-    public final static Option httpsCertificateKeyFile = new OptionBuilder<>("https-certificate-key-file", String.class)
+    public final static Option httpsCertificateKeyFile = new OptionBuilder<>("https-certificate-key-file", File.class)
             .category(OptionCategory.HTTP)
             .description("The file path to a private key in PEM format.")
             .build();
 
-    public final static Option httpsKeyStoreFile = new OptionBuilder<>("https-key-store-file", String.class)
+    public final static Option httpsKeyStoreFile = new OptionBuilder<>("https-key-store-file", File.class)
             .category(OptionCategory.HTTP)
             .description("The key store which holds the certificate information instead of specifying separate files.")
-            .defaultValue("~/conf/server.keystore") // TODO: verify
+            .defaultValue(getDefaultKeystorePathValue())
             .build();
 
     public final static Option httpsKeyStorePassword = new OptionBuilder<>("https-key-store-password", String.class)
@@ -93,7 +93,7 @@ public class HttpOptions {
                     "If not given, the type is automatically detected based on the file name.")
             .build();
 
-    public final static Option httpsTrustStoreFile = new OptionBuilder<>("https-trust-store-file", String.class)
+    public final static Option httpsTrustStoreFile = new OptionBuilder<>("https-trust-store-file", File.class)
             .category(OptionCategory.HTTP)
             .description("The trust store which holds the certificate information of the certificates to trust.")
             .build();
@@ -103,12 +103,26 @@ public class HttpOptions {
             .description("The password of the trust store file.")
             .build();
 
-    public final static Option httpsTrustStoreType = new OptionBuilder<>("https-trust-store-type", String.class)
+    public final static Option httpsTrustStoreType = new OptionBuilder<>("https-trust-store-type", File.class)
             .category(OptionCategory.HTTP)
             .description("The type of the trust store file. " +
                     "If not given, the type is automatically detected based on the file name.")
-            // .defaultValue("~/conf/server.keystore") // TODO: is this a bug in the current distribution?
+            .defaultValue(getDefaultKeystorePathValue())
             .build();
+
+    private static File getDefaultKeystorePathValue() {
+        String homeDir = Environment.getHomeDir();
+
+        if (homeDir != null) {
+            File file = Paths.get(homeDir, "conf", "server.keystore").toFile();
+
+            if (file.exists()) {
+                return file;
+            }
+        }
+
+        return null;
+    }
 
     public final static List<Option<?>> ALL_OPTIONS = new ArrayList<>();
 

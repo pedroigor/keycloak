@@ -1,5 +1,6 @@
 package org.keycloak.config;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +37,7 @@ public class ClusteringOptions {
             .expectedValues(Stack.values())
             .build();
 
-    public final static Option cacheConfigFile = new OptionBuilder<>("cache-config-file", String.class)
+    public final static Option cacheConfigFile = new OptionBuilder<>("cache-config-file", File.class)
             .category(OptionCategory.CLUSTERING)
             .description("Defines the file from which cache configuration should be loaded from. "
                     + "The configuration file is relative to the 'conf/' directory.")
