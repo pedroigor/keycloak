@@ -1,10 +1,8 @@
 package org.keycloak.quarkus.runtime.configuration.mappers;
 
-import java.util.Arrays;
 import java.util.function.BiFunction;
 
 import org.keycloak.config.ClusteringOptions;
-import org.keycloak.config.OptionCategory;
 import org.keycloak.quarkus.runtime.Environment;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;

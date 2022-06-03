@@ -3,14 +3,14 @@ package org.keycloak.quarkus.runtime.configuration.mappers;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
-import org.keycloak.config.OptionCategory;
-import org.keycloak.quarkus.runtime.storage.database.Database;
+import org.keycloak.config.DatabaseOptions;
+import org.keycloak.config.database.Database;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-import static java.util.Arrays.asList;
 import static org.keycloak.quarkus.runtime.Messages.invalidDatabaseVendor;
+import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 import static org.keycloak.quarkus.runtime.integration.QuarkusPlatform.addInitializationException;
 
 final class DatabasePropertyMappers {
@@ -19,102 +19,86 @@ final class DatabasePropertyMappers {
 
     public static PropertyMapper[] getDatabasePropertyMappers() {
         return new PropertyMapper[] {
-                builder().from("db-dialect")
+                fromOption(DatabaseOptions.dbDialect)
                         .mapFrom("db")
                         .to("quarkus.hibernate-orm.dialect")
-                        .isBuildTimeProperty(true)
-                        .transformer(DatabasePropertyMappers::transformDialect)
-                        .hidden(true)
+                        .transformer(transformDialect)
                         .build(),
-                builder().from("db-driver")
+                fromOption(DatabaseOptions.dbDriver)
                         .mapFrom("db")
-                        .defaultValue(Database.getDriver("dev-file", true).get())
                         .to("quarkus.datasource.jdbc.driver")
-                        .transformer(DatabasePropertyMappers::getXaOrNonXaDriver)
-                        .hidden(true)
+                        .transformer(XaOrNonXaDriver)
                         .build(),
-                builder().from("db").
-                        to("quarkus.datasource.db-kind")
-                        .isBuildTimeProperty(true)
+                fromOption(DatabaseOptions.db)
+                        .to("quarkus.datasource.db-kind")
                         .transformer(toDatabaseKind())
-                        .description("The database vendor. Possible values are: " + String.join(", ", Database.getAliases()))
                         .paramLabel("vendor")
-                        .expectedValues(asList(Database.getAliases()))
                         .build(),
-                builder().from("db-url")
+                fromOption(DatabaseOptions.dbUrl)
                         .to("quarkus.datasource.jdbc.url")
                         .mapFrom("db")
-                        .transformer((value, context) -> Database.getDefaultUrl(value).orElse(value))
-                        .description("The full database JDBC URL. If not provided, a default URL is set based on the selected database vendor. " +
-                                "For instance, if using 'postgres', the default JDBC URL would be 'jdbc:postgresql://localhost/keycloak'. ")
+                        .transformer(DatabaseUrl)
                         .paramLabel("jdbc-url")
                         .build(),
-                builder().from("db-url-host")
+                fromOption(DatabaseOptions.dbUrlHost)
                         .to("kc.db-url-host")
-                        .description("Sets the hostname of the default JDBC URL of the chosen vendor. If the `db-url` option is set, this option is ignored.")
                         .paramLabel("hostname")
                         .build(),
-                builder().from("db-url-database")
+                fromOption(DatabaseOptions.dbUrlDatabase)
                         .to("kc.db-url-database")
-                        .description("Sets the database name of the default JDBC URL of the chosen vendor. If the `db-url` option is set, this option is ignored.")
                         .paramLabel("dbname")
                         .build(),
-                builder().from("db-url-port")
+                fromOption(DatabaseOptions.dbUrlPort)
                         .to("kc.db-url-port")
-                        .description("Sets the port of the default JDBC URL of the chosen vendor. If the `db-url` option is set, this option is ignored.")
                         .paramLabel("port")
                         .build(),
-                builder().from("db-url-properties")
+                fromOption(DatabaseOptions.dbUrlProperties)
                         .to("kc.db-url-properties")
-                        .description("Sets the properties of the default JDBC URL of the chosen vendor. If the `db-url` option is set, this option is ignored.")
                         .paramLabel("properties")
                         .build(),
-                builder().from("db-username")
+                fromOption(DatabaseOptions.dbUsername)
                         .to("quarkus.datasource.username")
                         .mapFrom("db")
-                        .transformer(DatabasePropertyMappers::resolveUsername)
-                        .description("The username of the database user.")
+                        .transformer(ResolveUsername)
                         .paramLabel("username")
                         .build(),
-                builder().from("db-password")
+                fromOption(DatabaseOptions.dbPassword)
                         .to("quarkus.datasource.password")
                         .mapFrom("db")
-                        .transformer(DatabasePropertyMappers::resolvePassword)
-                        .description("The password of the database user.")
+                        .transformer(ResolvePassword)
                         .paramLabel("password")
                         .isMasked(true)
                         .build(),
-                builder().from("db-schema")
+                fromOption(DatabaseOptions.dbSchema)
                         .to("quarkus.hibernate-orm.database.default-schema")
-                        .description("The database schema to be used.")
                         .paramLabel("schema")
                         .build(),
-                builder().from("db-pool-initial-size")
+                fromOption(DatabaseOptions.dbPoolInitialSize)
                         .to("quarkus.datasource.jdbc.initial-size")
-                        .description("The initial size of the connection pool.")
                         .paramLabel("size")
                         .build(),
-                builder().from("db-pool-min-size")
+                fromOption(DatabaseOptions.dbPoolMinSize)
                         .to("quarkus.datasource.jdbc.min-size")
-                        .description("The minimal size of the connection pool.")
                         .paramLabel("size")
                         .build(),
-                builder().from("db-pool-max-size")
+                fromOption(DatabaseOptions.dbPoolMaxSize)
                         .to("quarkus.datasource.jdbc.max-size")
-                        .defaultValue(String.valueOf(100))
-                        .description("The maximum size of the connection pool.")
                         .paramLabel("size")
                         .build()
         };
     }
 
-    private static String getXaOrNonXaDriver(String db, ConfigSourceInterceptorContext context) {
-        ConfigValue xaEnabledConfigValue = context.proceed("kc.transaction-xa-enabled");
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> DatabaseUrl =
+            (s, c) -> Database.getDefaultUrl(s).orElse(s);
 
-        boolean isXaEnabled = xaEnabledConfigValue == null || Boolean.parseBoolean(xaEnabledConfigValue.getValue());
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> XaOrNonXaDriver =
+        (String db, ConfigSourceInterceptorContext context) -> {
+            ConfigValue xaEnabledConfigValue = context.proceed("kc.transaction-xa-enabled");
 
-        return Database.getDriver(db, isXaEnabled).orElse(db);
-    }
+            boolean isXaEnabled = xaEnabledConfigValue == null || Boolean.parseBoolean(xaEnabledConfigValue.getValue());
+
+            return Database.getDriver(db, isXaEnabled).orElse(db);
+        };
 
     private static BiFunction<String, ConfigSourceInterceptorContext, String> toDatabaseKind() {
         return (db, context) -> {
@@ -130,38 +114,37 @@ final class DatabasePropertyMappers {
         };
     }
 
-    private static <T> PropertyMapper.Builder<T> builder() {
-        return PropertyMapper.builder(OptionCategory.DATABASE);
-    }
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> ResolveUsername =
+        (String value, ConfigSourceInterceptorContext context) -> {
+            if (isDevModeDatabase(context)) {
+                return "sa";
+            }
 
-    private static String resolveUsername(String value, ConfigSourceInterceptorContext context) {
-        if (isDevModeDatabase(context)) {
-            return "sa";
-        }
+            return Database.getDatabaseKind(value).isEmpty() ? value : null;
+        };
 
-        return Database.getDatabaseKind(value).isEmpty() ? value : null;
-    }
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> ResolvePassword =
+        (String value, ConfigSourceInterceptorContext context) -> {
+            if (isDevModeDatabase(context)) {
+                return "password";
+            }
 
-    private static String resolvePassword(String value, ConfigSourceInterceptorContext context) {
-        if (isDevModeDatabase(context)) {
-            return "password";
-        }
-
-        return Database.getDatabaseKind(value).isEmpty() ? value : null;
-    }
+            return Database.getDatabaseKind(value).isEmpty() ? value : null;
+        };
 
     private static boolean isDevModeDatabase(ConfigSourceInterceptorContext context) {
         String db = context.proceed("kc.db").getValue();
         return Database.getDatabaseKind(db).get().equals(DatabaseKind.H2);
     }
 
-    private static String transformDialect(String db, ConfigSourceInterceptorContext context) {
-        Optional<String> databaseKind = Database.getDatabaseKind(db);
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> transformDialect =
+        (String db, ConfigSourceInterceptorContext context) -> {
+            Optional<String> databaseKind = Database.getDatabaseKind(db);
 
-        if (databaseKind.isEmpty()) {
-            return db;
-        }
+            if (databaseKind.isEmpty()) {
+                return db;
+            }
 
-        return Database.getDialect(db).orElse(Database.getDialect("dev-file").get());
-    }
+            return Database.getDialect(db).orElse(Database.getDialect("dev-file").get());
+        };
 }

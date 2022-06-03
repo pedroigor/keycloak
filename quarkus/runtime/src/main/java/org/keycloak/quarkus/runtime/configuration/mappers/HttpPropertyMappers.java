@@ -3,15 +3,10 @@ package org.keycloak.quarkus.runtime.configuration.mappers;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
 import org.keycloak.config.HttpOptions;
-import org.keycloak.config.Option;
-import org.keycloak.config.OptionCategory;
 import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.Messages;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.function.BiFunction;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;

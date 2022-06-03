@@ -1,7 +1,10 @@
 package org.keycloak.quarkus.runtime.configuration.mappers;
 
 
+import org.keycloak.config.HostnameOptions;
 import org.keycloak.config.OptionCategory;
+
+import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
 final class HostnamePropertyMappers {
 
@@ -9,43 +12,29 @@ final class HostnamePropertyMappers {
 
     public static PropertyMapper[] getHostnamePropertyMappers() {
         return new PropertyMapper[] {
-                builder().from("hostname")
+                fromOption(HostnameOptions.hostname)
                         .to("kc.spi-hostname-default-hostname")
-                        .description("Hostname for the Keycloak server.")
                         .paramLabel("hostname")
                         .build(),
-                builder().from("hostname-admin")
+                fromOption(HostnameOptions.hostnameAdmin)
                         .to("kc.spi-hostname-default-admin")
-                        .description("The hostname for accessing the administration console. Use this option if you are exposing the administration console using a hostname other than the value set to the 'hostname' option.")
                         .paramLabel("hostname")
                         .build(),
-                builder().from("hostname-strict")
+                fromOption(HostnameOptions.hostnameStrict)
                         .to("kc.spi-hostname-default-strict")
-                        .description("Disables dynamically resolving the hostname from request headers. Should always be set to true in production, unless proxy verifies the Host header.")
-                        .type(Boolean.class)
-                        .defaultValue(Boolean.TRUE.toString())
                         .build(),
-                builder().from("hostname-strict-https")
+                fromOption(HostnameOptions.hostnameStrictHttps)
                         .to("kc.spi-hostname-default-strict-https")
-                        .description("Forces URLs to use HTTPS. Only needed if proxy does not properly set the X-Forwarded-Proto header.")
-                        .hidden(true)
-                        .defaultValue(Boolean.TRUE.toString())
-                        .type(Boolean.class)
                         .build(),
-                builder().from("hostname-strict-backchannel")
+                fromOption(HostnameOptions.hostnameStrictBackchannel)
                         .to("kc.spi-hostname-default-strict-backchannel")
-                        .description("By default backchannel URLs are dynamically resolved from request headers to allow internal and external applications. If all applications use the public URL this option should be enabled.")
-                        .type(Boolean.class)
                         .build(),
-                builder().from("hostname-path")
+                fromOption(HostnameOptions.hostnamePath)
                         .to("kc.spi-hostname-default-path")
-                        .description("This should be set if proxy uses a different context-path for Keycloak.")
                         .paramLabel("path")
                         .build(),
-                builder().from("hostname-port")
+                fromOption(HostnameOptions.hostnamePort)
                         .to("kc.spi-hostname-default-hostname-port")
-                        .defaultValue("-1")
-                        .description("The port used by the proxy when exposing the hostname. Set this option if the proxy uses a port other than the default HTTP and HTTPS ports.")
                         .paramLabel("port")
                         .build()
         };

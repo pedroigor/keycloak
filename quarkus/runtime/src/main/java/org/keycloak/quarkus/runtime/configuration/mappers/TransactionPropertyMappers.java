@@ -2,8 +2,12 @@ package org.keycloak.quarkus.runtime.configuration.mappers;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import org.keycloak.config.OptionCategory;
+import org.keycloak.config.TransactionOptions;
 
 import java.util.Arrays;
+import java.util.function.BiFunction;
+
+import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
 public class TransactionPropertyMappers {
 
@@ -11,30 +15,23 @@ public class TransactionPropertyMappers {
 
     public static PropertyMapper[] getTransactionPropertyMappers() {
         return new PropertyMapper[] {
-                builder().from("transaction-xa-enabled")
+                fromOption(TransactionOptions.transactionXaEnabled)
                         .to("quarkus.datasource.jdbc.transactions")
-                        .defaultValue(Boolean.TRUE.toString())
-                        .description("Manually override the transaction type. Transaction type XA and the appropriate driver is used by default.")
                         .paramLabel(Boolean.TRUE + "|" + Boolean.FALSE)
-                        .expectedValues(Arrays.asList(Boolean.TRUE.toString(), Boolean.FALSE.toString()))
-                        .isBuildTimeProperty(true)
-                        .transformer(TransactionPropertyMappers::getQuarkusTransactionsValue)
-                        .build(),
+                        .transformer(QuarkusTransactionsValue)
+                        .build()
         };
     }
 
-    private static String getQuarkusTransactionsValue(String txValue, ConfigSourceInterceptorContext context) {
-        boolean isXaEnabled = Boolean.parseBoolean(txValue);
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> QuarkusTransactionsValue =
+        (String txValue, ConfigSourceInterceptorContext context) -> {
+            boolean isXaEnabled = Boolean.parseBoolean(txValue);
 
-        if (isXaEnabled) {
-            return "xa";
-        }
+            if (isXaEnabled) {
+                return "xa";
+            }
 
-        return "enabled";
-    }
-
-    private static <T> PropertyMapper.Builder<T> builder() {
-        return PropertyMapper.builder(OptionCategory.TRANSACTION);
-    }
+            return "enabled";
+        };
 
 }

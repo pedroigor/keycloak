@@ -10,6 +10,11 @@ public class HostnameOptions {
             .description("Hostname for the Keycloak server.")
             .build();
 
+    public final static Option hostnameAdmin = new OptionBuilder<>("hostname-admin", String.class)
+            .category(OptionCategory.HOSTNAME)
+            .description("The hostname for accessing the administration console. Use this option if you are exposing the administration console using a hostname other than the value set to the 'hostname' option.")
+            .build();
+
     public final static Option hostnameStrict = new OptionBuilder<>("hostname-strict", Boolean.class)
             .category(OptionCategory.HOSTNAME)
             .description("Disables dynamically resolving the hostname from request headers. Should always be set to true in production, unless proxy verifies the Host header.")
