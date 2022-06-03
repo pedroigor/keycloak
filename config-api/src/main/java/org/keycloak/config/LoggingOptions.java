@@ -13,27 +13,18 @@ import java.util.stream.Collectors;
 
 public class LoggingOptions {
 
-    public static final Handler DEFAULT_LOG_HANDLER = Handler.CONSOLE;
+    public static final Handler DEFAULT_LOG_HANDLER = Handler.console;
     public static final Level DEFAULT_LOG_LEVEL = Level.INFO;
     public static final Output DEFAULT_CONSOLE_OUTPUT = Output.DEFAULT;
     public static final String DEFAULT_LOG_FILENAME = "keycloak.log";
     public static final String DEFAULT_LOG_PATH = "data" + File.separator + "log" + File.separator + DEFAULT_LOG_FILENAME;
 
-    // TODO: check if this is interpreted correctly
     public enum Handler {
-        CONSOLE,
-        FILE,
-        CONSOLE_FILE,
-        FILE_CONSOLE;
-
-        @Override
-        public String toString() {
-            return super.toString().replaceFirst("_", ",").toLowerCase(Locale.ROOT);
-        }
+        console,
+        file;
     }
 
-    // TODO: need to check the support of:  file,console and console,file !
-    public final static Option log = new OptionBuilder<>("log", Handler.class)
+    public final static Option log = new OptionBuilder("log", List.class, Handler.class)
             .category(OptionCategory.LOGGING)
             .description("Enable one or more log handlers in a comma-separated list. Available log handlers are: " + Arrays.stream(Handler.values()).limit(2).map(h -> h.toString()).collect(Collectors.joining(",")))
             .defaultValue(DEFAULT_LOG_HANDLER)
@@ -91,19 +82,19 @@ public class LoggingOptions {
             .build();
 
     public final static Option logConsoleEnabled = new OptionBuilder<>("log-console-enabled", Boolean.class)
-            .category(OptionCategory.LOGGING) // TODO: check that params without description are working
-            .runtimes(Collections.emptySet()) // TODO: verify
+            .category(OptionCategory.LOGGING)
+            .runtimes(Collections.emptySet())
             .build();
 
     public final static Option logFileEnabled = new OptionBuilder<>("log-file-enabled", Boolean.class)
-            .category(OptionCategory.LOGGING) // TODO: check that params without description are working
-            .runtimes(Collections.emptySet()) // TODO: verify
+            .category(OptionCategory.LOGGING)
+            .runtimes(Collections.emptySet())
             .build();
 
-    public final static Option logFile = new OptionBuilder<>("log-file", String.class)
+    public final static Option logFile = new OptionBuilder<>("log-file", File.class)
             .category(OptionCategory.LOGGING)
             .description("Set the log file path and filename.")
-            .defaultValue(DEFAULT_LOG_PATH)
+            .defaultValue(new File(DEFAULT_LOG_PATH))
             .build();
 
     public final static Option logFileFormat = new OptionBuilder<>("log-file-format", String.class)

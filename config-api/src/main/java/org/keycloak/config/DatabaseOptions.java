@@ -3,18 +3,17 @@ package org.keycloak.config;
 import org.keycloak.config.database.Database;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DatabaseOptions {
 
-    // TODO: check that those properties are working even without description
     public final static Option dbDialect = new OptionBuilder<>("db-dialect", String.class)
             .category(OptionCategory.DATABASE)
             .runtimes(Option.Runtime.OPERATOR)
             .buildTime(true)
             .build();
 
-    // TODO: check that those properties are working even without description
     public final static Option dbDriver = new OptionBuilder<>("db-driver", String.class)
             .category(OptionCategory.DATABASE)
             .runtimes(Option.Runtime.OPERATOR)
@@ -24,7 +23,7 @@ public class DatabaseOptions {
     public final static Option db = new OptionBuilder<>("db", Database.Vendor.class)
             .category(OptionCategory.DATABASE)
             .description("The database vendor. Possible values are: " + String.join(", ", Database.getAliases()))
-            .expectedValues(Database.Vendor.values()) // TODO: verify how this renders
+            .expectedStringValues(Database.getAliases())
             .buildTime(true)
             .build();
 
