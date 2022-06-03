@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+set -euxo pipefail
 
 (cd .. && mvn clean install -f config-api/pom.xml --offline)
 
