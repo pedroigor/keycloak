@@ -189,7 +189,6 @@ public final class Database {
             return databaseKind.equals(dbKind);
         }
 
-        // TODO: fixme - doesn't work as expected
         @Override
         public String toString() {
             return databaseKind.toLowerCase(Locale.ROOT);

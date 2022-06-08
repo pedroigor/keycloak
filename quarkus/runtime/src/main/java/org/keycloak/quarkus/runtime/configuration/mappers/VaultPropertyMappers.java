@@ -20,7 +20,7 @@ final class VaultPropertyMappers {
                         .to("kc.spi-vault-file-dir")
                         .paramLabel("dir")
                         .build(),
-                fromOption(VaultOptions.vaultGeneric) // TODO: check me?
+                fromOption(VaultOptions.vaultGeneric)
                         .to("quarkus.vault.")
                         .build(),
                 fromOption(VaultOptions.vaultUrl)

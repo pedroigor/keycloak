@@ -7,7 +7,6 @@ import java.util.List;
 
 public class FeatureOptions {
 
-    // TODO: can we change this to something like: List[Feature] ???
     public final static Option features = new OptionBuilder("features", List.class, Profile.Feature.class)
             .category(OptionCategory.FEATURE)
             .description("Enables a set of one or more features.")
@@ -15,7 +14,6 @@ public class FeatureOptions {
             .buildTime(true)
             .build();
 
-    // TODO: can we change this to something like: List[Feature] ???
     public final static Option featuresDisabled = new OptionBuilder("features-disabled", List.class, Profile.Feature.class)
             .category(OptionCategory.FEATURE)
             .description("Disables a set of one or more features.")

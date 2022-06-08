@@ -22,7 +22,7 @@ public class ProxyOptions {
             .expectedValues(Mode.values())
             .build();
 
-    // TODO: check originally missing "from"
+    // TODO: check originally missing a "from"
     public final static Option proxyForwardedHost = new OptionBuilder<>("proxy-forwarded-host", Boolean.class)
             .category(OptionCategory.PROXY)
             .defaultValue(Boolean.FALSE)
