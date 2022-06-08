@@ -2,7 +2,6 @@ package org.keycloak.quarkus.runtime.configuration.mappers;
 
 
 import org.keycloak.config.HostnameOptions;
-import org.keycloak.config.OptionCategory;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
@@ -38,9 +37,5 @@ final class HostnamePropertyMappers {
                         .paramLabel("port")
                         .build()
         };
-    }
-
-    private static PropertyMapper.Builder builder() {
-        return PropertyMapper.builder(OptionCategory.HOSTNAME);
     }
 }
