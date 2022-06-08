@@ -26,8 +26,11 @@ public class OptionBuilder<T> {
         supportedRuntimes = Arrays.stream(Option.Runtime.values()).collect(Collectors.toSet());
         build = false;
         description = null;
-        defaultValue = Optional.empty();
+        defaultValue = Boolean.class.equals(type) ? Optional.of((T) Boolean.FALSE) : Optional.empty();
         expectedValues = new ArrayList<>();
+        if (Boolean.class.equals(type)) {
+            expectedStringValues(Boolean.TRUE.toString(), Boolean.FALSE.toString());
+        }
     }
 
     public OptionBuilder(String key, Class<T> type, Class<T> auxiliaryType) {
@@ -38,8 +41,11 @@ public class OptionBuilder<T> {
         supportedRuntimes = Arrays.stream(Option.Runtime.values()).collect(Collectors.toSet());
         build = false;
         description = null;
-        defaultValue = Optional.empty();
+        defaultValue = Boolean.class.equals(type) ? Optional.of((T) Boolean.FALSE) : Optional.empty();
         expectedValues = new ArrayList<>();
+        if (Boolean.class.equals(type)) {
+            expectedStringValues(Boolean.TRUE.toString(), Boolean.FALSE.toString());
+        }
     }
 
     public OptionBuilder<T> category(OptionCategory category) {
