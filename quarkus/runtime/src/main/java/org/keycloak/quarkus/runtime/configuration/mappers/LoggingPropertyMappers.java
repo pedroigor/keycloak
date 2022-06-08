@@ -1,7 +1,5 @@
 package org.keycloak.quarkus.runtime.configuration.mappers;
 
-import static org.keycloak.config.LoggingOptions.DEFAULT_LOG_FILENAME;
-import static org.keycloak.config.LoggingOptions.DEFAULT_LOG_HANDLER;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 import static org.keycloak.quarkus.runtime.integration.QuarkusPlatform.addInitializationException;
 
@@ -31,6 +29,12 @@ public final class LoggingPropertyMappers {
                 fromOption(LoggingOptions.logConsoleOutput)
                         .to("quarkus.log.console.json")
                         .paramLabel("default|json")
+                        .transformer((value, context) -> {
+                            if(value.equals(LoggingOptions.DEFAULT_CONSOLE_OUTPUT.name().toLowerCase(Locale.ROOT))) {
+                                return Boolean.FALSE.toString();
+                            }
+                            return Boolean.TRUE.toString();
+                        })
                         .build(),
                 fromOption(LoggingOptions.logConsoleFormat)
                         .to("quarkus.log.console.format")
@@ -43,7 +47,7 @@ public final class LoggingPropertyMappers {
                 fromOption(LoggingOptions.logConsoleEnabled)
                         .mapFrom("log")
                         .to("quarkus.log.console.enable")
-                        .transformer(ResolveLogHandler(DEFAULT_LOG_HANDLER.name()))
+                        .transformer(ResolveLogHandler(LoggingOptions.DEFAULT_LOG_HANDLER.name()))
                         .build(),
                 fromOption(LoggingOptions.logFileEnabled)
                         .mapFrom("log")
@@ -109,7 +113,7 @@ public final class LoggingPropertyMappers {
         return (parentValue, context) -> {
 
             //we want to fall back to console to not have nothing shown up when wrong values are set.
-            String consoleDependantErrorResult = handler.equals(DEFAULT_LOG_HANDLER) ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
+            String consoleDependantErrorResult = handler.equals(LoggingOptions.DEFAULT_LOG_HANDLER.name()) ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
 
             if(parentValue.isBlank()) {
                 addInitializationException(Messages.emptyValueForKey("log"));
@@ -138,7 +142,7 @@ public final class LoggingPropertyMappers {
         (String value, ConfigSourceInterceptorContext configSourceInterceptorContext) -> {
             if (value.endsWith(File.separator))
             {
-                return value + DEFAULT_LOG_FILENAME;
+                return value + LoggingOptions.DEFAULT_LOG_FILENAME;
             }
 
             return value;
