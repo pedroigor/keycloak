@@ -22,13 +22,8 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.OPTION_PA
 import static org.keycloak.quarkus.runtime.configuration.Configuration.toCliFormat;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.toEnvVarFormat;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -256,20 +251,9 @@ public class PropertyMapper<T> {
             return this;
         }
 
-//        public Builder<T> type(Class<T> type) {
-//            TODO: check if is needed
-//            if (Boolean.class.equals(type)) {
-//                expectedValues((T) Boolean.TRUE.toString(), (T) Boolean.FALSE.toString());
-//                paramLabel(defaultValue == null ? "true|false" : defaultValue.toString());
-//                defaultValue(defaultValue == null ? (T) Boolean.FALSE : defaultValue);
-//            }
-//            this.type = type;
-//            return this;
-//        }
-
         public PropertyMapper<T> build() {
-            if (paramLabel ==null && Boolean.class.equals(option.getType())) {
-                paramLabel = option.getDefaultValue().isEmpty() ? "true|false" : option.getDefaultValue().get().toString();
+            if (paramLabel == null && Boolean.class.equals(option.getType())) {
+                paramLabel = Boolean.TRUE + "|" + Boolean.FALSE;
             }
             return new PropertyMapper<T>(option, to, mapper, mapFrom, paramLabel, isMasked);
         }
