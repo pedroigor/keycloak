@@ -18,12 +18,14 @@
 package org.keycloak.quarkus.runtime.cli.command;
 
 import static org.keycloak.quarkus.runtime.Environment.getCurrentOrPersistedProfile;
+import static org.keycloak.quarkus.runtime.Environment.setProfile;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getConfigValue;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getPropertyNames;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers.formatValue;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -34,7 +36,9 @@ import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 import org.keycloak.quarkus.runtime.configuration.PersistedConfigSource;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.smallrye.config.ConfigValue;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
@@ -57,8 +61,11 @@ public final class ShowConfig extends AbstractCommand implements Runnable {
         String configArgs = System.getProperty("kc.show.config");
 
         if (configArgs != null) {
+            String profile = Optional.ofNullable(getCurrentOrPersistedProfile()).orElse(Environment.PROD_PROFILE_VALUE);
+
+            setProfile(profile);
+
             Map<String, Set<String>> properties = getPropertiesByGroup();
-            String profile = getCurrentOrPersistedProfile();
 
             printRunTimeConfig(properties, profile);
 
