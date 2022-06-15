@@ -18,19 +18,19 @@ final class ProxyPropertyMappers {
         return new PropertyMapper[] {
                 fromOption(ProxyOptions.proxy)
                         .to("quarkus.http.proxy.proxy-address-forwarding")
-                        .transformer(ValidProxyModeValue)
+                        .transformer(ProxyPropertyMappers.getValidProxyModeValue())
                         .paramLabel("mode")
                         .build(),
                 fromOption(ProxyOptions.proxyForwardedHost)
                         .to("quarkus.http.proxy.enable-forwarded-host")
                         .mapFrom("proxy")
-                        .transformer(ResolveEnableForwardedHost)
+                        .transformer(ProxyPropertyMappers.getResolveEnableForwardedHost())
                         .build()
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> ValidProxyModeValue =
-        (String mode, ConfigSourceInterceptorContext context) -> {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> getValidProxyModeValue() {
+        return (String mode, ConfigSourceInterceptorContext context) -> {
             switch (mode) {
                 case "none":
                     return "false";
@@ -43,8 +43,10 @@ final class ProxyPropertyMappers {
                     return "false";
             }
         };
+    }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> ResolveEnableForwardedHost =
-            (String proxy, ConfigSourceInterceptorContext context) -> String.valueOf(!"none".equals(proxy));
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> getResolveEnableForwardedHost() {
+        return (String proxy, ConfigSourceInterceptorContext context) -> String.valueOf(!"none".equals(proxy));
+    }
 
 }

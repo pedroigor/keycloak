@@ -23,7 +23,7 @@ final class HttpPropertyMappers {
         return new PropertyMapper[] {
                 fromOption(HttpOptions.httpEnabled)
                         .to("quarkus.http.insecure-requests")
-                        .transformer(HttpEnabledTransformer)
+                        .transformer(HttpPropertyMappers.getHttpEnabledTransformer())
                         .paramLabel(Boolean.TRUE + "|" + Boolean.FALSE)
                         .build(),
                 fromOption(HttpOptions.httpHost)
@@ -93,8 +93,8 @@ final class HttpPropertyMappers {
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> HttpEnabledTransformer =
-        (String value, ConfigSourceInterceptorContext context) -> {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> getHttpEnabledTransformer() {
+        return (String value, ConfigSourceInterceptorContext context) -> {
             boolean enabled = Boolean.parseBoolean(value);
             ConfigValue proxy = context.proceed(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + "proxy");
 
@@ -117,6 +117,7 @@ final class HttpPropertyMappers {
 
             return enabled ? "enabled" : "disabled";
         };
+    }
 
     private static String getDefaultKeystorePathValue() {
         String homeDir = Environment.getHomeDir();

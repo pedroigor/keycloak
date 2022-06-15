@@ -51,4 +51,5 @@ final class ClusteringPropertyMappers {
                         .build()
         };
     }
+
 }

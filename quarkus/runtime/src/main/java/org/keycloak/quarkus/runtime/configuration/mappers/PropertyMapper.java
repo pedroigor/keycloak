@@ -262,4 +262,5 @@ public class PropertyMapper<T> {
     public static <T> PropertyMapper.Builder<T> fromOption(Option<T> opt) {
         return new PropertyMapper.Builder<>(opt);
     }
+
 }

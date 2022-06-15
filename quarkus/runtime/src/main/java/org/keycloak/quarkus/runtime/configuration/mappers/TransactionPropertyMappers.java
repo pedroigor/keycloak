@@ -16,13 +16,13 @@ public class TransactionPropertyMappers {
                 fromOption(TransactionOptions.transactionXaEnabled)
                         .to("quarkus.datasource.jdbc.transactions")
                         .paramLabel(Boolean.TRUE + "|" + Boolean.FALSE)
-                        .transformer(QuarkusTransactionsValue)
+                        .transformer(TransactionPropertyMappers.getQuarkusTransactionsValue())
                         .build()
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> QuarkusTransactionsValue =
-        (String txValue, ConfigSourceInterceptorContext context) -> {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> getQuarkusTransactionsValue() {
+        return (String txValue, ConfigSourceInterceptorContext context) -> {
             boolean isXaEnabled = Boolean.parseBoolean(txValue);
 
             if (isXaEnabled) {
@@ -31,5 +31,6 @@ public class TransactionPropertyMappers {
 
             return "enabled";
         };
+    }
 
 }

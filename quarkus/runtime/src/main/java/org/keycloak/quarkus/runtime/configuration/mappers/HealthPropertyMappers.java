@@ -17,4 +17,5 @@ final class HealthPropertyMappers {
                         .build()
         };
     }
+
 }

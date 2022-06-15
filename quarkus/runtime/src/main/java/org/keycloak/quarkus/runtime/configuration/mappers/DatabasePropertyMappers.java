@@ -22,12 +22,12 @@ final class DatabasePropertyMappers {
                 fromOption(DatabaseOptions.dbDialect)
                         .mapFrom("db")
                         .to("quarkus.hibernate-orm.dialect")
-                        .transformer(transformDialect)
+                        .transformer(DatabasePropertyMappers.transformDialect())
                         .build(),
                 fromOption(DatabaseOptions.dbDriver)
                         .mapFrom("db")
                         .to("quarkus.datasource.jdbc.driver")
-                        .transformer(XaOrNonXaDriver)
+                        .transformer(DatabasePropertyMappers.getXaOrNonXaDriver())
                         .build(),
                 fromOption(DatabaseOptions.db)
                         .to("quarkus.datasource.db-kind")
@@ -37,7 +37,7 @@ final class DatabasePropertyMappers {
                 fromOption(DatabaseOptions.dbUrl)
                         .to("quarkus.datasource.jdbc.url")
                         .mapFrom("db")
-                        .transformer(DatabaseUrl)
+                        .transformer(DatabasePropertyMappers.getDatabaseUrl())
                         .paramLabel("jdbc-url")
                         .build(),
                 fromOption(DatabaseOptions.dbUrlHost)
@@ -59,13 +59,13 @@ final class DatabasePropertyMappers {
                 fromOption(DatabaseOptions.dbUsername)
                         .to("quarkus.datasource.username")
                         .mapFrom("db")
-                        .transformer(ResolveUsername)
+                        .transformer(DatabasePropertyMappers.resolveUsername())
                         .paramLabel("username")
                         .build(),
                 fromOption(DatabaseOptions.dbPassword)
                         .to("quarkus.datasource.password")
                         .mapFrom("db")
-                        .transformer(ResolvePassword)
+                        .transformer(DatabasePropertyMappers.resolvePassword())
                         .paramLabel("password")
                         .isMasked(true)
                         .build(),
@@ -88,17 +88,19 @@ final class DatabasePropertyMappers {
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> DatabaseUrl =
-            (s, c) -> Database.getDefaultUrl(s).orElse(s);
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> getDatabaseUrl() {
+        return (s, c) -> Database.getDefaultUrl(s).orElse(s);
+    }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> XaOrNonXaDriver =
-        (String db, ConfigSourceInterceptorContext context) -> {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> getXaOrNonXaDriver() {
+        return (String db, ConfigSourceInterceptorContext context) -> {
             ConfigValue xaEnabledConfigValue = context.proceed("kc.transaction-xa-enabled");
 
             boolean isXaEnabled = xaEnabledConfigValue == null || Boolean.parseBoolean(xaEnabledConfigValue.getValue());
 
             return Database.getDriver(db, isXaEnabled).orElse(db);
         };
+    }
 
     private static BiFunction<String, ConfigSourceInterceptorContext, String> toDatabaseKind() {
         return (db, context) -> {
@@ -114,31 +116,33 @@ final class DatabasePropertyMappers {
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> ResolveUsername =
-        (String value, ConfigSourceInterceptorContext context) -> {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> resolveUsername() {
+        return (String value, ConfigSourceInterceptorContext context) -> {
             if (isDevModeDatabase(context)) {
                 return "sa";
             }
 
             return Database.getDatabaseKind(value).isEmpty() ? value : null;
         };
+    }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> ResolvePassword =
-        (String value, ConfigSourceInterceptorContext context) -> {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> resolvePassword() {
+        return (String value, ConfigSourceInterceptorContext context) -> {
             if (isDevModeDatabase(context)) {
                 return "password";
             }
 
             return Database.getDatabaseKind(value).isEmpty() ? value : null;
         };
+    }
 
     private static boolean isDevModeDatabase(ConfigSourceInterceptorContext context) {
         String db = context.proceed("kc.db").getValue();
         return Database.getDatabaseKind(db).get().equals(DatabaseKind.H2);
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> transformDialect =
-        (String db, ConfigSourceInterceptorContext context) -> {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> transformDialect() {
+        return (db, configSourceInterceptorContext) -> {
             Optional<String> databaseKind = Database.getDatabaseKind(db);
 
             if (databaseKind.isEmpty()) {
@@ -147,4 +151,6 @@ final class DatabasePropertyMappers {
 
             return Database.getDialect(db).orElse(Database.getDialect("dev-file").get());
         };
+    }
+
 }

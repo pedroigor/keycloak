@@ -47,17 +47,17 @@ public final class LoggingPropertyMappers {
                 fromOption(LoggingOptions.logConsoleEnabled)
                         .mapFrom("log")
                         .to("quarkus.log.console.enable")
-                        .transformer(ResolveLogHandler(LoggingOptions.DEFAULT_LOG_HANDLER.name()))
+                        .transformer(LoggingPropertyMappers.resolveLogHandler(LoggingOptions.DEFAULT_LOG_HANDLER.name()))
                         .build(),
                 fromOption(LoggingOptions.logFileEnabled)
                         .mapFrom("log")
                         .to("quarkus.log.file.enable")
-                        .transformer(ResolveLogHandler("file"))
+                        .transformer(LoggingPropertyMappers.resolveLogHandler("file"))
                         .build(),
                 fromOption(LoggingOptions.logFile)
                         .to("quarkus.log.file.path")
                         .paramLabel("<path>/<file-name>.log")
-                        .transformer(ResolveFileLogLocation)
+                        .transformer(LoggingPropertyMappers.resolveFileLogLocation())
                         .build(),
                 fromOption(LoggingOptions.logFileFormat)
                         .to("quarkus.log.file.format")
@@ -109,7 +109,7 @@ public final class LoggingPropertyMappers {
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> ResolveLogHandler(String handler) {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> resolveLogHandler(String handler) {
         return (parentValue, context) -> {
 
             //we want to fall back to console to not have nothing shown up when wrong values are set.
@@ -138,15 +138,15 @@ public final class LoggingPropertyMappers {
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> ResolveFileLogLocation =
-        (String value, ConfigSourceInterceptorContext configSourceInterceptorContext) -> {
-            if (value.endsWith(File.separator))
-            {
+    private static BiFunction<String, ConfigSourceInterceptorContext, String> resolveFileLogLocation() {
+        return (String value, ConfigSourceInterceptorContext configSourceInterceptorContext) -> {
+            if (value.endsWith(File.separator)) {
                 return value + LoggingOptions.DEFAULT_LOG_FILENAME;
             }
 
             return value;
         };
+    }
 
     private static Level toLevel(String categoryLevel) throws IllegalArgumentException {
         return LogContext.getLogContext().getLevelForName(categoryLevel.toUpperCase(Locale.ROOT));
@@ -155,4 +155,5 @@ public final class LoggingPropertyMappers {
     private static void setCategoryLevel(String category, String level) {
         LogContext.getLogContext().getLogger(category).setLevel(toLevel(level));
     }
+
 }

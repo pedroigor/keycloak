@@ -37,4 +37,5 @@ final class HostnamePropertyMappers {
                         .build()
         };
     }
+
 }
