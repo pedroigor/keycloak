@@ -1,10 +1,8 @@
 package org.keycloak.quarkus.runtime.configuration.mappers;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
-import org.keycloak.config.OptionCategory;
 import org.keycloak.config.TransactionOptions;
 
-import java.util.Arrays;
 import java.util.function.BiFunction;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;

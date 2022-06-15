@@ -3,7 +3,6 @@ package org.keycloak.config;
 import org.keycloak.config.database.Database;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class DatabaseOptions {

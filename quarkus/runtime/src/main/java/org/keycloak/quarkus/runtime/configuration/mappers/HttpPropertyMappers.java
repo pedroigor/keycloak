@@ -7,6 +7,8 @@ import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.Messages;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.function.BiFunction;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
@@ -60,7 +62,8 @@ final class HttpPropertyMappers {
                         .to("quarkus.http.ssl.certificate.key-file")
                         .paramLabel("file")
                         .build(),
-                fromOption(HttpOptions.httpsKeyStoreFile)
+                fromOption(HttpOptions.httpsKeyStoreFile
+                            .withRuntimeSpecificDefault(getDefaultKeystorePathValue()))
                         .to("quarkus.http.ssl.certificate.key-store-file")
                         .paramLabel("file")
                         .build(),
@@ -69,7 +72,8 @@ final class HttpPropertyMappers {
                         .paramLabel("password")
                         .isMasked(true)
                         .build(),
-                fromOption(HttpOptions.httpsKeyStoreType)
+                fromOption(HttpOptions.httpsKeyStoreType
+                            .withRuntimeSpecificDefault(getDefaultKeystorePathValue()))
                         .to("quarkus.http.ssl.certificate.key-store-file-type")
                         .paramLabel("type")
                         .build(),
@@ -113,5 +117,20 @@ final class HttpPropertyMappers {
 
             return enabled ? "enabled" : "disabled";
         };
+
+    private static String getDefaultKeystorePathValue() {
+        String homeDir = Environment.getHomeDir();
+
+        if (homeDir != null) {
+            File file = Paths.get(homeDir, "conf", "server.keystore").toFile();
+
+            if (file.exists()) {
+                return file.getAbsolutePath();
+            }
+        }
+
+        return null;
+    }
+
 }
 

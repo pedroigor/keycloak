@@ -62,4 +62,17 @@ public class Option<T> {
         return expectedValues;
     }
 
+    public Option<T> withRuntimeSpecificDefault(T defaultValue) {
+        return new Option<T>(
+            this.type,
+            this.key,
+            this.category,
+            this.supportedRuntimes,
+            this.buildTime,
+            this.description,
+            Optional.of(defaultValue),
+            this.expectedValues
+        );
+    }
+
 }

@@ -1,12 +1,8 @@
 package org.keycloak.config;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class HttpOptions {
 
@@ -79,7 +75,6 @@ public class HttpOptions {
     public static final Option httpsKeyStoreFile = new OptionBuilder<>("https-key-store-file", File.class)
             .category(OptionCategory.HTTP)
             .description("The key store which holds the certificate information instead of specifying separate files.")
-            .defaultValue(getDefaultKeystorePathValue())
             .build();
 
     public static final Option httpsKeyStorePassword = new OptionBuilder<>("https-key-store-password", String.class)
@@ -108,22 +103,7 @@ public class HttpOptions {
             .category(OptionCategory.HTTP)
             .description("The type of the trust store file. " +
                     "If not given, the type is automatically detected based on the file name.")
-            .defaultValue(getDefaultKeystorePathValue())
             .build();
-
-    private static File getDefaultKeystorePathValue() {
-        String homeDir = Environment.getHomeDir();
-
-        if (homeDir != null) {
-            File file = Paths.get(homeDir, "conf", "server.keystore").toFile();
-
-            if (file.exists()) {
-                return file;
-            }
-        }
-
-        return null;
-    }
 
     public static final List<Option<?>> ALL_OPTIONS = new ArrayList<>();
 

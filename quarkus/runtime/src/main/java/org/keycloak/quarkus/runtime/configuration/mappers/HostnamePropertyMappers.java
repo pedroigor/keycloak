@@ -1,6 +1,5 @@
 package org.keycloak.quarkus.runtime.configuration.mappers;
 
-
 import org.keycloak.config.HostnameOptions;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
