@@ -11,7 +11,7 @@ public class ClusteringOptions {
         local
     }
 
-    public static final Option cache = new OptionBuilder<>("cache", Mechanism.class)
+    public static final Option CACHE = new OptionBuilder<>("cache", Mechanism.class)
             .category(OptionCategory.CLUSTERING)
             .description("Defines the cache mechanism for high-availability. "
                     + "By default, a 'ispn' cache is used to create a cluster between multiple server nodes. "
@@ -29,7 +29,7 @@ public class ClusteringOptions {
         google;
     }
 
-    public static final Option cacheStack = new OptionBuilder<>("cache-stack", Stack.class)
+    public static final Option CACHE_STACK = new OptionBuilder<>("cache-stack", Stack.class)
             .category(OptionCategory.CLUSTERING)
             .description("Define the default stack to use for cluster communication and node discovery. This option only takes effect "
                     + "if 'cache' is set to 'ispn'. Default: udp.")
@@ -37,7 +37,7 @@ public class ClusteringOptions {
             .expectedValues(Stack.values())
             .build();
 
-    public static final Option cacheConfigFile = new OptionBuilder<>("cache-config-file", File.class)
+    public static final Option<File> CACHE_CONFIG_FILE = new OptionBuilder<>("cache-config-file", File.class)
             .category(OptionCategory.CLUSTERING)
             .description("Defines the file from which cache configuration should be loaded from. "
                     + "The configuration file is relative to the 'conf/' directory.")
@@ -47,8 +47,8 @@ public class ClusteringOptions {
     public static final List<Option<?>> ALL_OPTIONS = new ArrayList<>();
 
     static {
-        ALL_OPTIONS.add(cache);
-        ALL_OPTIONS.add(cacheStack);
-        ALL_OPTIONS.add(cacheConfigFile);
+        ALL_OPTIONS.add(CACHE);
+        ALL_OPTIONS.add(CACHE_STACK);
+        ALL_OPTIONS.add(CACHE_CONFIG_FILE);
     }
 }

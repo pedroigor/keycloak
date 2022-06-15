@@ -19,69 +19,69 @@ final class DatabasePropertyMappers {
 
     public static PropertyMapper[] getDatabasePropertyMappers() {
         return new PropertyMapper[] {
-                fromOption(DatabaseOptions.dbDialect)
+                fromOption(DatabaseOptions.DB_DIALECT)
                         .mapFrom("db")
                         .to("quarkus.hibernate-orm.dialect")
-                        .transformer(DatabasePropertyMappers.transformDialect())
+                        .transformer(DatabasePropertyMappers::transformDialect)
                         .build(),
-                fromOption(DatabaseOptions.dbDriver)
+                fromOption(DatabaseOptions.DB_DRIVER)
                         .mapFrom("db")
                         .to("quarkus.datasource.jdbc.driver")
                         .transformer(DatabasePropertyMappers.getXaOrNonXaDriver())
                         .build(),
-                fromOption(DatabaseOptions.db)
+                fromOption(DatabaseOptions.DB)
                         .to("quarkus.datasource.db-kind")
-                        .transformer(toDatabaseKind())
+                        .transformer(DatabasePropertyMappers::toDatabaseKind)
                         .paramLabel("vendor")
                         .build(),
-                fromOption(DatabaseOptions.dbUrl)
+                fromOption(DatabaseOptions.DB_URL)
                         .to("quarkus.datasource.jdbc.url")
                         .mapFrom("db")
                         .transformer(DatabasePropertyMappers.getDatabaseUrl())
                         .paramLabel("jdbc-url")
                         .build(),
-                fromOption(DatabaseOptions.dbUrlHost)
+                fromOption(DatabaseOptions.DB_URL_HOST)
                         .to("kc.db-url-host")
                         .paramLabel("hostname")
                         .build(),
-                fromOption(DatabaseOptions.dbUrlDatabase)
+                fromOption(DatabaseOptions.DB_URL_DATABASE)
                         .to("kc.db-url-database")
                         .paramLabel("dbname")
                         .build(),
-                fromOption(DatabaseOptions.dbUrlPort)
+                fromOption(DatabaseOptions.DB_URL_PORT)
                         .to("kc.db-url-port")
                         .paramLabel("port")
                         .build(),
-                fromOption(DatabaseOptions.dbUrlProperties)
+                fromOption(DatabaseOptions.DB_URL_PROPERTIES)
                         .to("kc.db-url-properties")
                         .paramLabel("properties")
                         .build(),
-                fromOption(DatabaseOptions.dbUsername)
+                fromOption(DatabaseOptions.DB_USERNAME)
                         .to("quarkus.datasource.username")
                         .mapFrom("db")
-                        .transformer(DatabasePropertyMappers.resolveUsername())
+                        .transformer(DatabasePropertyMappers::resolveUsername)
                         .paramLabel("username")
                         .build(),
-                fromOption(DatabaseOptions.dbPassword)
+                fromOption(DatabaseOptions.DB_PASSWORD)
                         .to("quarkus.datasource.password")
                         .mapFrom("db")
-                        .transformer(DatabasePropertyMappers.resolvePassword())
+                        .transformer(DatabasePropertyMappers::resolvePassword)
                         .paramLabel("password")
                         .isMasked(true)
                         .build(),
-                fromOption(DatabaseOptions.dbSchema)
+                fromOption(DatabaseOptions.DB_SCHEMA)
                         .to("quarkus.hibernate-orm.database.default-schema")
                         .paramLabel("schema")
                         .build(),
-                fromOption(DatabaseOptions.dbPoolInitialSize)
+                fromOption(DatabaseOptions.DB_POOL_INITIAL_SIZE)
                         .to("quarkus.datasource.jdbc.initial-size")
                         .paramLabel("size")
                         .build(),
-                fromOption(DatabaseOptions.dbPoolMinSize)
+                fromOption(DatabaseOptions.DB_POOL_MIN_SIZE)
                         .to("quarkus.datasource.jdbc.min-size")
                         .paramLabel("size")
                         .build(),
-                fromOption(DatabaseOptions.dbPoolMaxSize)
+                fromOption(DatabaseOptions.DB_POOL_MAX_SIZE)
                         .to("quarkus.datasource.jdbc.max-size")
                         .paramLabel("size")
                         .build()
@@ -102,38 +102,32 @@ final class DatabasePropertyMappers {
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> toDatabaseKind() {
-        return (db, context) -> {
-            Optional<String> databaseKind = Database.getDatabaseKind(db);
+    private static String toDatabaseKind(String db, ConfigSourceInterceptorContext context) {
+        Optional<String> databaseKind = Database.getDatabaseKind(db);
 
-            if (databaseKind.isPresent()) {
-                return databaseKind.get();
-            }
+        if (databaseKind.isPresent()) {
+            return databaseKind.get();
+        }
 
-            addInitializationException(invalidDatabaseVendor(db, Database.getAliases()));
+        addInitializationException(invalidDatabaseVendor(db, Database.getAliases()));
 
-            return "h2";
-        };
+        return "h2";
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> resolveUsername() {
-        return (String value, ConfigSourceInterceptorContext context) -> {
-            if (isDevModeDatabase(context)) {
-                return "sa";
-            }
+    private static String resolveUsername(String value, ConfigSourceInterceptorContext context) {
+        if (isDevModeDatabase(context)) {
+            return "sa";
+        }
 
-            return Database.getDatabaseKind(value).isEmpty() ? value : null;
-        };
+        return Database.getDatabaseKind(value).isEmpty() ? value : null;
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> resolvePassword() {
-        return (String value, ConfigSourceInterceptorContext context) -> {
-            if (isDevModeDatabase(context)) {
-                return "password";
-            }
+    private static String resolvePassword(String value, ConfigSourceInterceptorContext context) {
+        if (isDevModeDatabase(context)) {
+            return "password";
+        }
 
-            return Database.getDatabaseKind(value).isEmpty() ? value : null;
-        };
+        return Database.getDatabaseKind(value).isEmpty() ? value : null;
     }
 
     private static boolean isDevModeDatabase(ConfigSourceInterceptorContext context) {
@@ -141,16 +135,13 @@ final class DatabasePropertyMappers {
         return Database.getDatabaseKind(db).get().equals(DatabaseKind.H2);
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> transformDialect() {
-        return (db, configSourceInterceptorContext) -> {
-            Optional<String> databaseKind = Database.getDatabaseKind(db);
+    private static String transformDialect(String db, ConfigSourceInterceptorContext context) {
+        Optional<String> databaseKind = Database.getDatabaseKind(db);
 
-            if (databaseKind.isEmpty()) {
-                return db;
-            }
+        if (databaseKind.isEmpty()) {
+            return db;
+        }
 
-            return Database.getDialect(db).orElse(Database.getDialect("dev-file").get());
-        };
+        return Database.getDialect(db).orElse(Database.getDialect("dev-file").get());
     }
-
 }

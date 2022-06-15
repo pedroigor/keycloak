@@ -5,7 +5,7 @@ import java.util.List;
 
 public class TransactionOptions {
 
-    public static final Option transactionXaEnabled = new OptionBuilder<>("transaction-xa-enabled", Boolean.class)
+    public static final Option<Boolean> TRANSACTION_XA_ENABLED = new OptionBuilder<>("transaction-xa-enabled", Boolean.class)
             .category(OptionCategory.TRANSACTION)
             .description("Manually override the transaction type. Transaction type XA and the appropriate driver is used by default.")
             .buildTime(true)
@@ -16,6 +16,6 @@ public class TransactionOptions {
     public static final List<Option<?>> ALL_OPTIONS = new ArrayList<>();
 
     static {
-         ALL_OPTIONS.add(transactionXaEnabled);
+         ALL_OPTIONS.add(TRANSACTION_XA_ENABLED);
     }
 }

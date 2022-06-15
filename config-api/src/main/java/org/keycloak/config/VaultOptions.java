@@ -12,33 +12,33 @@ public class VaultOptions {
         hashicorp;
     }
 
-    public static final Option vault = new OptionBuilder<>("vault", Provider.class)
+    public static final Option VAULT = new OptionBuilder<>("vault", Provider.class)
             .category(OptionCategory.VAULT)
             .description("Enables a vault provider.")
             .buildTime(true)
             .expectedValues(Provider.values())
             .build();
 
-    public static final Option vaultDir = new OptionBuilder<>("vault-dir", File.class)
+    public static final Option VAULT_DIR = new OptionBuilder<>("vault-dir", File.class)
             .category(OptionCategory.VAULT)
             .description("If set, secrets can be obtained by reading the content of files within the given directory.")
             .build();
 
-    public static final Option vaultGeneric = new OptionBuilder<>("vault-", String.class)
+    public static final Option VAULT_UNMAPPED = new OptionBuilder<>("vault-", String.class)
             .category(OptionCategory.VAULT)
             .description("Maps any vault option to their corresponding properties in quarkus-vault extension.")
             .runtimes()
             .buildTime(true)
             .build();
 
-    public static final Option vaultUrl = new OptionBuilder<>("vault-url", String.class)
+    public static final Option VAULT_URL = new OptionBuilder<>("vault-url", String.class)
             .category(OptionCategory.VAULT)
             .description("The vault server url.")
             .runtimes()
             .buildTime(true)
             .build();
 
-    public static final Option vaultKvPaths = new OptionBuilder("vault-kv-paths", Map.class, String.class)
+    public static final Option VAULT_KV_PATHS = new OptionBuilder("vault-kv-paths", Map.class, String.class)
             .category(OptionCategory.VAULT)
             .description("A set of one or more key/value paths that should be used when looking up secrets.")
             .runtimes()
@@ -47,10 +47,10 @@ public class VaultOptions {
     public static final List<Option<?>> ALL_OPTIONS = new ArrayList<>();
 
     static {
-        ALL_OPTIONS.add(vault);
-        ALL_OPTIONS.add(vaultDir);
-        ALL_OPTIONS.add(vaultGeneric);
-        ALL_OPTIONS.add(vaultUrl);
-        ALL_OPTIONS.add(vaultKvPaths);
+        ALL_OPTIONS.add(VAULT);
+        ALL_OPTIONS.add(VAULT_DIR);
+        ALL_OPTIONS.add(VAULT_UNMAPPED);
+        ALL_OPTIONS.add(VAULT_URL);
+        ALL_OPTIONS.add(VAULT_KV_PATHS);
     }
 }

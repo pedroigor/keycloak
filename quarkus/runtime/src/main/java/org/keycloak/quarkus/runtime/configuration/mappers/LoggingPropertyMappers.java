@@ -26,7 +26,7 @@ public final class LoggingPropertyMappers {
                 fromOption(LoggingOptions.log)
                         .paramLabel("<handler>")
                         .build(),
-                fromOption(LoggingOptions.logConsoleOutput)
+                fromOption(LoggingOptions.LOG_CONSOLE_OUTPUT)
                         .to("quarkus.log.console.json")
                         .paramLabel("default|json")
                         .transformer((value, context) -> {
@@ -36,74 +36,36 @@ public final class LoggingPropertyMappers {
                             return Boolean.TRUE.toString();
                         })
                         .build(),
-                fromOption(LoggingOptions.logConsoleFormat)
+                fromOption(LoggingOptions.LOG_CONSOLE_FORMAT)
                         .to("quarkus.log.console.format")
                         .paramLabel("format")
                         .build(),
-                fromOption(LoggingOptions.logConsoleColor)
+                fromOption(LoggingOptions.LOG_CONSOLE_COLOR)
                         .to("quarkus.log.console.color")
                         .paramLabel(Boolean.TRUE + "|" + Boolean.FALSE)
                         .build(),
-                fromOption(LoggingOptions.logConsoleEnabled)
+                fromOption(LoggingOptions.LOG_CONSOLE_ENABLED)
                         .mapFrom("log")
                         .to("quarkus.log.console.enable")
                         .transformer(LoggingPropertyMappers.resolveLogHandler(LoggingOptions.DEFAULT_LOG_HANDLER.name()))
                         .build(),
-                fromOption(LoggingOptions.logFileEnabled)
+                fromOption(LoggingOptions.LOG_FILE_ENABLED)
                         .mapFrom("log")
                         .to("quarkus.log.file.enable")
                         .transformer(LoggingPropertyMappers.resolveLogHandler("file"))
                         .build(),
-                fromOption(LoggingOptions.logFile)
+                fromOption(LoggingOptions.LOG_FILE)
                         .to("quarkus.log.file.path")
                         .paramLabel("<path>/<file-name>.log")
-                        .transformer(LoggingPropertyMappers.resolveFileLogLocation())
+                        .transformer(LoggingPropertyMappers::resolveFileLogLocation)
                         .build(),
-                fromOption(LoggingOptions.logFileFormat)
+                fromOption(LoggingOptions.LOG_FILE_FORMAT)
                         .to("quarkus.log.file.format")
                         .paramLabel("<format>")
                         .build(),
-                fromOption(LoggingOptions.logLevel)
+                fromOption(LoggingOptions.LOG_LEVEL)
                         .to("quarkus.log.level")
-                        .transformer(new BiFunction<String, ConfigSourceInterceptorContext, String>() {
-                            @Override
-                            public String apply(String value, ConfigSourceInterceptorContext configSourceInterceptorContext) {
-                                String rootLevel = LoggingOptions.DEFAULT_LOG_LEVEL.name();
-
-                                for (String level : value.split(",")) {
-                                    String[] parts = level.split(":");
-                                    String category = null;
-                                    String categoryLevel;
-
-                                    if (parts.length == 1) {
-                                        categoryLevel = parts[0];
-                                    } else if (parts.length == 2) {
-                                        category = parts[0];
-                                        categoryLevel = parts[1];
-                                    } else {
-                                        addInitializationException(Messages.invalidLogCategoryFormat(level));
-                                        return rootLevel;
-                                    }
-
-                                    Level levelType;
-
-                                    try {
-                                        levelType = toLevel(categoryLevel);
-                                    } catch (IllegalArgumentException iae) {
-                                        addInitializationException(Messages.invalidLogLevel(categoryLevel));
-                                        return rootLevel;
-                                    }
-
-                                    if (category == null) {
-                                        rootLevel = levelType.getName();
-                                    } else {
-                                        setCategoryLevel(category, levelType.getName());
-                                    }
-                                }
-
-                                return rootLevel;
-                            }
-                        })
+                        .transformer(LoggingPropertyMappers::resolveLogLevel)
                         .paramLabel("category:level")
                         .build()
         };
@@ -138,14 +100,12 @@ public final class LoggingPropertyMappers {
         };
     }
 
-    private static BiFunction<String, ConfigSourceInterceptorContext, String> resolveFileLogLocation() {
-        return (String value, ConfigSourceInterceptorContext configSourceInterceptorContext) -> {
-            if (value.endsWith(File.separator)) {
-                return value + LoggingOptions.DEFAULT_LOG_FILENAME;
-            }
+    private static String resolveFileLogLocation(String value, ConfigSourceInterceptorContext configSourceInterceptorContext) {
+        if (value.endsWith(File.separator)) {
+            return value + LoggingOptions.DEFAULT_LOG_FILENAME;
+        }
 
-            return value;
-        };
+        return value;
     }
 
     private static Level toLevel(String categoryLevel) throws IllegalArgumentException {
@@ -156,4 +116,40 @@ public final class LoggingPropertyMappers {
         LogContext.getLogContext().getLogger(category).setLevel(toLevel(level));
     }
 
+    private static String resolveLogLevel(String value, ConfigSourceInterceptorContext configSourceInterceptorContext) {
+        String rootLevel = LoggingOptions.DEFAULT_LOG_LEVEL.name();
+
+        for (String level : value.split(",")) {
+            String[] parts = level.split(":");
+            String category = null;
+            String categoryLevel;
+
+            if (parts.length == 1) {
+                categoryLevel = parts[0];
+            } else if (parts.length == 2) {
+                category = parts[0];
+                categoryLevel = parts[1];
+            } else {
+                addInitializationException(Messages.invalidLogCategoryFormat(level));
+                return rootLevel;
+            }
+
+            Level levelType;
+
+            try {
+                levelType = toLevel(categoryLevel);
+            } catch (IllegalArgumentException iae) {
+                addInitializationException(Messages.invalidLogLevel(categoryLevel));
+                return rootLevel;
+            }
+
+            if (category == null) {
+                rootLevel = levelType.getName();
+            } else {
+                setCategoryLevel(category, levelType.getName());
+            }
+        }
+
+        return rootLevel;
+    }
 }

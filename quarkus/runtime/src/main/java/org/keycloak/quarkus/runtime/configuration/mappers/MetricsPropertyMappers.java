@@ -11,7 +11,7 @@ final class MetricsPropertyMappers {
 
     public static PropertyMapper[] getMetricsPropertyMappers() {
         return new PropertyMapper[] {
-                fromOption(MetricsOptions.metricsEnabled)
+                fromOption(MetricsOptions.METRICS_ENABLED)
                         .to("quarkus.datasource.metrics.enabled")
                         .paramLabel(Boolean.TRUE + "|" + Boolean.FALSE)
                         .build()

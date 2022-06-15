@@ -1,7 +1,5 @@
 package org.keycloak.quarkus.runtime.configuration.mappers;
 
-import java.util.function.BiFunction;
-
 import org.keycloak.config.ClusteringOptions;
 import org.keycloak.quarkus.runtime.Environment;
 
@@ -16,40 +14,38 @@ final class ClusteringPropertyMappers {
 
     public static PropertyMapper[] getClusteringPropertyMappers() {
         return new PropertyMapper[] {
-                fromOption(ClusteringOptions.cache)
+                fromOption(ClusteringOptions.CACHE)
                         .paramLabel("type")
                         .build(),
-                fromOption(ClusteringOptions.cacheStack)
+                fromOption(ClusteringOptions.CACHE_STACK)
                         .to("kc.spi-connections-infinispan-quarkus-stack")
                         .paramLabel("stack")
                         .build(),
-                fromOption(ClusteringOptions.cacheConfigFile)
+                fromOption(ClusteringOptions.CACHE_CONFIG_FILE)
                         .mapFrom("cache")
                         .to("kc.spi-connections-infinispan-quarkus-config-file")
-                        .transformer(new BiFunction<String, ConfigSourceInterceptorContext, String>() {
-                            @Override
-                            public String apply(String value, ConfigSourceInterceptorContext context) {
-                                if ("local".equals(value)) {
-                                    return "cache-local.xml";
-                                } else if ("ispn".equals(value)) {
-                                    return "cache-ispn.xml";
-                                }
-
-                                String pathPrefix;
-                                String homeDir = Environment.getHomeDir();
-
-                                if (homeDir == null) {
-                                    pathPrefix = "";
-                                } else {
-                                    pathPrefix = homeDir + "/conf/";
-                                }
-
-                                return pathPrefix + value;
-                            }
-                        })
+                        .transformer(ClusteringPropertyMappers::resolveConfigFile)
                         .paramLabel("file")
                         .build()
         };
     }
 
+    private static String resolveConfigFile(String value, ConfigSourceInterceptorContext context) {
+        if ("local".equals(value)) {
+            return "cache-local.xml";
+        } else if ("ispn".equals(value)) {
+            return "cache-ispn.xml";
+        }
+
+        String pathPrefix;
+        String homeDir = Environment.getHomeDir();
+
+        if (homeDir == null) {
+            pathPrefix = "";
+        } else {
+            pathPrefix = homeDir + "/conf/";
+        }
+
+        return pathPrefix + value;
+    }
 }

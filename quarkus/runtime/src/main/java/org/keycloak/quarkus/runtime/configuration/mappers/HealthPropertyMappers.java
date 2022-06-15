@@ -11,7 +11,7 @@ final class HealthPropertyMappers {
 
     public static PropertyMapper[] getHealthPropertyMappers() {
         return new PropertyMapper[] {
-                fromOption(HealthOptions.httpEnabled)
+                fromOption(HealthOptions.HEALTH_ENABLED)
                         .to("quarkus.datasource.health.enabled")
                         .paramLabel(Boolean.TRUE + "|" + Boolean.FALSE)
                         .build()

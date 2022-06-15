@@ -14,7 +14,7 @@ public class ProxyOptions {
         passthrough;
     }
 
-    public static final Option proxy = new OptionBuilder<>("proxy", Mode.class)
+    public static final Option<Mode> proxy = new OptionBuilder<>("proxy", Mode.class)
             .category(OptionCategory.PROXY)
             .description("The proxy address forwarding mode if the server is behind a reverse proxy. " +
                     "Possible values are: " + String.join(",", Arrays.stream(Mode.values()).skip(1).map(m -> m.name()).collect(Collectors.joining(","))))
@@ -22,7 +22,7 @@ public class ProxyOptions {
             .expectedValues(Mode.values())
             .build();
 
-    public static final Option proxyForwardedHost = new OptionBuilder<>("proxy-forwarded-host", Boolean.class)
+    public static final Option<Boolean> proxyForwardedHost = new OptionBuilder<>("proxy-forwarded-host", Boolean.class)
             .category(OptionCategory.PROXY)
             .defaultValue(Boolean.FALSE)
             .build();

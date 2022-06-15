@@ -44,7 +44,7 @@ public class LoggingOptions {
         }
     }
 
-    public static final Option logLevel = new OptionBuilder<>("log-level", Level.class)
+    public static final Option<Level> LOG_LEVEL = new OptionBuilder<>("log-level", Level.class)
             .category(OptionCategory.LOGGING)
             .defaultValue(DEFAULT_LOG_LEVEL)
             .description("The log level of the root category or a comma-separated list of individual categories and their levels. For the root category, you don't need to specify a category.")
@@ -59,42 +59,42 @@ public class LoggingOptions {
             return super.toString().toLowerCase(Locale.ROOT);
         }
     }
-    public static final Option logConsoleOutput = new OptionBuilder<>("log-console-output", Output.class)
+    public static final Option LOG_CONSOLE_OUTPUT = new OptionBuilder<>("log-console-output", Output.class)
             .category(OptionCategory.LOGGING)
             .defaultValue(DEFAULT_CONSOLE_OUTPUT)
             .description("Set the log output to JSON or default (plain) unstructured logging.")
             .expectedValues(Output.values())
             .build();
 
-    public static final Option logConsoleFormat = new OptionBuilder<>("log-console-format", String.class)
+    public static final Option LOG_CONSOLE_FORMAT = new OptionBuilder<>("log-console-format", String.class)
             .category(OptionCategory.LOGGING)
             .description("The format of unstructured console log entries. If the format has spaces in it, escape the value using \"<format>\".")
             .defaultValue("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n")
             .build();
 
-    public static final Option logConsoleColor = new OptionBuilder<>("log-console-color", Boolean.class)
+    public static final Option LOG_CONSOLE_COLOR = new OptionBuilder<>("log-console-color", Boolean.class)
             .category(OptionCategory.LOGGING)
             .description("Enable or disable colors when logging to console.")
             .defaultValue(Boolean.FALSE) // :-(
             .build();
 
-    public static final Option logConsoleEnabled = new OptionBuilder<>("log-console-enabled", Boolean.class)
+    public static final Option<Boolean> LOG_CONSOLE_ENABLED = new OptionBuilder<>("log-console-enabled", Boolean.class)
             .category(OptionCategory.LOGGING)
             .runtimes(Collections.emptySet())
             .build();
 
-    public static final Option logFileEnabled = new OptionBuilder<>("log-file-enabled", Boolean.class)
+    public static final Option LOG_FILE_ENABLED = new OptionBuilder<>("log-file-enabled", Boolean.class)
             .category(OptionCategory.LOGGING)
             .runtimes(Collections.emptySet())
             .build();
 
-    public static final Option logFile = new OptionBuilder<>("log-file", File.class)
+    public static final Option<File> LOG_FILE = new OptionBuilder<>("log-file", File.class)
             .category(OptionCategory.LOGGING)
             .description("Set the log file path and filename.")
             .defaultValue(new File(DEFAULT_LOG_PATH))
             .build();
 
-    public static final Option logFileFormat = new OptionBuilder<>("log-file-format", String.class)
+    public static final Option LOG_FILE_FORMAT = new OptionBuilder<>("log-file-format", String.class)
             .category(OptionCategory.LOGGING)
             .description("Set a format specific to file log entries.")
             .defaultValue("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n")
@@ -104,13 +104,13 @@ public class LoggingOptions {
 
     static {
         ALL_OPTIONS.add(log);
-        ALL_OPTIONS.add(logLevel);
-        ALL_OPTIONS.add(logConsoleOutput);
-        ALL_OPTIONS.add(logConsoleFormat);
-        ALL_OPTIONS.add(logConsoleColor);
-        ALL_OPTIONS.add(logConsoleEnabled);
-        ALL_OPTIONS.add(logFileEnabled);
-        ALL_OPTIONS.add(logFile);
-        ALL_OPTIONS.add(logFileFormat);
+        ALL_OPTIONS.add(LOG_LEVEL);
+        ALL_OPTIONS.add(LOG_CONSOLE_OUTPUT);
+        ALL_OPTIONS.add(LOG_CONSOLE_FORMAT);
+        ALL_OPTIONS.add(LOG_CONSOLE_COLOR);
+        ALL_OPTIONS.add(LOG_CONSOLE_ENABLED);
+        ALL_OPTIONS.add(LOG_FILE_ENABLED);
+        ALL_OPTIONS.add(LOG_FILE);
+        ALL_OPTIONS.add(LOG_FILE_FORMAT);
     }
 }

@@ -11,10 +11,10 @@ final class FeaturePropertyMappers {
 
     public static PropertyMapper[] getMappers() {
         return new PropertyMapper[] {
-                fromOption(FeatureOptions.features)
+                fromOption(FeatureOptions.FEATURES)
                         .paramLabel("feature")
                         .build(),
-                fromOption(FeatureOptions.featuresDisabled)
+                fromOption(FeatureOptions.FEATURES_DISABLED)
                         .paramLabel("feature")
                         .build()
         };
