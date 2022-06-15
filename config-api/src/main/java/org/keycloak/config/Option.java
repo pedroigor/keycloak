@@ -70,7 +70,7 @@ public class Option<T> {
             this.supportedRuntimes,
             this.buildTime,
             this.description,
-            Optional.of(defaultValue),
+            Optional.ofNullable(defaultValue),
             this.expectedValues
         );
     }
