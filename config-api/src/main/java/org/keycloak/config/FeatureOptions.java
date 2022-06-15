@@ -7,14 +7,14 @@ import java.util.List;
 
 public class FeatureOptions {
 
-    public final static Option features = new OptionBuilder("features", List.class, Profile.Feature.class)
+    public static final Option features = new OptionBuilder("features", List.class, Profile.Feature.class)
             .category(OptionCategory.FEATURE)
             .description("Enables a set of one or more features.")
             .expectedStringValues(getFeatureValues())
             .buildTime(true)
             .build();
 
-    public final static Option featuresDisabled = new OptionBuilder("features-disabled", List.class, Profile.Feature.class)
+    public static final Option featuresDisabled = new OptionBuilder("features-disabled", List.class, Profile.Feature.class)
             .category(OptionCategory.FEATURE)
             .description("Disables a set of one or more features.")
             .expectedStringValues(getFeatureValues())
@@ -33,7 +33,7 @@ public class FeatureOptions {
         return features;
     }
 
-    public final static List<Option<?>> ALL_OPTIONS = new ArrayList<>();
+    public static final List<Option<?>> ALL_OPTIONS = new ArrayList<>();
 
     static {
         ALL_OPTIONS.add(features);

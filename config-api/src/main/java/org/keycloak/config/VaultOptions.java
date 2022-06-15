@@ -12,39 +12,39 @@ public class VaultOptions {
         hashicorp;
     }
 
-    public final static Option vault = new OptionBuilder<>("vault", Provider.class)
+    public static final Option vault = new OptionBuilder<>("vault", Provider.class)
             .category(OptionCategory.VAULT)
             .description("Enables a vault provider.")
             .buildTime(true)
             .expectedValues(Provider.values())
             .build();
 
-    public final static Option vaultDir = new OptionBuilder<>("vault-dir", File.class)
+    public static final Option vaultDir = new OptionBuilder<>("vault-dir", File.class)
             .category(OptionCategory.VAULT)
             .description("If set, secrets can be obtained by reading the content of files within the given directory.")
             .build();
 
-    public final static Option vaultGeneric = new OptionBuilder<>("vault-", String.class)
+    public static final Option vaultGeneric = new OptionBuilder<>("vault-", String.class)
             .category(OptionCategory.VAULT)
             .description("Maps any vault option to their corresponding properties in quarkus-vault extension.")
             .runtimes()
             .buildTime(true)
             .build();
 
-    public final static Option vaultUrl = new OptionBuilder<>("vault-url", String.class)
+    public static final Option vaultUrl = new OptionBuilder<>("vault-url", String.class)
             .category(OptionCategory.VAULT)
             .description("The vault server url.")
             .runtimes()
             .buildTime(true)
             .build();
 
-    public final static Option vaultKvPaths = new OptionBuilder("vault-kv-paths", Map.class, String.class)
+    public static final Option vaultKvPaths = new OptionBuilder("vault-kv-paths", Map.class, String.class)
             .category(OptionCategory.VAULT)
             .description("A set of one or more key/value paths that should be used when looking up secrets.")
             .runtimes()
             .build();
 
-    public final static List<Option<?>> ALL_OPTIONS = new ArrayList<>();
+    public static final List<Option<?>> ALL_OPTIONS = new ArrayList<>();
 
     static {
         ALL_OPTIONS.add(vault);

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class AllOptions {
 
-    public final static List<Option<?>> ALL_OPTIONS = new ArrayList<>();
+    public static final List<Option<?>> ALL_OPTIONS = new ArrayList<>();
 
     static {
         ALL_OPTIONS.addAll(ClusteringOptions.ALL_OPTIONS);
