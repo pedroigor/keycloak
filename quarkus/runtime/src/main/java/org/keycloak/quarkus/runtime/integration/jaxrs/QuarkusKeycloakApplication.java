@@ -17,12 +17,16 @@
 
 package org.keycloak.quarkus.runtime.integration.jaxrs;
 
+import static org.keycloak.storage.datastore.LegacyDatastoreProviderFactory.setupScheduledTasks;
+
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.ApplicationPath;
 
 import org.keycloak.Config;
+import org.keycloak.common.Profile;
+import org.keycloak.exportimport.ExportImportManager;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransactionManager;
@@ -33,6 +37,8 @@ import org.keycloak.services.managers.ApplianceBootstrap;
 import org.keycloak.services.resources.KeycloakApplication;
 import org.keycloak.quarkus.runtime.services.resources.QuarkusWelcomeResource;
 import org.keycloak.services.resources.WelcomeResource;
+
+import io.quarkus.runtime.Quarkus;
 
 @ApplicationPath("/")
 public class QuarkusKeycloakApplication extends KeycloakApplication {
@@ -47,6 +53,18 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
     @Override
     protected void startup() {
         initializeKeycloakSessionFactory();
+
+        ExportImportManager exportImportManager = bootstrap();
+
+        if (exportImportManager.isRunImport() || exportImportManager.isRunExport()) {
+            Quarkus.asyncExit();
+            return;
+        }
+
+        if (!Profile.isFeatureEnabled(Profile.Feature.MAP_STORAGE)) {
+            setupScheduledTasks(sessionFactory);
+        }
+
         createAdminUser();
     }
 

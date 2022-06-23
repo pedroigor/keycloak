@@ -17,6 +17,9 @@
 
 package org.keycloak.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class StorageOptions {
 
     public static final Option<Boolean> DEFAULT_PERSISTENCE_UNIT_ENABLED = new OptionBuilder<>("storage-default-persistence-unit-enabled", Boolean.class)
@@ -26,4 +29,76 @@ public class StorageOptions {
             .buildTime(true)
             .build();
 
+    public static final Option<String> STORAGE = new OptionBuilder<>("storage", String.class)
+            .description("Sets a storage mechanism.")
+            .expectedValues("chms")
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_REALM = new OptionBuilder<>("storage-realm", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_CLIENT = new OptionBuilder<>("storage-client", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_CLIENT_SCOPE = new OptionBuilder<>("storage-client-scope", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_GROUP = new OptionBuilder<>("storage-group", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_ROLE = new OptionBuilder<>("storage-role", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_USER = new OptionBuilder<>("storage-user", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_DEPLOYMENT_STATE = new OptionBuilder<>("storage-deployment-state", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_AUTH_SESSION = new OptionBuilder<>("storage-auth-session", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_USER_SESSION = new OptionBuilder<>("storage-user-session", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_LOGIN_FAILURE = new OptionBuilder<>("storage-login-failure", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_AUTHORIZATION_PERSISTER = new OptionBuilder<>("storage-authorization-persister", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final Option<String> STORAGE_DBLOCK = new OptionBuilder<>("storage-dblock", String.class)
+            .runtimes(Option.Runtime.OPERATOR)
+            .buildTime(true)
+            .build();
+
+    public static final List<Option<?>> ALL_OPTIONS = new ArrayList<>();
+
+    static {
+        ALL_OPTIONS.add(STORAGE);
+    }
 }

@@ -7,10 +7,11 @@ import java.util.List;
 
 public class FeatureOptions {
 
-    public static final Option FEATURES = new OptionBuilder("features", List.class, Profile.Feature.class)
+    public static final Option<List> FEATURES = new OptionBuilder("features", List.class, Profile.Feature.class)
             .category(OptionCategory.FEATURE)
             .description("Enables a set of one or more features.")
             .expectedStringValues(getFeatureValues())
+            .defaultValue(List.of())
             .buildTime(true)
             .build();
 
