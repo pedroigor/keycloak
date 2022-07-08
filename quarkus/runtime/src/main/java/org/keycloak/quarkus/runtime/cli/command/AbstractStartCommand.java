@@ -24,8 +24,11 @@ import picocli.CommandLine;
 
 public abstract class AbstractStartCommand extends AbstractCommand implements Runnable {
 
+    // remove this once auto-build is removed
     public static final String AUTO_BUILD_OPTION_LONG = "--auto-build";
     public static final String AUTO_BUILD_OPTION_SHORT = "-b";
+
+    public static final String NO_AUTO_BUILD_OPTION_LONG = "--no-auto-build";
 
     @Override
     public void run() {

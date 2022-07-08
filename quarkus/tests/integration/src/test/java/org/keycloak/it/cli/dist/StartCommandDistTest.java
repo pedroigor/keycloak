@@ -36,7 +36,7 @@ import org.keycloak.it.utils.KeycloakDistribution;
 public class StartCommandDistTest extends StartCommandTest {
 
     @Test
-    @Launch({ "--profile=dev", "start", "--auto-build", "--http-enabled=true", "--hostname-strict=false" })
+    @Launch({ "--profile=dev", "start", "--http-enabled=true", "--hostname-strict=false" })
     void failIfAutoBuildUsingDevProfile(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
         assertThat(cliResult.getErrorOutput(), containsString("You can not 'start' the server in development mode. Please re-build the server first, using 'kc.sh build' for the default production mode."));
@@ -51,7 +51,7 @@ public class StartCommandDistTest extends StartCommandTest {
     }
 
     @Test
-    @Launch({ "start", "--auto-build", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
+    @Launch({ "start", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
     void testStartUsingAutoBuild(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
         cliResult.assertMessage("Changes detected in configuration. Updating the server image.");

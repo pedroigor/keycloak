@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.testcontainers.shaded.org.hamcrest.MatcherAssert.assertThat;
 import static org.testcontainers.shaded.org.hamcrest.Matchers.containsString;
+import static org.testcontainers.shaded.org.hamcrest.Matchers.not;
 
 import java.util.List;
 
@@ -90,6 +91,10 @@ public interface CLIResult extends LaunchResult {
 
     default void assertMessage(String message) {
         assertThat(getOutput(), containsString(message));
+    }
+
+    default void assertNoMessage(String message) {
+        assertThat(getOutput(), not(containsString(message)));
     }
 
     default void assertBuild() {

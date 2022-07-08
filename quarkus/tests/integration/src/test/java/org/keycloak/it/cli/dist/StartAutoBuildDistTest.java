@@ -17,9 +17,8 @@
 
 package org.keycloak.it.cli.dist;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import io.quarkus.test.junit.main.Launch;
+import io.quarkus.test.junit.main.LaunchResult;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -27,15 +26,18 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.keycloak.it.junit5.extension.CLIResult;
 import org.keycloak.it.junit5.extension.DistributionTest;
 import org.keycloak.it.junit5.extension.RawDistOnly;
-
-import io.quarkus.test.junit.main.Launch;
-import io.quarkus.test.junit.main.LaunchResult;
 import org.keycloak.it.utils.KeycloakDistribution;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.NO_AUTO_BUILD_OPTION_LONG;
 
 @DistributionTest(reInstall = DistributionTest.ReInstall.NEVER)
 @RawDistOnly(reason = "Containers are immutable")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class StartAutoBuildDistTest {
+
+    private static final String WARNING_MSG_AUTO_BUILD_DEPRECATION_ON_START = "WARNING: The '--auto-build' option for 'start' command is DEPRECATED and no longer needed. When executing the 'start' command, a new server image is automatically built based on the configuration. If you want to disable this behavior and achieve an optimal startup time, use the '--no-auto-build' option instead.";
 
     @Test
     @Launch({ "start", "--auto-build", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
@@ -48,12 +50,13 @@ public class StartAutoBuildDistTest {
         cliResult.assertMessage(KeycloakDistribution.SCRIPT_CMD + " show-config");
         cliResult.assertMessage("Next time you run the server, just run:");
         cliResult.assertMessage(KeycloakDistribution.SCRIPT_CMD + " start --http-enabled=true --hostname-strict=false");
+        cliResult.assertMessage(WARNING_MSG_AUTO_BUILD_DEPRECATION_ON_START);
         assertFalse(cliResult.getOutput().contains("--cache"));
         cliResult.assertStarted();
     }
 
     @Test
-    @Launch({ "start", "--auto-build", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
+    @Launch({ "start", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
     @Order(2)
     void testShouldNotReAugIfConfigIsSame(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
@@ -62,7 +65,7 @@ public class StartAutoBuildDistTest {
     }
 
     @Test
-    @Launch({ "start", "--auto-build", "--db=dev-mem", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
+    @Launch({ "start", "--db=dev-mem", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
     @Order(3)
     void testShouldReAugIfConfigChanged(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
@@ -71,7 +74,7 @@ public class StartAutoBuildDistTest {
     }
 
     @Test
-    @Launch({ "start", "--auto-build", "--db=dev-mem", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
+    @Launch({ "start", "--db=dev-mem", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
     @Order(4)
     void testShouldNotReAugIfSameDatabase(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
@@ -88,7 +91,7 @@ public class StartAutoBuildDistTest {
     }
 
     @Test
-    @Launch({ "start", "--auto-build", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
+    @Launch({ "start", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
     @Order(6)
     void testReAugWhenNoOptionAfterBuild(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
@@ -97,8 +100,25 @@ public class StartAutoBuildDistTest {
     }
 
     @Test
-    @Launch({ "start-dev" })
+    @Launch({ "start", "--db=postgres", "--http-enabled=true", "--hostname-strict=false", "--cache=local" })
     @Order(7)
+    void testShouldReAugWithoutAutoBuildOptionAfterDatabaseChange(LaunchResult result) {
+        CLIResult cliResult = (CLIResult) result;
+        cliResult.assertNoMessage(WARNING_MSG_AUTO_BUILD_DEPRECATION_ON_START);
+        cliResult.assertBuild();
+    }
+
+    @Test
+    @Launch({ "start", "--db=dev-file", "--http-enabled=true", "--hostname-strict=false", "--cache=local", NO_AUTO_BUILD_OPTION_LONG })
+    @Order(8)
+    void testShouldReAugAndNeedsAutoBuildOptionBecauseHasNoAutoBuildOption(LaunchResult result) {
+        CLIResult cliResult = (CLIResult) result;
+        cliResult.assertNoBuild();
+    }
+
+    @Test
+    @Launch({ "start-dev" })
+    @Order(8)
     void testStartDevFirstTime(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
         assertTrue(cliResult.getOutput().contains("Updating the configuration and installing your custom providers, if any. Please wait."));
@@ -107,7 +127,7 @@ public class StartAutoBuildDistTest {
 
     @Test
     @Launch({ "start-dev" })
-    @Order(8)
+    @Order(9)
     void testShouldNotReAugStartDevIfConfigIsSame(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
         assertFalse(cliResult.getOutput().contains("Updating the configuration and installing your custom providers, if any. Please wait."));

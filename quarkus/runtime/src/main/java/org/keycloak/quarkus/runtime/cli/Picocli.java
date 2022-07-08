@@ -17,6 +17,8 @@
 
 package org.keycloak.quarkus.runtime.cli;
 
+import static org.keycloak.quarkus.runtime.Environment.isRebuildCheck;
+import static org.keycloak.quarkus.runtime.Environment.isRebuilt;
 import static org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.AUTO_BUILD_OPTION_LONG;
 import static org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.AUTO_BUILD_OPTION_SHORT;
 import static org.keycloak.quarkus.runtime.configuration.ConfigArgsConfigSource.hasOptionValue;
@@ -42,14 +44,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.keycloak.config.ConfigSupportLevel;
 import org.keycloak.config.MultiOption;
 import org.keycloak.config.OptionCategory;
+import org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand;
 import org.keycloak.quarkus.runtime.cli.command.Build;
 import org.keycloak.quarkus.runtime.cli.command.ImportRealmMixin;
 import org.keycloak.quarkus.runtime.cli.command.Main;
@@ -101,7 +102,7 @@ public final class Picocli {
     private static int runReAugmentationIfNeeded(List<String> cliArgs, CommandLine cmd) {
         int exitCode = 0;
 
-        if (hasAutoBuildOption(cliArgs) && !isHelpCommand(cliArgs)) {
+        if (!isHelpCommand(cliArgs)) {
             if (cliArgs.contains(StartDev.NAME)) {
                 String profile = Environment.getProfile();
 
@@ -119,10 +120,6 @@ public final class Picocli {
 
     private static boolean isHelpCommand(List<String> cliArgs) {
         return cliArgs.contains("--help") || cliArgs.contains("-h") || cliArgs.contains("--help-all");
-    }
-
-    public static boolean hasAutoBuildOption(List<String> cliArgs) {
-        return cliArgs.contains(AUTO_BUILD_OPTION_LONG) || cliArgs.contains(AUTO_BUILD_OPTION_SHORT);
     }
 
     public static boolean requiresReAugmentation(CommandLine cmd) {
@@ -175,19 +172,13 @@ public final class Picocli {
 
         List<String> configArgsList = new ArrayList<>(cliArgs);
 
+        // remove this once auto-build option is removed
         configArgsList.remove(AUTO_BUILD_OPTION_LONG);
         configArgsList.remove(AUTO_BUILD_OPTION_SHORT);
+
         configArgsList.remove(ImportRealmMixin.IMPORT_REALM);
 
-        configArgsList.replaceAll(new UnaryOperator<String>() {
-            @Override
-            public String apply(String arg) {
-                if (arg.equals(Start.NAME) || arg.equals(StartDev.NAME)) {
-                    return Build.NAME;
-                }
-                return arg;
-            }
-        });
+        configArgsList.replaceAll(Picocli::replaceStartWithBuild);
 
         exitCode = cmd.execute(configArgsList.toArray(new String[0]));
 
@@ -352,9 +343,9 @@ public final class Picocli {
                     .build());
         }
 
-        addOption(spec, Start.NAME, hasAutoBuildOption(cliArgs), true);
+        addOption(spec, Start.NAME, isRebuilt(), true);
         addOption(spec, StartDev.NAME, true, true);
-        addOption(spec, Build.NAME, true, hasAutoBuildOption(cliArgs));
+        addOption(spec, Build.NAME, true, isRebuildCheck());
 
         CommandLine cmd = new CommandLine(spec);
 
@@ -473,8 +464,19 @@ public final class Picocli {
                     }
                 }
             }
+
+            if (!isRebuildCheck() && (arg.startsWith(AbstractStartCommand.AUTO_BUILD_OPTION_SHORT) || arg.startsWith(AUTO_BUILD_OPTION_LONG))) {
+                System.out.println("WARNING: The '" + arg + "' option for 'start' command is DEPRECATED and no longer needed. When executing the '" + Start.NAME + "' command, a new server image is automatically built based on the configuration. If you want to disable this behavior and achieve an optimal startup time, use the '" + AbstractStartCommand.NO_AUTO_BUILD_OPTION_LONG + "' option instead.");
+            }
         }
 
         return args;
+    }
+
+    private static String replaceStartWithBuild(String arg) {
+        if (arg.equals(Start.NAME) || arg.equals(StartDev.NAME)) {
+            return Build.NAME;
+        }
+        return arg;
     }
 }
