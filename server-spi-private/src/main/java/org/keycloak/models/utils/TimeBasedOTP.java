@@ -33,6 +33,7 @@ public class TimeBasedOTP extends HmacOTP {
     public static final int DEFAULT_DELAY_WINDOW = 1;
 
     private Clock clock;
+    private long validationInterval;
 
     public TimeBasedOTP() {
         this(DEFAULT_ALGORITHM, DEFAULT_NUMBER_DIGITS, DEFAULT_INTERVAL_SECONDS, DEFAULT_DELAY_WINDOW);
@@ -67,6 +68,10 @@ public class TimeBasedOTP extends HmacOTP {
         return generateOTP(secretKey, steps, this.numberDigits, this.algorithm);
     }
 
+    public boolean validateTOTP(String token, byte[] secret) {
+        return validateTOTP(token, secret, -1);
+    }
+
     /**
      * <p>Validates a token using a secret key.</p>
      *
@@ -74,12 +79,12 @@ public class TimeBasedOTP extends HmacOTP {
      * @param secret Shared secret
      * @return true of the token is valid
      */
-    public boolean validateTOTP(String token, byte[] secret) {
-        long currentInterval = this.clock.getCurrentInterval();
+    public boolean validateTOTP(String token, byte[] secret, long lastValidationInterval) {
+        long validationInterval = this.clock.getCurrentInterval();
 
         for (int i = 0; i <= (lookAheadWindow * 2); i++) {
             long delta = clockSkewIndexToDelta(i);
-            long adjustedInterval = currentInterval + delta;
+            long adjustedInterval = validationInterval + delta;
 
             String steps = Long.toHexString(adjustedInterval).toUpperCase();
 
@@ -91,11 +96,19 @@ public class TimeBasedOTP extends HmacOTP {
             String candidate = generateOTP(new String(secret), steps, this.numberDigits, this.algorithm);
 
             if (candidate.equals(token)) {
+                if (lastValidationInterval > 0 && adjustedInterval <= lastValidationInterval) {
+                    return false;
+                }
+                this.validationInterval = adjustedInterval;
                 return true;
             }
         }
 
         return false;
+    }
+
+    public long getValidationInterval() {
+        return validationInterval;
     }
 
     /**

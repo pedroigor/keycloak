@@ -16,6 +16,8 @@
  */
 package org.keycloak.models;
 
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.keycloak.models.utils.TimeBasedOTP;
@@ -32,7 +34,7 @@ public class TotpTest {
         String secret = "dSdmuHLQhkm54oIm0A0S";
         String otp = totp.generateTOTP(secret);
 
-        Assert.assertTrue(totp.validateTOTP(otp, secret.getBytes(StandardCharsets.UTF_8)));
+        assertTrue(totp.validateTOTP(otp, secret.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**
@@ -52,7 +54,34 @@ public class TotpTest {
             calendar.add(Calendar.MINUTE, i);
             totp.setCalendar(calendar);
 
-            Assert.assertTrue("Should accept code with skew offset " + i,totp.validateTOTP(otp, secret.getBytes(StandardCharsets.UTF_8)));
+            assertTrue("Should accept code with skew offset " + i,totp.validateTOTP(otp, secret.getBytes(StandardCharsets.UTF_8)));
+        }
+    }
+
+    @Test
+    public void testTotpReuse() throws InterruptedException {
+        int timeInterval = 2;
+        long lastSuccessValidationInterval = 0;
+        int time = 20;
+        int tmpInterval = timeInterval;
+        TimeBasedOTP totp = new TimeBasedOTP("HmacSHA1", 8, timeInterval, 0);
+        String secret = "dSdmuHLQhkm54oIm0A0S";
+        String otp = totp.generateTOTP(secret);
+
+        for (int i = 0; i < time; i ++) {
+            boolean valid = totp.validateTOTP(otp, secret.getBytes(StandardCharsets.UTF_8), lastSuccessValidationInterval);
+            System.out.println(valid);
+            if (valid){
+                lastSuccessValidationInterval = totp.getValidationInterval();
+            }
+            Thread.sleep(1000);
+            if (tmpInterval == 0) {
+                System.out.println("Generating new code");
+                otp = totp.generateTOTP(secret);
+                tmpInterval = timeInterval;
+            } else {
+                tmpInterval--;
+            }
         }
     }
 }
