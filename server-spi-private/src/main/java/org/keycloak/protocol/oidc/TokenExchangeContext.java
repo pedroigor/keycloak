@@ -15,6 +15,7 @@
  *  limitations under the License.
  *
  */
+
 package org.keycloak.protocol.oidc;
 
 import org.keycloak.OAuth2Constants;
@@ -30,90 +31,29 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.Map;
 
 /**
+ * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
+ *
  * Token exchange context
  *
- * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
+ * @author Ben Cresitello-Dittmar
+ *
+ * Updated to use AbstractOIDCRequestContext abstract class
  */
-public class TokenExchangeContext {
-
-    private final KeycloakSession session;
-    private final MultivaluedMap<String, String> formParams;
-
-    // TODO: resolve deps issue and use correct types
-    private final Object cors;
-    private final Object tokenManager;
-
-    private final ClientModel client;
-    private final RealmModel realm;
-    private final EventBuilder event;
-
-    private ClientConnection clientConnection;
-    private HttpHeaders headers;
-    private Map<String, String> clientAuthAttributes;
+public class TokenExchangeContext extends AbstractOIDCRequestContext {
+    public TokenExchangeContext(KeycloakSession session,
+                                 MultivaluedMap<String, String> formParams,
+                                 Object cors,
+                                 RealmModel realm,
+                                 EventBuilder event,
+                                 ClientModel client,
+                                 ClientConnection clientConnection,
+                                 HttpHeaders headers,
+                                 Object tokenManager,
+                                 Map<String, String> clientAuthAttributes) {
+        super(session, formParams, cors, realm, event, client, clientConnection, headers, tokenManager, clientAuthAttributes);
+    }
 
     private final Params params = new Params();
-
-    public TokenExchangeContext(KeycloakSession session,
-            MultivaluedMap<String, String> formParams,
-            Object cors,
-            RealmModel realm,
-            EventBuilder event,
-            ClientModel client,
-            ClientConnection clientConnection,
-            HttpHeaders headers,
-            Object tokenManager,
-            Map<String, String> clientAuthAttributes) {
-        this.session = session;
-        this.formParams = formParams;
-        this.cors = cors;
-        this.client = client;
-        this.realm = realm;
-        this.event = event;
-        this.clientConnection = clientConnection;
-        this.headers = headers;
-        this.tokenManager = tokenManager;
-        this.clientAuthAttributes = clientAuthAttributes;
-    }
-
-    public KeycloakSession getSession() {
-        return session;
-    }
-
-    public MultivaluedMap<String, String> getFormParams() {
-        return formParams;
-    }
-
-    public Object getCors() {
-        return cors;
-    }
-
-    public RealmModel getRealm() {
-        return realm;
-    }
-
-    public ClientModel getClient() {
-        return client;
-    }
-
-    public EventBuilder getEvent() {
-        return event;
-    }
-
-    public ClientConnection getClientConnection() {
-        return clientConnection;
-    }
-
-    public HttpHeaders getHeaders() {
-        return headers;
-    }
-
-    public Object getTokenManager() {
-        return tokenManager;
-    }
-
-    public Map<String, String> getClientAuthAttributes() {
-        return clientAuthAttributes;
-    }
 
     public Params getParams() {
         return params;
@@ -158,5 +98,4 @@ public class TokenExchangeContext {
         }
 
     }
-
 }

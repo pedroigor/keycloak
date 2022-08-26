@@ -158,7 +158,9 @@ public enum EventType implements EnumWithStableIndex {
     PUSHED_AUTHORIZATION_REQUEST_ERROR(0x10000 + PUSHED_AUTHORIZATION_REQUEST.getStableIndex(), false),
 
     USER_DISABLED_BY_PERMANENT_LOCKOUT(52, true),
-    USER_DISABLED_BY_PERMANENT_LOCKOUT_ERROR(0x10000 + USER_DISABLED_BY_PERMANENT_LOCKOUT.getStableIndex(), false);
+    USER_DISABLED_BY_PERMANENT_LOCKOUT_ERROR(0x10000 + USER_DISABLED_BY_PERMANENT_LOCKOUT.getStableIndex(), false),
+    JWT_BEARER(53, true),
+    JWT_BEARER_ERROR(0x10000 + JWT_BEARER.getStableIndex(), true);
 
     private final int stableIndex;
     private final boolean saveByDefault;

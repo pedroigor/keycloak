@@ -151,6 +151,13 @@ public final class Constants {
     public static final int MINIMUM_LOA = 0;
     public static final int NO_LOA = -1;
 
+    // Assertion grant configuration constants
+    public static final String OIDC_ASSERTION_GRANT_ENABLED = "oidc.grants.assertion.enabled";
+    public static final String OIDC_ASSERTION_GRANT_TRUSTED_ISSUER = "oidc.grants.assertion.config";
+
+    // Authentication session note, which contains assertion used to authenticate user
+    public static final String OIDC_ASSERTION_GRANT_NOTE = "oidc-assertion";
+
     public static final Boolean REALM_ATTR_USERNAME_CASE_SENSITIVE_DEFAULT = Boolean.FALSE;
     public static final String REALM_ATTR_USERNAME_CASE_SENSITIVE = "keycloak.username-search.case-sensitive";
 

@@ -52,6 +52,8 @@ import org.keycloak.protocol.oidc.OIDCAdvancedConfigWrapper;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.TokenExchangeContext;
 import org.keycloak.protocol.oidc.TokenExchangeProvider;
+import org.keycloak.protocol.oidc.AssertionGrantContext;
+import org.keycloak.protocol.oidc.AssertionGrantProvider;
 import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.protocol.oidc.grants.ciba.CibaGrantType;
 import org.keycloak.protocol.oidc.grants.device.DeviceGrantType;
@@ -59,6 +61,7 @@ import org.keycloak.protocol.oidc.utils.AuthorizeClientUtil;
 import org.keycloak.protocol.oidc.utils.OAuth2Code;
 import org.keycloak.protocol.oidc.utils.OAuth2CodeParser;
 import org.keycloak.protocol.oidc.utils.PkceUtils;
+import org.keycloak.protocol.oidc.utils.AssertionGrantUtils;
 import org.keycloak.protocol.saml.JaxrsSAML2BindingBuilder;
 import org.keycloak.protocol.saml.SamlClient;
 import org.keycloak.protocol.saml.SamlProtocol;
@@ -126,6 +129,7 @@ import java.util.stream.Stream;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
+ *
  */
 public class TokenEndpoint {
 
@@ -137,7 +141,7 @@ public class TokenEndpoint {
     private DPoP dPoP;
 
     private enum Action {
-        AUTHORIZATION_CODE, REFRESH_TOKEN, PASSWORD, CLIENT_CREDENTIALS, TOKEN_EXCHANGE, PERMISSION, OAUTH2_DEVICE_CODE, CIBA
+        AUTHORIZATION_CODE, REFRESH_TOKEN, PASSWORD, CLIENT_CREDENTIALS, TOKEN_EXCHANGE, JWT_BEARER, PERMISSION, OAUTH2_DEVICE_CODE, CIBA
     }
 
     private final KeycloakSession session;
@@ -211,6 +215,8 @@ public class TokenEndpoint {
                 return clientCredentialsGrant();
             case TOKEN_EXCHANGE:
                 return tokenExchange();
+            case JWT_BEARER:
+                return assertionGrant();
             case PERMISSION:
                 return permissionGrant();
             case OAUTH2_DEVICE_CODE:
@@ -282,6 +288,9 @@ public class TokenEndpoint {
         } else if (grantType.equals(OAuth2Constants.TOKEN_EXCHANGE_GRANT_TYPE)) {
             event.event(EventType.TOKEN_EXCHANGE);
             action = Action.TOKEN_EXCHANGE;
+        } else if (grantType.equals(OAuth2Constants.JWT_BEARER_GRANT_TYPE)) {
+            event.event(EventType.JWT_BEARER);
+            action = Action.JWT_BEARER;
         } else if (grantType.equals(OAuth2Constants.UMA_GRANT_TYPE)) {
             event.event(EventType.PERMISSION_TOKEN);
             action = Action.PERMISSION;
@@ -882,6 +891,48 @@ public class TokenEndpoint {
                 .findFirst()
                 .orElseThrow(() -> new InternalServerErrorException("No token exchange provider available"))
                 .exchange(context);
+    }
+
+    /**
+     * Handle the JWT bearer OAuth grant type
+     *
+     * @return The token endpoint response
+     */
+    public Response assertionGrant() {
+        // ensure assertion grant feature is enabled
+        ProfileHelper.requireFeature(Profile.Feature.ASSERTION_GRANT);
+
+        // ensure the assertion grant flow is enabled for the client
+        if (!AssertionGrantUtils.isOIDCAssertionGrantEnabled(client)) {
+            event.error(Errors.NOT_ALLOWED);
+            throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_GRANT, "Client not allowed to perform assertion grant", Status.FORBIDDEN);
+        }
+
+        event.detail(Details.AUTH_METHOD, "assertion_grant");
+        event.client(client);
+
+        // create the assertion grant request context
+        AssertionGrantContext context = new AssertionGrantContext(
+                session,
+                formParams,
+                cors,
+                realm,
+                event,
+                client,
+                clientConnection,
+                headers,
+                tokenManager,
+                clientAuthAttributes);
+
+        // fetch the assertion grant provider from the SPI
+        return session.getKeycloakSessionFactory()
+                .getProviderFactoriesStream(AssertionGrantProvider.class)
+                .sorted((f1, f2) -> f2.order() - f1.order())
+                .map(f -> session.getProvider(AssertionGrantProvider.class, f.getId()))
+                .filter(p -> p.supports(context))
+                .findFirst()
+                .orElseThrow(() -> new InternalServerErrorException("No assertion grant provider available"))
+                .authenticate(context);
     }
 
     public Response permissionGrant() {
