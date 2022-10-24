@@ -45,10 +45,11 @@ public class ImportDistTest {
     @Test
     @Order(2)
     @Launch({"import", "--dir=." })
-    void testMissingDir(LaunchResult result) {
+    void testImport(LaunchResult result) {
         CLIResult cliResult = (CLIResult) result;
         cliResult.assertMessage("Realm 'master' imported");
         cliResult.assertMessage("Import finished successfully");
         cliResult.assertNoMessage("Changes detected in configuration");
+        cliResult.assertNoMessage("Listening on:");
     }
 }
