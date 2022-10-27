@@ -45,7 +45,6 @@ import org.keycloak.common.crypto.FipsMode;
 import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 import org.keycloak.quarkus.runtime.integration.QuarkusKeycloakSessionFactory;
-import org.keycloak.quarkus.runtime.integration.web.QuarkusRequestFilter;
 import org.keycloak.quarkus.runtime.storage.database.liquibase.FastServiceLocator;
 import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
@@ -142,10 +141,6 @@ public class KeycloakRecorder {
                 propertyCollector.accept(AvailableSettings.DEFAULT_SCHEMA, Configuration.getRawValue("kc.db-schema"));
             }
         };
-    }
-
-    public QuarkusRequestFilter createRequestFilter(List<String> ignoredPaths, ExecutorService executor) {
-        return new QuarkusRequestFilter(createIgnoredHttpPathsPredicate(ignoredPaths), executor);
     }
 
     private Predicate<RoutingContext> createIgnoredHttpPathsPredicate(List<String> ignoredPaths) {

@@ -516,24 +516,6 @@ class KeycloakProcessor {
         indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem("org.keycloak", "keycloak-model-jpa"));
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
-    void initializeFilter(BuildProducer<FilterBuildItem> filters, KeycloakRecorder recorder, HttpBuildTimeConfig httpBuildConfig,
-            ExecutorBuildItem executor) {
-        String rootPath = httpBuildConfig.rootPath;
-        List<String> ignoredPaths = new ArrayList<>();
-
-        if (isHealthEnabled()) {
-            ignoredPaths.add(rootPath + "health");
-        }
-
-        if (isMetricsEnabled()) {
-            ignoredPaths.add(rootPath + "metrics");
-        }
-
-        filters.produce(new FilterBuildItem(recorder.createRequestFilter(ignoredPaths, executor.getExecutorProxy()),FilterBuildItem.AUTHORIZATION - 10));
-    }
-
     @BuildStep
     void disableMetricsEndpoint(BuildProducer<RouteBuildItem> routes) {
         if (!isMetricsEnabled()) {
