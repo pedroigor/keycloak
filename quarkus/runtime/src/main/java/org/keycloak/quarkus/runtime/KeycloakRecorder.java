@@ -70,7 +70,7 @@ public class KeycloakRecorder {
     }
 
     public void configSessionFactory(
-            Map<Spi, Map<Class<? extends Provider>, Map<String, Class<? extends ProviderFactory>>>> factories,
+            Map<Spi, Map<Class<? extends Provider>, Map<String, String>>> factories,
             Map<Class<? extends Provider>, String> defaultProviders,
             Map<String, ProviderFactory> preConfiguredProviders,
             List<ClasspathThemeProviderFactory.ThemesRepresentation> themes, boolean reaugmented) {

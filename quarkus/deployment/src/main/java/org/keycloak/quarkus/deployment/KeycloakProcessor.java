@@ -310,7 +310,7 @@ class KeycloakProcessor {
     @BuildStep
     KeycloakSessionFactoryPreInitBuildItem configureKeycloakSessionFactory(KeycloakRecorder recorder, List<PersistenceXmlDescriptorBuildItem> descriptors) {
         Profile.setInstance(new QuarkusProfile());
-        Map<Spi, Map<Class<? extends Provider>, Map<String, Class<? extends ProviderFactory>>>> factories = new HashMap<>();
+        Map<Spi, Map<Class<? extends Provider>, Map<String, String>>> factories = new HashMap<>();
         Map<Class<? extends Provider>, String> defaultProviders = new HashMap<>();
         Map<String, ProviderFactory> preConfiguredProviders = new HashMap<>();
 
@@ -324,7 +324,7 @@ class KeycloakProcessor {
                 for (ProviderFactory factory : value.getValue().values()) {
                     factories.computeIfAbsent(spi,
                             key -> new HashMap<>())
-                            .computeIfAbsent(spi.getProviderClass(), aClass -> new HashMap<>()).put(factory.getId(),factory.getClass());
+                            .computeIfAbsent(spi.getProviderClass(), aClass -> new HashMap<>()).put(factory.getId(),factory.getClass().getName());
                 }
             }
 
@@ -357,14 +357,14 @@ class KeycloakProcessor {
         }
     }
 
-    private void configureThemeResourceProviders(Map<Spi, Map<Class<? extends Provider>, Map<String, Class<? extends ProviderFactory>>>> factories, Spi spi) {
+    private void configureThemeResourceProviders(Map<Spi, Map<Class<? extends Provider>, Map<String, String>>> factories, Spi spi) {
         try {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             Enumeration<URL> resources = classLoader.getResources(FlatClasspathThemeResourceProviderFactory.THEME_RESOURCES);
 
             if (resources.hasMoreElements()) {
                 // make sure theme resources are loaded using a flat classpath. if no resources are available the provider is not registered
-                factories.computeIfAbsent(spi, key -> new HashMap<>()).computeIfAbsent(spi.getProviderClass(), aClass -> new HashMap<>()).put(FlatClasspathThemeResourceProviderFactory.ID, FlatClasspathThemeResourceProviderFactory.class);
+                factories.computeIfAbsent(spi, key -> new HashMap<>()).computeIfAbsent(spi.getProviderClass(), aClass -> new HashMap<>()).put(FlatClasspathThemeResourceProviderFactory.ID, FlatClasspathThemeResourceProviderFactory.class.getName());
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to install default theme resource provider", e);
@@ -372,7 +372,7 @@ class KeycloakProcessor {
     }
 
     private void configureUserDefinedPersistenceUnits(List<PersistenceXmlDescriptorBuildItem> descriptors,
-            Map<Spi, Map<Class<? extends Provider>, Map<String, Class<? extends ProviderFactory>>>> factories,
+            Map<Spi, Map<Class<? extends Provider>, Map<String, String>>> factories,
             Map<String, ProviderFactory> preConfiguredProviders, Spi spi) {
         descriptors.stream()
                 .map(PersistenceXmlDescriptorBuildItem::getDescriptor)
@@ -384,7 +384,7 @@ class KeycloakProcessor {
 
                         factory.setUnitName(unitName);
 
-                        factories.get(spi).get(JpaConnectionProvider.class).put(unitName, NamedJpaConnectionProviderFactory.class);
+                        factories.get(spi).get(JpaConnectionProvider.class).put(unitName, NamedJpaConnectionProviderFactory.class.getName());
                         preConfiguredProviders.put(unitName, factory);
                     }
                 });

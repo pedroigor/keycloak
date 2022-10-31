@@ -48,11 +48,11 @@ public final class QuarkusKeycloakSessionFactory extends DefaultKeycloakSessionF
 
     private static QuarkusKeycloakSessionFactory INSTANCE;
     private final Boolean reaugmented;
-    private final Map<Spi, Map<Class<? extends Provider>, Map<String, Class<? extends ProviderFactory>>>> factories;
+    private final Map<Spi, Map<Class<? extends Provider>, Map<String, String>>> factories;
     private Map<String, ProviderFactory> preConfiguredProviders;
 
     public QuarkusKeycloakSessionFactory(
-            Map<Spi, Map<Class<? extends Provider>, Map<String, Class<? extends ProviderFactory>>>> factories,
+            Map<Spi, Map<Class<? extends Provider>, Map<String, String>>> factories,
             Map<Class<? extends Provider>, String> defaultProviders,
             Map<String, ProviderFactory> preConfiguredProviders,
             List<ClasspathThemeProviderFactory.ThemesRepresentation> themes,
@@ -65,8 +65,8 @@ public final class QuarkusKeycloakSessionFactory extends DefaultKeycloakSessionF
         spis = factories.keySet();
 
         for (Spi spi : spis) {
-            for (Map<String, Class<? extends ProviderFactory>> factoryClazz : factories.get(spi).values()) {
-                for (Map.Entry<String, Class<? extends ProviderFactory>> entry : factoryClazz.entrySet()) {
+            for (Map<String, String> factoryClazz : factories.get(spi).values()) {
+                for (Map.Entry<String, String> entry : factoryClazz.entrySet()) {
                     ProviderFactory factory = preConfiguredProviders.get(entry.getKey());
 
                     if (factory == null) {
@@ -111,11 +111,11 @@ public final class QuarkusKeycloakSessionFactory extends DefaultKeycloakSessionF
         ProviderManagerRegistry.SINGLETON.setDeployer(this);
     }
 
-    private ProviderFactory lookupProviderFactory(Class<? extends ProviderFactory> factoryClazz) {
+    private ProviderFactory lookupProviderFactory(String factoryClazz) {
         ProviderFactory factory;
 
         try {
-            factory = factoryClazz.getDeclaredConstructor().newInstance();
+            factory = (ProviderFactory) Class.forName(factoryClazz, false, getClass().getClassLoader()).getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
