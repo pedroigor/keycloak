@@ -99,7 +99,7 @@ public class JpaAutoFlushListener extends DefaultAutoFlushEventListener {
         return !source.getHibernateFlushMode().lessThan(FlushMode.AUTO)
                 && source.getDontFlushFromFind() == 0
                 && (source.getPersistenceContext().getNumberOfManagedEntities() > 0 ||
-                source.getPersistenceContext().getCollectionEntriesSize() > 0);
+                source.getPersistenceContext().getCollectionEntries().size() > 0);
     }
 
 }

@@ -125,7 +125,7 @@ public class TestCacheResource {
                 // Need to use reflection due some incompatibilities between ispn 8.2.6 and 9.0.1
                 JChannel channel = (JChannel) transport.getClass().getMethod("getChannel").invoke(transport);
 
-                return new JGroupsStats(channel.getSentBytes(), channel.getSentMessages(), channel.getReceivedBytes(), channel.getReceivedMessages());
+                return new JGroupsStats();
             } catch (Exception nsme) {
                 throw new RuntimeException(nsme);
             }

@@ -239,8 +239,8 @@ public class DistributedCacheConcurrentWritesTest {
 
             JChannel channel = ((JGroupsTransport)cache1.getAdvancedCache().getRpcManager().getTransport()).getChannel();
 
-            System.out.println("Sent MB: " + channel.getSentBytes() / 1000000 + ", sent messages: " + channel.getSentMessages() + ", received MB: " + channel.getReceivedBytes() / 1000000 +
-                    ", received messages: " + channel.getReceivedMessages());
+//            System.out.println("Sent MB: " + channel.getSentBytes() / 1000000 + ", sent messages: " + channel.getSentMessages() + ", received MB: " + channel.getReceivedBytes() / 1000000 +
+//                    ", received messages: " + channel.getReceivedMessages());
         } else {
             Map<String, String> stats = ((RemoteCache) cache).stats().getStatsMap();
             System.out.println("Stats: " + stats);

@@ -100,8 +100,8 @@ public class DistributedCacheWriteSkewTest {
 
         // JGroups statistics
         JChannel channel = (JChannel)((JGroupsTransport)cache1.getAdvancedCache().getRpcManager().getTransport()).getChannel();
-        System.out.println("Sent MB: " + channel.getSentBytes() / 1000000 + ", sent messages: " + channel.getSentMessages() + ", received MB: " + channel.getReceivedBytes() / 1000000 +
-                ", received messages: " + channel.getReceivedMessages());
+//        System.out.println("Sent MB: " + channel.getSentBytes() / 1000000 + ", sent messages: " + channel.getSentMessages() + ", received MB: " + channel.getReceivedBytes() / 1000000 +
+//                ", received messages: " + channel.getReceivedMessages());
 
         // Kill JVM
         cache1.stop();
