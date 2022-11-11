@@ -17,6 +17,7 @@
 
 package org.keycloak.quarkus.runtime.integration.jaxrs;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,11 +25,15 @@ import javax.ws.rs.ApplicationPath;
 import org.keycloak.exportimport.ExportImportManager;
 import org.keycloak.models.utils.PostMigrationEvent;
 import org.keycloak.quarkus.runtime.integration.QuarkusKeycloakSessionFactory;
+import org.keycloak.quarkus.runtime.services.resources.DummyResource;
 import org.keycloak.services.resources.KeycloakApplication;
 import org.keycloak.quarkus.runtime.services.resources.QuarkusWelcomeResource;
 import org.keycloak.services.resources.WelcomeResource;
 
+import io.smallrye.common.annotation.Blocking;
+
 @ApplicationPath("/")
+@Blocking
 public class QuarkusKeycloakApplication extends KeycloakApplication {
 
     private static boolean filterSingletons(Object o) {
@@ -60,8 +65,19 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
                 .filter(QuarkusKeycloakApplication::filterSingletons)
                 .collect(Collectors.toSet());
 
-        singletons.add(new QuarkusWelcomeResource());
+        singletons.add(new DummyResource());
 
         return singletons;
+    }
+
+    @Override
+    public Set<Class<?>> getClasses() {
+        Set<Class<?>> classes = new HashSet<>(super.getClasses());
+
+        classes.add(QuarkusWelcomeResource.class);
+        classes.add(TransactionalResponseFilter.class);
+        classes.add(TransactionalResponseInterceptor.class);
+
+        return classes;
     }
 }

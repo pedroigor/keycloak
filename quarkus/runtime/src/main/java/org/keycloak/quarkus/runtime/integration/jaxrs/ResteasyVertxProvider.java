@@ -17,8 +17,16 @@
 
 package org.keycloak.quarkus.runtime.integration.jaxrs;
 
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.UriInfo;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.ext.web.RoutingContext;
 import org.jboss.resteasy.core.ResteasyContext;
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
+import org.jboss.resteasy.spi.HttpRequest;
+import org.jboss.resteasy.spi.HttpResponse;
 import org.keycloak.common.util.ResteasyProvider;
 
 /**
@@ -31,13 +39,31 @@ public class ResteasyVertxProvider implements ResteasyProvider {
         R data = ResteasyContext.getContextData(type);
 
         if (data == null) {
-            RoutingContext contextData = ResteasyContext.getContextData(RoutingContext.class);
+            RoutingContext contextData = Arc.container().instance(CurrentVertxRequest.class).get().getCurrent();
 
             if (contextData == null) {
                 return null;
             }
 
-            return (R) contextData.data().get(type.getName());
+            Object o = contextData.data().get(type.getName());
+
+            if (type.equals(UriInfo.class)) {
+                return (R) CurrentRequestManager.get().getUriInfo();
+            }
+
+            if (type.equals(HttpRequest.class)) {
+                return (R) new org.keycloak.quarkus.runtime.integration.jaxrs.HttpRequest(CurrentRequestManager.get().serverRequest());
+            }
+
+            if (type.equals(HttpResponse.class)) {
+                return (R) CurrentRequestManager.get().getResponse();
+            }
+
+            if (type.equals(HttpHeaders.class)) {
+                return (R) CurrentRequestManager.get().getHttpHeaders();
+            }
+
+            return (R) o;
         }
 
         return data;
