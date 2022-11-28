@@ -17,27 +17,39 @@
 
 package org.keycloak.quarkus.runtime.integration.jaxrs;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import javax.enterprise.event.Observes;
 import javax.ws.rs.ApplicationPath;
 import org.keycloak.exportimport.ExportImportManager;
 import org.keycloak.models.utils.PostMigrationEvent;
+import org.keycloak.platform.Platform;
 import org.keycloak.quarkus.runtime.integration.QuarkusKeycloakSessionFactory;
-import org.keycloak.quarkus.runtime.services.resources.DummyResource;
+import org.keycloak.quarkus.runtime.integration.QuarkusPlatform;
 import org.keycloak.services.resources.KeycloakApplication;
 import org.keycloak.quarkus.runtime.services.resources.QuarkusWelcomeResource;
 import org.keycloak.services.resources.WelcomeResource;
+import org.keycloak.services.util.ObjectMapperResolver;
 
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.Blocking;
 
 @ApplicationPath("/")
 @Blocking
 public class QuarkusKeycloakApplication extends KeycloakApplication {
 
-    private static boolean filterSingletons(Object o) {
-        return !WelcomeResource.class.isInstance(o);
+    void onStartupEvent(@Observes StartupEvent event) {
+        QuarkusPlatform platform = (QuarkusPlatform) Platform.getPlatform();
+        platform.started();
+        QuarkusPlatform.exitOnError();
+        startup();
+    }
+
+    void onShutdownEvent(@Observes ShutdownEvent event) {
+        shutdown();
     }
 
     @Override
@@ -61,22 +73,19 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
 
     @Override
     public Set<Object> getSingletons() {
-        Set<Object> singletons = super.getSingletons().stream()
-                .filter(QuarkusKeycloakApplication::filterSingletons)
-                .collect(Collectors.toSet());
-
-        singletons.add(new DummyResource());
-
-        return singletons;
+        return Collections.emptySet();
     }
 
     @Override
     public Set<Class<?>> getClasses() {
         Set<Class<?>> classes = new HashSet<>(super.getClasses());
 
+        classes.remove(WelcomeResource.class);
         classes.add(QuarkusWelcomeResource.class);
         classes.add(TransactionalResponseFilter.class);
         classes.add(TransactionalResponseInterceptor.class);
+        classes.add(ObjectMapperResolver.class);
+        classes.add(StreamingOutputMessageBodyWriter.class);
 
         return classes;
     }

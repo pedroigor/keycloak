@@ -17,8 +17,9 @@
 
 package org.keycloak.quarkus.runtime.integration;
 
-import org.keycloak.common.util.Resteasy;
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.keycloak.http.HttpRequest;
+import org.keycloak.http.HttpResponse;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.DefaultKeycloakContext;
 
@@ -30,6 +31,11 @@ public class QuarkusKeycloakContext extends DefaultKeycloakContext {
 
     @Override
     protected HttpRequest createHttpRequest() {
-        return new QuarkusHttpRequest(Resteasy.getContextData(org.jboss.resteasy.spi.HttpRequest.class));
+        return new QuarkusHttpRequest(CurrentRequestManager.get());
+    }
+
+    @Override
+    protected HttpResponse createHttpResponse() {
+        return new QuarkusHttpResponse(CurrentRequestManager.get());
     }
 }

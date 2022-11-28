@@ -31,6 +31,7 @@ import org.jboss.resteasy.reactive.server.handlers.InputHandler;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+import org.keycloak.quarkus.runtime.integration.QuarkusHttpResponse;
 
 public class KeycloakHandlerChainCustomizer implements HandlerChainCustomizer {
 
@@ -69,7 +70,7 @@ public class KeycloakHandlerChainCustomizer implements HandlerChainCustomizer {
             @Override
             public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
                 if (requestContext.getResponse() == null) {
-                    HttpResponse response = new HttpResponse(requestContext);
+                    QuarkusHttpResponse response = new QuarkusHttpResponse(requestContext);
                     requestContext.setResponse(response);
                 }
             }

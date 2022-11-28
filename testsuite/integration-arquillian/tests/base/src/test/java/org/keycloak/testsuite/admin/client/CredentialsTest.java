@@ -131,7 +131,7 @@ public class CredentialsTest extends AbstractClientTest {
             FileInputStream fs = new FileInputStream(generatedKeystore.getKeystoreFile());
             byte [] content = fs.readAllBytes();
             fs.close();
-            keyCertForm.addFormData("file", content, MediaType.APPLICATION_OCTET_STREAM_TYPE);
+            keyCertForm.addFormData("file", content, MediaType.APPLICATION_OCTET_STREAM_TYPE, "keys");
             CertificateRepresentation cert = certRsc.uploadJks(keyCertForm);
 
             // Returned cert is not the new state but rather what was extracted from inputs
@@ -147,7 +147,7 @@ public class CredentialsTest extends AbstractClientTest {
             // Upload a different certificate via /upload-certificate, privateKey should be nullified
             MultipartFormDataOutput form = new MultipartFormDataOutput();
             form.addFormData("keystoreFormat", "Certificate PEM", MediaType.TEXT_PLAIN_TYPE);
-            form.addFormData("file", certificate2.getBytes(Charset.forName("ASCII")), MediaType.APPLICATION_OCTET_STREAM_TYPE);
+            form.addFormData("file", certificate2.getBytes(Charset.forName("ASCII")), MediaType.APPLICATION_OCTET_STREAM_TYPE, "cert");
             cert = certRsc.uploadJksCertificate(form);
             assertNotNull("cert not null", cert);
             assertEquals("cert properly extracted", certificate2, cert.getCertificate());
@@ -164,7 +164,7 @@ public class CredentialsTest extends AbstractClientTest {
             // Upload certificate as PEM via /upload - nullifies the private key
             form = new MultipartFormDataOutput();
             form.addFormData("keystoreFormat", "Certificate PEM", MediaType.TEXT_PLAIN_TYPE);
-            form.addFormData("file", certificate2.getBytes(Charset.forName("ASCII")), MediaType.APPLICATION_OCTET_STREAM_TYPE);
+            form.addFormData("file", certificate2.getBytes(Charset.forName("ASCII")), MediaType.APPLICATION_OCTET_STREAM_TYPE, "cert");
             cert = certRsc.uploadJks(form);
             assertNotNull("cert not null", cert);
             assertEquals("cert properly extracted", certificate2, cert.getCertificate());
@@ -181,7 +181,7 @@ public class CredentialsTest extends AbstractClientTest {
 
             String certificate2WithHeaders = PemUtils.BEGIN_CERT + "\n" + certificate2 + "\n" + PemUtils.END_CERT;
 
-            form.addFormData("file", certificate2WithHeaders.getBytes(Charset.forName("ASCII")), MediaType.APPLICATION_OCTET_STREAM_TYPE);
+            form.addFormData("file", certificate2WithHeaders.getBytes(Charset.forName("ASCII")), MediaType.APPLICATION_OCTET_STREAM_TYPE, "cert");
             cert = certRsc.uploadJks(form);
             assertNotNull("cert not null", cert);
             assertEquals("cert properly extracted", certificate2, cert.getCertificate());

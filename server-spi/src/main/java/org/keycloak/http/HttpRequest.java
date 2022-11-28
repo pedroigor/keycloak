@@ -18,6 +18,7 @@
 package org.keycloak.http;
 
 import java.security.cert.X509Certificate;
+import java.util.Map;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
@@ -46,6 +47,8 @@ public interface HttpRequest {
      * @return the decoded form parameters
      */
     MultivaluedMap<String, String> getDecodedFormParameters();
+
+    MultivaluedMap<String, FormPart> getMultiPartFormParameters();
 
     /**
      * Returns the HTTP headers.

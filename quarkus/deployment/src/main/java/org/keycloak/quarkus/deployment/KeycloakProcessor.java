@@ -613,7 +613,6 @@ class KeycloakProcessor {
     void configureResteasy(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> buildTimeConditionBuildItemBuildProducer, BuildProducer<MethodScannerBuildItem> scanner) {
         buildTimeConditionBuildItemBuildProducer.produce(new BuildTimeConditionBuildItem(index.getIndex().getClassByName(DotName.createSimple(
                 KeycloakApplication.class.getName())), false));
-        buildTimeConditionBuildItemBuildProducer.produce(new BuildTimeConditionBuildItem(index.getIndex().getClassByName(DotName.createSimple("com.arjuna.ats.jta.cdi.NarayanaTransactionManager")), false));
         scanner.produce(new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,

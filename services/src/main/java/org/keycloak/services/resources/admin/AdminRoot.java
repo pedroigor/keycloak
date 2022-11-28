@@ -40,6 +40,7 @@ import org.keycloak.urls.UrlType;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
@@ -86,7 +87,7 @@ public class AdminRoot {
      */
     @GET
     public Response masterRealmAdminConsoleRedirect() {
-
+        System.out.println("test");
         if (!isAdminConsoleEnabled()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -221,6 +222,12 @@ public class AdminRoot {
                 response);
 
         return new RealmsAdminResource(session, auth, tokenManager);
+    }
+
+    @Path("{any:.*}")
+    @OPTIONS
+    public Object preFlight() {
+        return getRealmsAdmin();
     }
 
     /**

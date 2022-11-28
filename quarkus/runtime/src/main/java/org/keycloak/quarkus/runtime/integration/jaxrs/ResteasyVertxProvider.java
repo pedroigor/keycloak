@@ -29,9 +29,6 @@ import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
 import org.keycloak.common.util.ResteasyProvider;
 
-/**
- * TODO: we should probably rely on the vert.x routing context instead of resteasy context data
- */
 public class ResteasyVertxProvider implements ResteasyProvider {
 
     @Override
@@ -45,25 +42,7 @@ public class ResteasyVertxProvider implements ResteasyProvider {
                 return null;
             }
 
-            Object o = contextData.data().get(type.getName());
-
-            if (type.equals(UriInfo.class)) {
-                return (R) CurrentRequestManager.get().getUriInfo();
-            }
-
-            if (type.equals(HttpRequest.class)) {
-                return (R) new org.keycloak.quarkus.runtime.integration.jaxrs.HttpRequest(CurrentRequestManager.get().serverRequest());
-            }
-
-            if (type.equals(HttpResponse.class)) {
-                return (R) CurrentRequestManager.get().getResponse();
-            }
-
-            if (type.equals(HttpHeaders.class)) {
-                return (R) CurrentRequestManager.get().getHttpHeaders();
-            }
-
-            return (R) o;
+            return (R) contextData.data().get(type.getName());
         }
 
         return data;

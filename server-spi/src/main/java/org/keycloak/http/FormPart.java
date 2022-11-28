@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Red Hat, Inc. and/or its affiliates
+ * Copyright 2022 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,23 +15,29 @@
  * limitations under the License.
  */
 
-package org.keycloak.quarkus.runtime.integration.jaxrs;
+package org.keycloak.http;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import org.keycloak.common.util.Resteasy;
-import org.keycloak.models.KeycloakSession;
+import java.io.InputStream;
 
-import io.quarkus.arc.Unremovable;
+public class FormPart {
 
-@ApplicationScoped
-@Unremovable
-public class ResteasyDependencyResolver {
+    private String value;
+    private InputStream inputStream;
 
-    @Produces
-    @RequestScoped
-    public KeycloakSession getKeycloakSession() {
-        return Resteasy.getContextData(KeycloakSession.class);
+    public FormPart(String value) {
+        this.value = value;
+    }
+
+    public FormPart(InputStream inputStream) {
+        this.inputStream = inputStream;
+        this.value = null;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public InputStream getInputStream() {
+        return inputStream;
     }
 }

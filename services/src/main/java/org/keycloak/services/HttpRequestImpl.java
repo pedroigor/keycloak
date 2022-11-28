@@ -18,9 +18,12 @@
 package org.keycloak.services;
 
 import java.security.cert.X509Certificate;
+import java.util.Map;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
+import org.keycloak.http.FormPart;
 import org.keycloak.http.HttpRequest;
 
 public class HttpRequestImpl implements HttpRequest {
@@ -39,6 +42,11 @@ public class HttpRequestImpl implements HttpRequest {
     @Override
     public MultivaluedMap<String, String> getDecodedFormParameters() {
         return delegate.getDecodedFormParameters();
+    }
+
+    @Override
+    public MultivaluedMap<String, FormPart> getMultiPartFormParameters() {
+        return new MultivaluedHashMap<>();
     }
 
     @Override

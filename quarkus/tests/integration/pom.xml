@@ -43,6 +43,11 @@
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-quarkus-server</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>

@@ -820,7 +820,7 @@ public class SamlService extends AuthorizationEndpointBase {
      */
     @POST
     @NoCache
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Consumes({MediaType.APPLICATION_FORM_URLENCODED, javax.ws.rs.core.MediaType.TEXT_XML })
     public void postBinding(@Suspended AsyncResponse asyncResponse, @FormParam(GeneralConstants.SAML_REQUEST_KEY) String samlRequest, @FormParam(GeneralConstants.SAML_RESPONSE_KEY) String samlResponse, @FormParam(GeneralConstants.RELAY_STATE) String relayState, @FormParam(GeneralConstants.SAML_ARTIFACT_KEY) String artifact) {
         logger.debug("SAML POST");
         PostBindingProtocol postBindingProtocol = new PostBindingProtocol();
@@ -1070,11 +1070,18 @@ public class SamlService extends AuthorizationEndpointBase {
      */
     @POST
     @NoCache
-    @Consumes({"application/soap+xml",MediaType.TEXT_XML})
+    @Consumes("application/soap+xml")
     public Response soapBinding(InputStream inputStream) {
         SamlEcpProfileService bindingService = new SamlEcpProfileService(session, event, destinationValidator);
 
         return bindingService.authenticate(inputStream);
+    }
+
+    @POST
+    @NoCache
+    @Consumes(MediaType.TEXT_XML)
+    public Response soapBindingXml(InputStream inputStream) {
+        return soapBinding(inputStream);
     }
 
     private ClientModel getAndCheckClientModel(String clientSessionId, String clientId) throws ProcessingException {
@@ -1425,7 +1432,7 @@ public class SamlService extends AuthorizationEndpointBase {
                     EntityUtils.consumeQuietly(result.getEntity());
                 }
 
-            } catch (IOException | ProcessingException | ParsingException e) {
+            } catch (IOException | ProcessingException | ParsingException | IllegalArgumentException e) {
                 event.event(EventType.LOGIN);
                 event.detail(Details.REASON, e.getMessage());
                 event.error(Errors.IDENTITY_PROVIDER_ERROR);

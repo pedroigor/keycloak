@@ -71,7 +71,6 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -115,8 +114,8 @@ public class KeycloakApplication extends Application {
             classes.add(KeycloakErrorHandler.class);
             classes.add(KcUnrecognizedPropertyExceptionHandler.class);
 
-            singletons.add(new ObjectMapperResolver());
-            singletons.add(new WelcomeResource());
+            singletons.add(ObjectMapperResolver.class);
+            classes.add(WelcomeResource.class);
 
             platform.onStartup(this::startup);
             platform.onShutdown(this::shutdown);

@@ -29,6 +29,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.keycloak.models.BrowserSecurityHeaders.CONTENT_SECURITY_POLICY;
 
@@ -67,7 +68,7 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
         }
 
         MediaType requestType = requestContext.getMediaType();
-        MediaType responseType = responseContext.getMediaType();
+        MediaType responseType = Optional.ofNullable(responseContext.getMediaType()).orElse(MediaType.APPLICATION_JSON_TYPE);
         MultivaluedMap<String, Object> headers = responseContext.getHeaders();
 
         if (responseType == null && !isEmptyMediaTypeAllowed(requestContext, responseContext)) {

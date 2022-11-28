@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.jdk8.StreamSerializer;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 import java.util.stream.Stream;
@@ -35,6 +37,8 @@ import java.util.stream.Stream;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
+@Provider
+@ApplicationScoped
 public class ObjectMapperResolver implements ContextResolver<ObjectMapper> {
     protected ObjectMapper mapper;
 
@@ -61,6 +65,11 @@ public class ObjectMapperResolver implements ContextResolver<ObjectMapper> {
 
     @Override
     public ObjectMapper getContext(Class<?> type) {
+        return mapper;
+    }
+
+    @Produces
+    public ObjectMapper getObjectMapper() {
         return mapper;
     }
 }
