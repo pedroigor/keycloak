@@ -20,6 +20,7 @@ package org.keycloak.it.cli.dist;
 import org.junit.jupiter.api.Test;
 import org.keycloak.it.junit5.extension.CLIResult;
 import org.keycloak.it.junit5.extension.DistributionTest;
+import org.keycloak.it.junit5.extension.LegacyStore;
 import org.keycloak.it.junit5.extension.RawDistOnly;
 import org.keycloak.it.junit5.extension.TestProvider;
 import com.acme.provider.user.CustomUserProvider;
@@ -29,6 +30,7 @@ import io.quarkus.test.junit.main.LaunchResult;
 
 @DistributionTest(reInstall = DistributionTest.ReInstall.BEFORE_TEST)
 @RawDistOnly(reason = "Containers are immutable")
+@LegacyStore
 public class CustomJpaUserProviderDistTest {
 
     @Test

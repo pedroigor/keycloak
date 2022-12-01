@@ -23,7 +23,6 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.keycloak.it.cli.StartDevCommandTest;
 import org.keycloak.it.junit5.extension.CLIResult;
 import org.keycloak.it.junit5.extension.DistributionTest;
 import org.keycloak.it.junit5.extension.RawDistOnly;
@@ -34,7 +33,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DistributionTest(reInstall = DistributionTest.ReInstall.NEVER)
 @RawDistOnly(reason = "Containers are immutable")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class StartDevCommandDistTest extends StartDevCommandTest {
+public class StartDevCommandDistTest {
+
+    @Test
+    @Launch({ "start-dev" })
+    void testDevModeWarning(LaunchResult result) {
+        CLIResult cliResult = (CLIResult) result;
+        cliResult.assertStartedDevMode();
+    }
+
+    @Test
+    @Launch({ "start-dev", "--db=dev-mem" })
+    void testBuildPropertyAvailable(LaunchResult result) {
+        CLIResult cliResult = (CLIResult) result;
+        cliResult.assertStartedDevMode();
+    }
 
     @Test
     @Launch({ "start-dev", "--debug" })

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.keycloak.it.junit5.extension.CLIResult;
 import org.keycloak.it.junit5.extension.DistributionTest;
 import org.keycloak.it.junit5.extension.RawDistOnly;
+import org.keycloak.it.utils.KeycloakDistribution;
 
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
@@ -30,18 +31,15 @@ import io.quarkus.test.junit.main.LaunchResult;
 public class ExportDistTest {
 
     @Test
-    @Launch({"export", "--realm=master", "--dir=."})
-    void testExport(LaunchResult result) {
-        CLIResult cliResult = (CLIResult) result;
+    void testExport(KeycloakDistribution dist) {
+        CLIResult cliResult = dist.run("build", "--cache=local", "--storage-chm");
+
+        cliResult = dist.run("export", "--realm=master", "--dir=.");
         cliResult.assertMessage("Export of realm 'master' requested.");
         cliResult.assertMessage("Export finished successfully");
         cliResult.assertNoMessage("Changes detected in configuration");
-    }
 
-    @Test
-    @Launch({"export", "--realm=master" })
-    void testMissingDir(LaunchResult result) {
-        CLIResult cliResult = (CLIResult) result;
+        cliResult = dist.run("export", "--realm=master");
         cliResult.assertError("Must specify either --dir or --file options.");
     }
 }

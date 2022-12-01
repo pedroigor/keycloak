@@ -20,11 +20,13 @@ package org.keycloak.it.junit5.extension;
 import static org.keycloak.it.junit5.extension.DistributionTest.ReInstall.BEFORE_ALL;
 import static org.keycloak.it.junit5.extension.DistributionType.RAW;
 import static org.keycloak.quarkus.runtime.Environment.forceTestLaunchMode;
+import static org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.OPTIMIZED_BUILD_OPTION_LONG;
 import static org.keycloak.quarkus.runtime.cli.command.Main.CONFIG_FILE_LONG_NAME;
 import static org.keycloak.quarkus.runtime.cli.command.Main.CONFIG_FILE_SHORT_NAME;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -63,6 +65,7 @@ public class CLITestExtension extends QuarkusMainTestExtension {
     public void beforeEach(ExtensionContext context) throws Exception {
         DistributionTest distConfig = getDistributionConfig(context);
         Launch launch = context.getRequiredTestMethod().getAnnotation(Launch.class);
+        List<String> arguments = List.of();
 
         if (launch != null) {
             for (String arg : launch.value()) {
@@ -83,6 +86,37 @@ public class CLITestExtension extends QuarkusMainTestExtension {
                     setProperty(name, value);
                 }
             }
+
+            arguments = new ArrayList<>(List.of(launch.value()));
+            boolean doNotSetStorageChm = false;
+
+            if (!doNotSetStorageChm) {
+                for (String argument : arguments) {
+                    if (argument.contains("--storage")) {
+                        doNotSetStorageChm = true;
+                        break;
+                    }
+                    if (argument.equals("build")) {
+                        doNotSetStorageChm = true;
+                    }
+                    if (argument.equals(OPTIMIZED_BUILD_OPTION_LONG)) {
+                        doNotSetStorageChm = true;
+                    }
+                    if (argument.equals("export")
+                            || argument.equals("import")
+                            || argument.contains("--help")
+                            || argument.contains("-h")
+                            || argument.contains("--show-config")) {
+                        doNotSetStorageChm = true;
+                    }
+                }
+            }
+
+            if (!doNotSetStorageChm
+                    && context.getTestClass().orElse(Object.class).getDeclaredAnnotation(LegacyStore.class) == null
+                    && !arguments.isEmpty()) {
+                arguments.add("--storage=chm");
+            }
         }
 
         configureDatabase(context);
@@ -100,7 +134,7 @@ public class CLITestExtension extends QuarkusMainTestExtension {
             onBeforeStartDistribution(context.getRequiredTestMethod().getAnnotation(BeforeStartDistribution.class));
 
             if (launch != null) {
-                result = dist.run(Arrays.asList(launch.value()));
+                result = dist.run(arguments);
             }
         } else {
             configureProfile(context);
@@ -271,7 +305,7 @@ public class CLITestExtension extends QuarkusMainTestExtension {
     }
 
     private void configureDatabase(ExtensionContext context) {
-        WithDatabase database = context.getTestClass().orElse(Object.class).getDeclaredAnnotation(WithDatabase.class);
+        WithDatabase database = getDatabaseConfig(context);
 
         if (database != null) {
             if (dist == null) {
@@ -299,6 +333,10 @@ public class CLITestExtension extends QuarkusMainTestExtension {
             // This is for re-creating the H2 database instead of using the default in home
             setProperty("kc.db-url-path", new QuarkusPlatform().getTmpDirectory().getAbsolutePath());
         }
+    }
+
+    private WithDatabase getDatabaseConfig(ExtensionContext context) {
+        return context.getTestClass().orElse(Object.class).getDeclaredAnnotation(WithDatabase.class);
     }
 
     private void configureDevServices() {
