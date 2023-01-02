@@ -65,6 +65,8 @@ import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.UserStorageProviderModel;
 import org.keycloak.storage.client.ClientStorageProvider;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -681,13 +683,45 @@ public class UserCacheSession implements UserCache, OnCreateComponent, OnUpdateC
         CachedUserConsents cached = cache.get(cacheKey, CachedUserConsents.class);
 
         if (cached == null) {
+            UserConsentModel consent = getDelegate().getConsentByClient(realm, userId, clientId);
+
+            if (consent == null) {
+                return null;
+            }
+
             Long loaded = cache.getCurrentRevision(cacheKey);
-            List<UserConsentModel> consents = getDelegate().getConsentsStream(realm, userId).collect(Collectors.toList());
+            cached = new CachedUserConsents(loaded, cacheKey, realm, Arrays.asList(consent));
+            cache.addRevisioned(cached, startupRevision);
+        }
+
+        CachedUserConsent cachedConsent = cached.getConsents().get(clientId);
+
+        if (cachedConsent == null) {
+            UserConsentModel consent = getDelegate().getConsentByClient(realm, userId, clientId);
+
+            if (consent == null) {
+                return null;
+            }
+
+            List<UserConsentModel> consents = new ArrayList<>();
+
+            consents.add(consent);
+
+            for (String cid : cached.getConsents().keySet()) {
+                consents.add(getDelegate().getConsentByClient(realm, userId, cid));
+            }
+
+            Long loaded = cache.getCurrentRevision(cacheKey);
             cached = new CachedUserConsents(loaded, cacheKey, realm, consents);
             cache.addRevisioned(cached, startupRevision);
         }
-        CachedUserConsent cachedConsent = cached.getConsents().get(clientId);
-        if (cachedConsent == null) return null;
+
+        cachedConsent = cached.getConsents().get(clientId);
+
+        if (cachedConsent == null) {
+            return null;
+        }
+
         return toConsentModel(realm, cachedConsent);
     }
 
