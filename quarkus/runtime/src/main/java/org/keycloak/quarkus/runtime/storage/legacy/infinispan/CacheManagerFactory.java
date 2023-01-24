@@ -30,20 +30,20 @@ import org.infinispan.jboss.marshalling.core.JBossUserMarshaller;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.metrics.config.MicrometerMeterRegisterConfigurationBuilder;
 import org.jboss.logging.Logger;
-import org.keycloak.config.MetricsOptions;
 import org.keycloak.quarkus.runtime.configuration.Configuration;
-import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 
 public class CacheManagerFactory {
 
     private String config;
+    private boolean metricsEnabled;
     private DefaultCacheManager cacheManager;
     private Future<DefaultCacheManager> cacheManagerFuture;
     private ExecutorService executor;
     private boolean initialized;
 
-    public CacheManagerFactory(String config) {
+    public CacheManagerFactory(String config, boolean metricsEnabled) {
         this.config = config;
+        this.metricsEnabled = metricsEnabled;
         this.executor = createThreadPool();
         this.cacheManagerFuture = executor.submit(this::startCacheManager);
     }
@@ -83,7 +83,7 @@ public class CacheManagerFactory {
             configureTransportStack(builder);
         }
 
-        if(isMetricsEnabled()) {
+        if (metricsEnabled) {
             builder.getNamedConfigurationBuilders().values().stream().forEach(b -> b.statistics().enable());
             builder.getGlobalConfigurationBuilder().addModule(MicrometerMeterRegisterConfigurationBuilder.class);
             builder.getGlobalConfigurationBuilder().module(MicrometerMeterRegisterConfigurationBuilder.class).meterRegistry(Metrics.globalRegistry);
@@ -95,10 +95,6 @@ public class CacheManagerFactory {
         builder.getGlobalConfigurationBuilder().serialization().marshaller(new JBossUserMarshaller());
 
         return new DefaultCacheManager(builder, isStartEagerly());
-    }
-
-    private boolean isMetricsEnabled() {
-        return Configuration.getOptionalBooleanValue(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX.concat(MetricsOptions.METRICS_ENABLED.getKey())).orElse(false);
     }
 
     private boolean isStartEagerly() {
