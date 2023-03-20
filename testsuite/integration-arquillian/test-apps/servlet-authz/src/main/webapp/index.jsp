@@ -1,10 +1,8 @@
 <%@page import="org.keycloak.AuthorizationContext" %>
-<%@ page import="org.keycloak.KeycloakSecurityContext" %>
 <%@ page import="org.keycloak.representations.idm.authorization.Permission" %>
 
 <%
-    KeycloakSecurityContext keycloakSecurityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
-    AuthorizationContext authzContext = keycloakSecurityContext.getAuthorizationContext();
+    AuthorizationContext authzContext = (AuthorizationContext) request.getAttribute(AuthorizationContext.class.getName());
 %>
 
 <html>

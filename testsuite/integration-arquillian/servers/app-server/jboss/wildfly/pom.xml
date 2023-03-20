@@ -60,4 +60,19 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>elytron-adapter</id>
+            <properties>
+                <wildfly.version>27.0.1.Final</wildfly.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.jboss.arquillian.protocol</groupId>
+                    <artifactId>arquillian-protocol-servlet-jakarta</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

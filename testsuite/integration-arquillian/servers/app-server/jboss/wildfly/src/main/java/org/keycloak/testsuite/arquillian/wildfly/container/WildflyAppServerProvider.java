@@ -82,6 +82,7 @@ public class WildflyAppServerProvider implements AppServerContainerProvider {
         configuration = container.createChild("configuration");
         createChild("enabled", "true");
         createChild("adapterImplClass", ManagedDeployableContainer.class.getName());
+        createChild("allowConnectingToRunningServer", "true");
         createChild("jbossHome", appServerHome);
         createChild("javaHome", appServerJavaHome);
         createChild("jbossArguments", 
@@ -127,6 +128,7 @@ public class WildflyAppServerProvider implements AppServerContainerProvider {
         configuration = container.createChild("configuration");
         createChild("enabled", "true");
         createChild("adapterImplClass", ManagedDeployableContainer.class.getName());
+        createChild("allowConnectingToRunningServer", "true");
         createChild("jbossHome", appServerHome);
         createChild("javaHome", appServerJavaHome);
         //cleanServerBaseDir cannot be used until WFARQ-44 is fixed

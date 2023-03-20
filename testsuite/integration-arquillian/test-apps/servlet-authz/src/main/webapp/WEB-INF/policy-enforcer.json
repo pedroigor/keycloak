@@ -1,0 +1,3 @@
+{
+  "on-deny-redirect-to" : "/servlet-authz-app/accessDenied.jsp"
+}

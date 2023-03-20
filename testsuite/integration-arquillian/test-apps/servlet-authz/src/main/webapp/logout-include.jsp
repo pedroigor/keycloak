@@ -9,4 +9,5 @@
     String redirectUri = scheme + "://" + host + ":" + port + contextPath;
 %>
 <h2>Click here <a href="<%= KeycloakUriBuilder.fromUri(WebAppHelper.getAuthUri()).path(ServiceUrlConstants.TOKEN_SERVICE_LOGOUT_PATH)
+            .queryParam("client_id", "servlet-authz-app")
             .build("servlet-authz").toString()%>">Sign Out</a></h2>

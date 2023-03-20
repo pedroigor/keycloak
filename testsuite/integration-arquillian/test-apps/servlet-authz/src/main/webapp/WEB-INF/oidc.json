@@ -1,0 +1,13 @@
+{
+  "realm": "servlet-authz",
+  "provider-url": "https://localhost:8543/auth/realms/servlet-authz",
+  "auth-server-url" : "https://localhost:8543/auth",
+  "ssl-required" : "external",
+  "resource" : "servlet-authz-app",
+  "public-client" : false,
+  "allow-any-hostname": true,
+  "disable-trust-manager": true,
+  "credentials": {
+    "secret": "secret"
+  }
+}

@@ -638,6 +638,13 @@
                 </pluginManagement>
             </build>
         </profile>
+        <profile>
+            <id>elytron-adapter</id>
+            <properties>
+                <arquillian-core.version>1.7.0.Alpha14</arquillian-core.version>
+                <arquillian-wildfly-container.version>5.0.0.Alpha6</arquillian-wildfly-container.version>
+            </properties>
+        </profile>
     </profiles>
 
     <repositories>

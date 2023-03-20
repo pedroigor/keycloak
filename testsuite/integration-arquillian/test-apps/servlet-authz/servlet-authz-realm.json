@@ -88,7 +88,12 @@
       "redirectUris": [
         "/servlet-authz-app/*"
       ],
-      "secret": "secret"
+      "secret": "secret",
+      "frontchannelLogout": true,
+      "attributes": {
+        "frontchannel.logout.url": "https://localhost:8643/servlet-authz-app/logout/callback",
+        "post.logout.redirect.uris": "*"
+      }
     }
   ]
 }

@@ -133,6 +133,7 @@
         <app.server.keystore>${app.server.keystore.dir}/adapter.jks</app.server.keystore>
         <app.server.keystore.password>secret</app.server.keystore.password>
         <app.server.jvm.args.extra/>
+        <arquillian.default.protocol>Servlet 3.0</arquillian.default.protocol>
         <tomcat.javax.net.ssl.properties/>
 
         <cache.server.legacy>false</cache.server.legacy>
@@ -566,6 +567,7 @@
                             <app.server.2.jboss.jvm.debug.args>${app.server.2.jboss.jvm.debug.args}</app.server.2.jboss.jvm.debug.args>
                             <app.server.jvm.args.extra>${app.server.jvm.args.extra}</app.server.jvm.args.extra>
                             <tomcat.javax.net.ssl.properties>${tomcat.javax.net.ssl.properties}</tomcat.javax.net.ssl.properties>
+                            <arquillian.default.protocol>${arquillian.default.protocol}</arquillian.default.protocol>
 
                             <frontend.console.output>${frontend.console.output}</frontend.console.output>
                             <backends.console.output>${backend.console.output}</backends.console.output>
@@ -2068,7 +2070,21 @@
                 <cache.server.auth>true</cache.server.auth>
             </properties>
         </profile>
-        
+
+        <profile>
+            <id>elytron-adapter</id>
+            <properties>
+                <arquillian.default.protocol>Servlet 5.0</arquillian.default.protocol>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.jboss.arquillian.protocol</groupId>
+                    <artifactId>arquillian-protocol-servlet-jakarta</artifactId>
+                    <version>1.7.0.Alpha13</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
     </profiles>
 
 </project>
