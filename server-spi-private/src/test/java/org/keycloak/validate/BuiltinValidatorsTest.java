@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.keycloak.validate.validators.DoubleValidator;
 import org.keycloak.validate.validators.IntegerValidator;
 import org.keycloak.validate.validators.LengthValidator;
+import org.keycloak.validate.validators.NoLeadingTrailingSpaceValidator;
 import org.keycloak.validate.validators.OptionsValidator;
 import org.keycloak.validate.validators.PatternValidator;
 import org.keycloak.validate.validators.UriValidator;
@@ -516,5 +517,19 @@ public class BuiltinValidatorsTest {
         result = Validators.validatorConfigValidator().validate(ValidatorConfig.builder().config(OptionsValidator.KEY_OPTIONS, Arrays.asList("opt1")).build(), OptionsValidator.ID).toResult();
         Assert.assertTrue(result.isValid());
 
+    }
+
+    @Test
+    public void testNoLeadingTrailingSpaceValidator() {
+        ValidationResult result = Validators.validatorConfigValidator().validate(ValidatorConfig.builder().build(), NoLeadingTrailingSpaceValidator.ID).toResult();
+        Assert.assertTrue(result.isValid());
+
+        NoLeadingTrailingSpaceValidator validator = new NoLeadingTrailingSpaceValidator();
+
+        Assert.assertTrue(validator.validate("test", "test", ValidatorConfig.builder().build()).isValid());
+        Assert.assertFalse(validator.validate("test ", "test", ValidatorConfig.builder().build()).isValid());
+        Assert.assertFalse(validator.validate(" test    ", "test", ValidatorConfig.builder().build()).isValid());
+        Assert.assertFalse(validator.validate(" test ", "test", ValidatorConfig.builder().build()).isValid());
+        Assert.assertTrue(validator.validate("te st", "test", ValidatorConfig.builder().build()).isValid());
     }
 }
