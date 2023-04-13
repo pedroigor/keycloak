@@ -52,13 +52,24 @@
             </plugin>
         </plugins>
     </build>
-    <modules>
-        <module>admin-client</module>
-        <module>providers</module>
-        <module>js-console</module>
-        <module>kerberos</module>
-        <module>themes</module>
-        <module>saml</module>
-        <module>ldap</module>
-    </modules>
+
+    <profiles>
+        <profile>
+            <id>examples</id>
+            <activation>
+                <property>
+                    <name>!skipExamples</name>
+                </property>
+            </activation>
+            <modules>
+                <module>admin-client</module>
+                <module>providers</module>
+                <module>js-console</module>
+                <module>kerberos</module>
+                <module>themes</module>
+                <module>saml</module>
+                <module>ldap</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>

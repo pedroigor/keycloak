@@ -29,22 +29,18 @@
     <artifactId>keycloak-docs-parent</artifactId>
     <packaging>pom</packaging>
 
-    <modules>
-        <module>maven-plugin</module>
-        <module>guides</module>
-    </modules>
-
     <profiles>
         <profile>
-            <id>documentation</id>
+            <id>docs</id>
+            <activation>
+                <property>
+                    <name>!skipDocs</name>
+                </property>
+            </activation>
             <modules>
                 <module>documentation</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>all</id>
-            <modules>
-                <module>documentation</module>
+                <module>maven-plugin</module>
+                <module>guides</module>
             </modules>
         </profile>
     </profiles>

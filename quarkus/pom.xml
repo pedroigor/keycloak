@@ -147,6 +147,20 @@
         </dependencies>
     </dependencyManagement>
 
+    <profiles>
+        <profile>
+            <id>testsuite</id>
+            <activation>
+                <property>
+                    <name>!skipTestsuite</name>
+                </property>
+            </activation>
+            <modules>
+                <module>tests</module>
+            </modules>
+        </profile>
+    </profiles>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -165,7 +179,6 @@
         <module>deployment</module>
         <module>server</module>
         <module>dist</module>
-        <module>tests</module>
     </modules>
 
     <repositories>

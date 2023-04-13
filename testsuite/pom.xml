@@ -55,11 +55,22 @@
             </plugin>
         </plugins>
     </build>
-    <modules>
-        <module>db-allocator-plugin</module>
-        <module>integration-arquillian</module>
-        <module>model</module>
-        <module>utils</module>
-    </modules>
+
+    <profiles>
+        <profile>
+            <id>testsuite</id>
+            <activation>
+                <property>
+                    <name>!skipTestsuite</name>
+                </property>
+            </activation>
+            <modules>
+                <module>db-allocator-plugin</module>
+                <module>integration-arquillian</module>
+                <module>model</module>
+                <module>utils</module>
+            </modules>
+        </profile>
+    </profiles>
 
 </project>

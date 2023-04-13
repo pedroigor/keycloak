@@ -266,28 +266,44 @@
     <contributors></contributors>
 
     <modules>
+        <!-- server -->
         <module>boms</module>
         <module>common</module>
         <module>core</module>
         <module>crypto</module>
         <module>dependencies</module>
-        <module>docs</module>
         <module>server-spi</module>
         <module>server-spi-private</module>
         <module>saml-core-api</module>
         <module>saml-core</module>
         <module>federation</module>
         <module>services</module>
-        <module>themes</module>
         <module>model</module>
         <module>util</module>
-        <module>rest</module>
-        <module>integration</module>
-        <module>adapters</module>
         <module>authz</module>
         <module>misc</module>
-        <module>js</module>
         <module>quarkus</module>
+
+        <!-- ui -->
+        <module>js</module>
+        <module>themes</module>
+        <module>rest</module>
+
+        <!-- adapters -->
+        <module>adapters</module>
+        <module>distribution</module>
+
+        <!-- clients -->
+        <module>integration</module>
+
+        <!-- docs -->
+        <module>docs</module>
+
+        <!-- testsuite -->
+        <module>testsuite</module>
+
+        <!-- examples -->
+        <module>examples</module>
     </modules>
 
     <dependencyManagement>
@@ -1969,47 +1985,120 @@
 
     <profiles>
         <profile>
-            <id>jdk9</id>
+            <id>server</id>
             <activation>
-                <jdk>[9,)</jdk>
+                <property>
+                    <name>server</name>
+                </property>
             </activation>
-            <properties>
-                <surefire.system.args>
-                    --add-opens=java.base/java.lang=ALL-UNNAMED
-                    --add-opens=java.base/java.util=ALL-UNNAMED
-                </surefire.system.args>
-            </properties>
+            <modules>
+                <module>boms</module>
+                <module>common</module>
+                <module>core</module>
+                <module>crypto</module>
+                <module>dependencies</module>
+                <module>server-spi</module>
+                <module>server-spi-private</module>
+                <module>saml-core-api</module>
+                <module>saml-core</module>
+                <module>federation</module>
+                <module>services</module>
+                <module>model</module>
+                <module>util</module>
+                <module>rest</module>
+                <module>authz</module>
+                <module>quarkus</module>
+            </modules>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
         </profile>
-
+        <profile>
+            <id>ui</id>
+            <activation>
+                <property>
+                    <name>ui</name>
+                </property>
+            </activation>
+            <modules>
+                <module>js</module>
+                <module>themes</module>
+                <module>rest</module>
+            </modules>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>adapters</id>
+            <activation>
+                <property>
+                    <name>adapters</name>
+                </property>
+            </activation>
+            <modules>
+                <module>adapters</module>
+                <module>distribution</module>
+            </modules>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>clients</id>
+            <activation>
+                <property>
+                    <name>clients</name>
+                </property>
+            </activation>
+            <modules>
+                <module>integration</module>
+            </modules>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>docs</id>
+            <activation>
+                <property>
+                    <name>docs</name>
+                </property>
+            </activation>
+            <modules>
+                <module>docs</module>
+            </modules>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
         <profile>
             <id>testsuite</id>
             <activation>
                 <property>
-                    <name>!skipTestsuite</name>
+                    <name>testsuite</name>
                 </property>
             </activation>
             <modules>
                 <module>testsuite</module>
             </modules>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
         </profile>
-
         <profile>
             <id>examples</id>
             <activation>
                 <property>
-                    <name>!skipExamples</name>
+                    <name>examples</name>
                 </property>
             </activation>
             <modules>
                 <module>examples</module>
             </modules>
-        </profile>
-
-        <profile>
-            <id>distribution</id>
-            <modules>
-                <module>distribution</module>
-            </modules>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
         </profile>
 
         <profile>
@@ -2029,6 +2118,19 @@
             <modules>
                 <module>operator</module>
             </modules>
+        </profile>
+
+        <profile>
+            <id>jdk9</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <surefire.system.args>
+                    --add-opens=java.base/java.lang=ALL-UNNAMED
+                    --add-opens=java.base/java.util=ALL-UNNAMED
+                </surefire.system.args>
+            </properties>
         </profile>
 
         <profile>

@@ -40,6 +40,7 @@
         <module>spring-boot2</module>
         <module>spring-boot-adapter-core</module>
         <module>spring-boot-container-bundle</module>
+        <module>spring-boot-starter</module>
         <module>spring-security</module>
         <module>tomcat</module>
         <module>undertow</module>

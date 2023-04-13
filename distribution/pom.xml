@@ -35,14 +35,48 @@
         <keycloak.provisioning.xml>server-provisioning.xml</keycloak.provisioning.xml>
     </properties>
 
-    <modules>
-        <module>adapters</module>
-        <module>saml-adapters</module>
-        <module>feature-packs</module>
-        <module>licenses-common</module>
-        <module>maven-plugins</module>
-        <!--<module>server-overlay</module>-->
-    </modules>
+    <profiles>
+        <profile>
+            <id>adapters</id>
+            <activation>
+                <property>
+                    <name>!skipAdapters</name>
+                </property>
+            </activation>
+            <modules>
+                <module>adapters</module>
+                <module>saml-adapters</module>
+                <module>feature-packs</module>
+                <module>licenses-common</module>
+                <module>maven-plugins</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>wildfly-dist</id>
+            <activation>
+                <property>
+                    <name>includeWildFly</name>
+                </property>
+            </activation>
+            <modules>
+                <module>adapters</module>
+                <module>saml-adapters</module>
+                <module>feature-packs</module>
+                <module>licenses-common</module>
+                <module>maven-plugins</module>
+
+                <module>galleon-feature-packs</module>
+                <module>server-dist</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>distribution-downloads</id>
+            <modules>
+                <module>api-docs-dist</module>
+                <module>downloads</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <repositories>
         <repository>
@@ -70,27 +104,5 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <profiles>
-        <profile>
-            <id>wildfly-dist</id>
-            <activation>
-                <property>
-                    <name>includeWildFly</name>
-                </property>
-            </activation>
-            <modules>
-                <module>galleon-feature-packs</module>
-                <module>server-dist</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>distribution-downloads</id>
-            <modules>
-                <module>api-docs-dist</module>
-                <module>downloads</module>
-            </modules>
-        </profile>
-    </profiles>
 
 </project>

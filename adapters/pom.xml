@@ -30,9 +30,19 @@
     <artifactId>keycloak-adapters-pom</artifactId>
     <packaging>pom</packaging>
 
-    <modules>
-        <module>spi</module>
-        <module>saml</module>
-        <module>oidc</module>
-    </modules>
+    <profiles>
+        <profile>
+            <id>adapters</id>
+            <activation>
+                <property>
+                    <name>!skipAdapters</name>
+                </property>
+            </activation>
+            <modules>
+                <module>spi</module>
+                <module>saml</module>
+                <module>oidc</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>
