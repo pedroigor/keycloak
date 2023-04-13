@@ -331,6 +331,7 @@ public class UserResource {
         if (authenticatedRealm.getId().equals(realm.getId()) && sessionState != null) {
             sameRealm = true;
             UserSessionModel userSession = lockUserSessionsForModification(session, () -> session.sessions().getUserSession(authenticatedRealm, sessionState));
+            AuthenticationManager.expireAuthSessionCookie(realm, session.getContext().getUri(), session);
             AuthenticationManager.expireIdentityCookie(realm, session.getContext().getUri(), session);
             AuthenticationManager.expireRememberMeCookie(realm, session.getContext().getUri(), session);
             AuthenticationManager.backchannelLogout(session, authenticatedRealm, userSession, session.getContext().getUri(), clientConnection, headers, true);
