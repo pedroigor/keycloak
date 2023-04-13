@@ -1961,20 +1961,6 @@
                     <version>${frontend.plugin.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.keycloak</groupId>
-                    <artifactId>keycloak-distribution-licenses-maven-plugin</artifactId>
-                    <version>${project.version}</version>
-                    <executions>
-                        <execution>
-                            <id>process-licenses</id>
-                            <goals>
-                                <goal>process</goal>
-                            </goals>
-                            <phase>process-resources</phase>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
                     <groupId>org.asciidoctor</groupId>
                     <artifactId>asciidoctor-maven-plugin</artifactId>
                     <version>1.5.8</version>
@@ -2005,7 +1991,6 @@
                 <module>services</module>
                 <module>model</module>
                 <module>util</module>
-                <module>rest</module>
                 <module>authz</module>
                 <module>quarkus</module>
             </modules>
@@ -2042,6 +2027,24 @@
             </modules>
             <build>
                 <defaultGoal>clean install</defaultGoal>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.keycloak</groupId>
+                            <artifactId>keycloak-distribution-licenses-maven-plugin</artifactId>
+                            <version>${project.version}</version>
+                            <executions>
+                                <execution>
+                                    <id>process-licenses</id>
+                                    <goals>
+                                        <goal>process</goal>
+                                    </goals>
+                                    <phase>process-resources</phase>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
         <profile>

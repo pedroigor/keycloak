@@ -33,11 +33,6 @@
 
     <name>Tests</name>
 
-    <modules>
-        <module>base</module>
-        <module>other</module>
-    </modules>
-
     <properties>
         <auth.server>undertow</auth.server>
         <auth.server.undertow>true</auth.server.undertow>
@@ -759,6 +754,18 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>testsuite</id>
+            <activation>
+                <property>
+                    <name>testsuite</name>
+                </property>
+            </activation>
+            <modules>
+                <module>base</module>
+                <module>other</module>
+            </modules>
+        </profile>
         <profile>
             <id>auth-server-quarkus</id>
             <properties>

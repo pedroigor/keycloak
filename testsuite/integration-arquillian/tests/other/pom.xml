@@ -151,7 +151,7 @@
             </modules>
         </profile>
         <profile>
-            <id>webauthn</id>
+            <id>testsuite</id>
             <modules>
                 <module>base-ui</module>
                 <module>webauthn</module>
