@@ -23,6 +23,12 @@ package org.keycloak.models;
  */
 public interface KeycloakTransactionManager extends KeycloakTransaction {
 
+    boolean RETRY_ENABLED = Boolean.parseBoolean(System.getProperty("kc.transaction.retry.enabled", Boolean.TRUE.toString()));
+
+    default boolean isRetryEnabled() {
+        return RETRY_ENABLED;
+    }
+
     enum JTAPolicy {
         /**
          * Do not interact with JTA at all

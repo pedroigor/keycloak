@@ -46,6 +46,9 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
 
     public DefaultKeycloakTransactionManager(KeycloakSession session) {
         this.session = session;
+        if (logger.isDebugEnabled()) {
+            logger.debugf("Transaction retry enabled: %s", isRetryEnabled());
+        }
     }
 
     @Override

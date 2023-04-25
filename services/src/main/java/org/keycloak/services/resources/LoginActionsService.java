@@ -256,17 +256,20 @@ public class LoginActionsService {
                                  @QueryParam(Constants.EXECUTION) String execution,
                                  @QueryParam(Constants.CLIENT_ID) String clientId,
                                  @QueryParam(Constants.TAB_ID) String tabId) {
-        return KeycloakModelUtils.runJobInRetriableTransaction(session.getKeycloakSessionFactory(), new ResponseSessionTask(session) {
-            @Override
-            public Response runInternal(KeycloakSession session) {
-                // create another instance of the endpoint to isolate each run.
-                session.getContext().getHttpResponse().setWriteCookiesOnTransactionComplete();
-                LoginActionsService other = new LoginActionsService(session, new EventBuilder(session.getContext().getRealm(), session, clientConnection));
-                // process the request in the created instance.
-                return other.authenticateInternal(authSessionId, code, execution, clientId, tabId);
-            }
-        }, 10, 100);
-
+        if (session.getTransactionManager().isRetryEnabled()) {
+            return KeycloakModelUtils.runJobInRetriableTransaction(session.getKeycloakSessionFactory(), new ResponseSessionTask(session) {
+                @Override
+                public Response runInternal(KeycloakSession session) {
+                    // create another instance of the endpoint to isolate each run.
+                    session.getContext().getHttpResponse().setWriteCookiesOnTransactionComplete();
+                    LoginActionsService other = new LoginActionsService(session, new EventBuilder(session.getContext().getRealm(), session, clientConnection));
+                    // process the request in the created instance.
+                    return other.authenticateInternal(authSessionId, code, execution, clientId, tabId);
+                }
+            }, 10, 100);
+        } else {
+            return authenticateInternal(authSessionId, code, execution, clientId, tabId);
+        }
     }
 
     private Response authenticateInternal(final String authSessionId, final String code, final String execution,
