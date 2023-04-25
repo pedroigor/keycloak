@@ -23,7 +23,7 @@ package org.keycloak.models;
  */
 public interface KeycloakTransactionManager extends KeycloakTransaction {
 
-    boolean RETRY_ENABLED = Boolean.parseBoolean(System.getProperty("kc.transaction.retry.enabled", Boolean.TRUE.toString()));
+    boolean RETRY_ENABLED = Boolean.parseBoolean(System.getenv("KC_TRANSACTION_RETRY_ENABLED"));
 
     default boolean isRetryEnabled() {
         return RETRY_ENABLED;
