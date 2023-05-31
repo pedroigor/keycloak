@@ -688,9 +688,11 @@ public class IdentityBrokerService implements IdentityProvider.AuthenticationCal
 
             // Add federated identity link here
             if (! (federatedUser instanceof LightweightUserAdapter)) {
-                FederatedIdentityModel federatedIdentityModel = new FederatedIdentityModel(context.getIdpConfig().getAlias(), context.getId(),
-                        context.getUsername(), context.getToken());
-                session.users().addFederatedIdentity(realmModel, federatedUser, federatedIdentityModel);
+                FederatedIdentityModel federatedIdentityModel = session.users().getFederatedIdentity(realmModel, federatedUser, providerAlias);
+                if (federatedIdentityModel == null) {
+                    federatedIdentityModel = new FederatedIdentityModel(providerAlias, context.getId(), context.getUsername(), context.getToken());
+                    session.users().addFederatedIdentity(realmModel, federatedUser, federatedIdentityModel);
+                }
             }
 
 
@@ -990,9 +992,9 @@ public class IdentityBrokerService implements IdentityProvider.AuthenticationCal
         if (context.getIdpConfig().getSyncMode() == IdentityProviderSyncMode.FORCE) {
             setBasicUserAttributes(context, federatedUser);
 
-            if (!Objects.equals(context.getUsername(), federatedIdentityModel.getUserName())) {
+            if (!Objects.equals(context.getUsername(), federatedIdentityModel.getUserName()) || !Objects.equals(context.getId(), federatedIdentityModel.getUserId())) {
                 federatedIdentityModel = new FederatedIdentityModel(federatedIdentityModel.getIdentityProvider(),
-                        federatedIdentityModel.getUserId(), context.getUsername(),
+                        context.getId(), context.getUsername(),
                         federatedIdentityModel.getToken());
 
                 this.session.users().updateFederatedIdentity(this.realmModel, federatedUser, federatedIdentityModel);
