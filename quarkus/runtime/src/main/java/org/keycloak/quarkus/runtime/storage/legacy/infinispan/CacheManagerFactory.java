@@ -17,6 +17,8 @@
 
 package org.keycloak.quarkus.runtime.storage.legacy.infinispan;
 
+import java.io.UncheckedIOException;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -29,8 +31,12 @@ import org.infinispan.configuration.parsing.ParserRegistry;
 import org.infinispan.jboss.marshalling.core.JBossUserMarshaller;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.metrics.config.MicrometerMeterRegisterConfigurationBuilder;
+import org.infinispan.protostream.SerializationContext;
+import org.infinispan.protostream.SerializationContextInitializer;
 import org.jboss.logging.Logger;
+import org.keycloak.config.StorageOptions;
 import org.keycloak.quarkus.runtime.configuration.Configuration;
+import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 
 public class CacheManagerFactory {
 
@@ -92,6 +98,35 @@ public class CacheManagerFactory {
         // TODO: This should be replaced later with the marshalling recommended by infinispan. Probably protostream.
         // See https://infinispan.org/docs/stable/titles/developing/developing.html#marshalling for the details
         builder.getGlobalConfigurationBuilder().serialization().marshaller(new JBossUserMarshaller());
+
+        Optional<String> storage = Configuration.getOptionalValue(
+                MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + StorageOptions.STORAGE.getKey());
+
+        if (storage.isEmpty()) {
+            // workaround to avoid loading initializers via service loader
+            builder.getGlobalConfigurationBuilder().serialization()
+                    .addContextInitializer(new SerializationContextInitializer() {
+                        @Override
+                        public String getProtoFileName() {
+                            return null;
+                        }
+
+                        @Override
+                        public String getProtoFile() throws UncheckedIOException {
+                            return null;
+                        }
+
+                        @Override
+                        public void registerSchema(SerializationContext serCtx) {
+
+                        }
+
+                        @Override
+                        public void registerMarshallers(SerializationContext serCtx) {
+
+                        }
+                    });
+        }
 
         return new DefaultCacheManager(builder, isStartEagerly());
     }

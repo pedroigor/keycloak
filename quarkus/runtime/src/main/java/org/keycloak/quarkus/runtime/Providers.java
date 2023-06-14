@@ -17,10 +17,30 @@
 
 package org.keycloak.quarkus.runtime;
 
+import static org.keycloak.config.StorageOptions.STORAGE;
+import static org.keycloak.quarkus.runtime.configuration.Configuration.getOptionalValue;
+import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import org.keycloak.models.map.storage.MapStorageSpi;
+import org.keycloak.models.map.storage.jpa.liquibase.connection.MapLiquibaseConnectionSpi;
+import org.keycloak.models.map.storage.jpa.updater.MapJpaUpdaterSpi;
 import org.keycloak.provider.KeycloakDeploymentInfo;
+import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.ProviderManager;
+import org.keycloak.provider.Spi;
 
 public final class Providers {
+
+    private static final List<Class<? extends Spi>> JPA_STORAGE_SPI = List.of(
+            MapLiquibaseConnectionSpi.class,
+            MapJpaUpdaterSpi.class
+    );
+
+    private static final List<Class<? extends Spi>> STORAGE_SPI = List.of(
+            MapStorageSpi.class
+    );
 
     public static ProviderManager getProviderManager(ClassLoader classLoader) {
         KeycloakDeploymentInfo keycloakDeploymentInfo = KeycloakDeploymentInfo.create()
@@ -28,6 +48,35 @@ public final class Providers {
                 .services()
                 .themeResources();
 
-        return new ProviderManager(keycloakDeploymentInfo, classLoader);
+        return new ProviderManager(keycloakDeploymentInfo, classLoader) {
+            @Override
+            public synchronized List<Spi> loadSpis() {
+                if (isLegacyStore()) {
+                    // do not include SPIs from keycloak-model-map-jpa in the runtime classpath if using legacy store
+                    return super.loadSpis().stream()
+                            .filter(spi -> !STORAGE_SPI.contains(spi.getClass()))
+                            .filter(spi -> !JPA_STORAGE_SPI.contains(spi.getClass()))
+                            .collect(Collectors.toList());
+                }
+
+                return super.loadSpis();
+            }
+
+            @Override
+            public synchronized List<ProviderFactory> load(Spi spi) {
+                if (isLegacyStore()) {
+                    return super.load(spi)
+                            .stream()
+                            .filter(f -> !f.getClass().getName().startsWith("org.keycloak.models.map.storage.jpa"))
+                            .collect(Collectors.toList());
+                }
+
+                return super.load(spi);
+            }
+
+            private boolean isLegacyStore() {
+                return getOptionalValue(NS_KEYCLOAK_PREFIX.concat(STORAGE.getKey())).isEmpty();
+            }
+        };
     }
 }
