@@ -51,7 +51,7 @@ public class FipsDistTest {
             dist.setEnvVar("KEYCLOAK_ADMIN", "admin");
             dist.setEnvVar("KEYCLOAK_ADMIN_PASSWORD", "admin");
 
-            CLIResult cliResult = dist.run("start", "--fips-mode=strict");
+            CLIResult cliResult = dist.run("-v", "start", "--fips-mode=strict");
             cliResult.assertStarted();
             cliResult.assertMessage(
                     "org.bouncycastle.crypto.fips.FipsUnapprovedOperationError: password must be at least 112 bits");
