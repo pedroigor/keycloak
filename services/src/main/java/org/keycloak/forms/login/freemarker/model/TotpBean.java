@@ -17,13 +17,14 @@
 package org.keycloak.forms.login.freemarker.model;
 
 import org.keycloak.authentication.otp.OTPApplicationProvider;
+import org.keycloak.authentication.requiredactions.UpdateTotp;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.OTPPolicy;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.credential.OTPCredentialModel;
-import org.keycloak.models.utils.HmacOTP;
+import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.utils.TotpUtils;
 
 import jakarta.ws.rs.core.UriBuilder;
@@ -61,7 +62,15 @@ public class TotpBean {
         } else {
             otpCredentials = Collections.EMPTY_LIST;
         }
-        this.totpSecret = HmacOTP.generateSecret(20);
+
+        AuthenticationSessionModel authenticationSession = session.getContext().getAuthenticationSession();
+
+        this.totpSecret = authenticationSession.getAuthNote(UpdateTotp.TOTP_SECRET);
+
+        if (totpSecret == null) {
+            throw new RuntimeException("Cannot create backing bean, the TOTP secret is not set");
+        }
+
         this.totpSecretEncoded = TotpUtils.encode(totpSecret);
         this.totpSecretQrCode = TotpUtils.qrCode(totpSecret, realm, user);
 

@@ -57,6 +57,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -144,6 +145,24 @@ public class RequiredActionTotpSetupTest extends AbstractTestRealmKeycloakTest {
         assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
 
         events.expectLogin().user(userId).session(authSessionId).detail(Details.USERNAME, "setuptotp").assertEvent();
+    }
+
+    @Test
+    public void setupTotpRegisterSameSecretOnError() {
+        loginPage.open();
+        loginPage.clickRegister();
+        registerPage.register("firstName", "lastName", "aliceotp@mail.com", "aliceotp", "password", "password");
+        events.poll();
+        totpPage.assertCurrent();
+        assertFalse(totpPage.isCancelDisplayed());
+        String totpSecret = totpPage.getTotpSecret();
+        totpPage.configure("wrong");
+        totpPage.assertCurrent();
+        assertNotNull(totpPage.getInputCodeError());
+        totpPage.configure(totp.generateTOTP(totpSecret));
+        events.poll();
+        assertEquals(RequestType.AUTH_RESPONSE, appPage.getRequestType());
+        events.poll();
     }
 
     @Test

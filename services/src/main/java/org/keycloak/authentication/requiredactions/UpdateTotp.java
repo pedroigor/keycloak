@@ -35,6 +35,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.credential.OTPCredentialModel;
 import org.keycloak.models.utils.CredentialValidation;
 import org.keycloak.models.utils.FormMessage;
+import org.keycloak.models.utils.HmacOTP;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.services.validation.Validation;
 import org.keycloak.utils.CredentialHelper;
@@ -48,6 +49,9 @@ import java.util.stream.Stream;
  * @version $Revision: 1 $
  */
 public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory, CredentialRegistrator {
+
+    public static String TOTP_SECRET = "totpSecret";
+
     @Override
     public InitiatedActionSupport initiatedActionSupport() {
         return InitiatedActionSupport.SUPPORTED;
@@ -59,6 +63,7 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
 
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
+        generateSecretIfNotPresentInSession(context);
         Response challenge = context.form()
                 .setAttribute("mode", context.getUriInfo().getQueryParameters().getFirst("mode"))
                 .createResponse(UserModel.RequiredAction.CONFIGURE_TOTP);
@@ -71,7 +76,7 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
         event.event(EventType.UPDATE_TOTP);
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         String challengeResponse = formData.getFirst("totp");
-        String totpSecret = formData.getFirst("totpSecret");
+        String totpSecret = getCurrentTotpSecret(context);
         String mode = formData.getFirst("mode");
         String userLabel = formData.getFirst("userLabel");
 
@@ -157,5 +162,15 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
     @Override
     public boolean isOneTimeAction() {
         return true;
+    }
+
+    private void generateSecretIfNotPresentInSession(RequiredActionContext context) {
+        if (getCurrentTotpSecret(context) == null) {
+            context.getAuthenticationSession().setAuthNote(TOTP_SECRET, HmacOTP.generateSecret(20));
+        }
+    }
+
+    private String getCurrentTotpSecret(RequiredActionContext context) {
+        return context.getAuthenticationSession().getAuthNote(TOTP_SECRET);
     }
 }
