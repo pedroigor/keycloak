@@ -30,6 +30,7 @@ import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
+import org.keycloak.models.utils.StripSecretsUtils;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.AdminEventRepresentation;
 import org.keycloak.representations.idm.AuthDetailsRepresentation;
@@ -247,6 +248,8 @@ public class AssertAdminEvents implements TestRule {
                             }
                         } else {
                             Object actualRep = JsonSerialization.readValue(actual.getRepresentation(), expectedRep.getClass());
+
+                            StripSecretsUtils.stripSecrets(null, expectedRep);
 
                             // Reflection-based comparing for other types - compare the non-null fields of "expected" representation with the "actual" representation from the event
                             for (Method method : Reflections.getAllDeclaredMethods(expectedRep.getClass())) {
