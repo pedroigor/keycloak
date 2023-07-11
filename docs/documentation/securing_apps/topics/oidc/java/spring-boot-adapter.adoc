@@ -8,7 +8,7 @@ This adapter is now in End-Of-Life (EOL), and it is no longer supported nor rece
 We recommend that you to leverage the OAuth2/OpenID Connect support from Spring Boot ecosystem.
 
 For more details about how to integrate {project_name} with Spring Boot applications, consider looking at the
-link:https://github.com/keycloak/keycloak-quickstarts[Keycloak Quickstart GitHub Repository].
+{quickstartRepo_link}[Keycloak Quickstart GitHub Repository].
 ====
 
 

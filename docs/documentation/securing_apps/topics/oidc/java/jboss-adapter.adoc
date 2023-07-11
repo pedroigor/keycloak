@@ -26,7 +26,7 @@ We recommend that you switch to the Elytron OIDC Java adapter to secure your app
 This adapter has a similar configuration to Keycloak Java adapters, so you can expect a smooth migration of your applications.
 
 For more details about how to integrate {project_name} with JakartaEE applications running on latest Wildfly/EAP, consider looking at the
-link:https://github.com/keycloak/keycloak-quickstarts[Keycloak Quickstart GitHub Repository].
+{quickstartRepo_link}[Keycloak Quickstart GitHub Repository].
 
 We do not regularly test and maintain WildFly/EAP adapters. They may work only with WildFly version 23 or earlier or with JBoss EAP 7. Also note
 that they may work only with JEE applications, but not with JakartaEE applications.

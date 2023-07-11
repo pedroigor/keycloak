@@ -5,7 +5,7 @@
 {project_name} Java Adapters are now deprecated and will be removed in a future release. No further enhancements or features will be added to the adapter until then.
 
 For more details about how to integrate {project_name} with Java applications, consider looking at the
-link:https://github.com/keycloak/keycloak-quickstarts[Keycloak Quickstart GitHub Repository].
+{quickstartRepo_link}[Keycloak Quickstart GitHub Repository].
 ====
 
 {project_name} comes with a range of different adapters for Java application. Selecting the correct adapter depends on the target platform.

@@ -11,8 +11,8 @@ Connect and SAML protocols.
 
 ===== Java
 ifeval::[{project_community}==true]
-* link:https://github.com/keycloak/keycloak-quickstarts/tree/main/jakarta/servlet-authz-client[Wildfly Elytron OIDC]
-* link:https://github.com/keycloak/keycloak-quickstarts/tree/main/spring/rest-authz-resource-server[Spring Boot]
+* {quickstartRepo_link}/tree/latest/jakarta/servlet-authz-client[Wildfly Elytron OIDC]
+* {quickstartRepo_link}/tree/latest/spring/rest-authz-resource-server[Spring Boot]
 * <<_jboss_adapter, {project_name} Wildfly Adapter>> (Deprecated)
 * <<_tomcat_adapter,{project_name} Tomcat Adapter>> (Deprecated)
 * <<_jetty9_adapter,{project_name} Jetty 9>> (Deprecated)
