@@ -6,6 +6,7 @@ The policy enforcer configuration uses a JSON format, represented as follows:
 [source,json]
 ----
 {
+  "policy-enforcer": {}
 }
 ----
 
