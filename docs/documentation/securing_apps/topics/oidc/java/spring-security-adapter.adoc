@@ -4,11 +4,12 @@
 
 [WARNING]
 ====
-This adapter is now in End-Of-Life (EOL), and it is no longer supported nor receiving security updates. It will be removed in future releases.
+This adapter is deprecated and will be removed in a future release of Keycloak. No further enhancements or new features
+will be added to this adapter.
 
-We recommend that you to leverage the OAuth2/OpenID Connect support from Spring Security.
+We recommend that you leverage the OAuth2/OpenID Connect support from Spring Security.
 
-For more details about how to integrate {project_name} with Spring Security applications, consider looking at the
+For more details about how to integrate {project_name} with Spring Boot applications, consider looking at the
 {quickstartRepo_link}[Keycloak Quickstart GitHub Repository].
 ====
 

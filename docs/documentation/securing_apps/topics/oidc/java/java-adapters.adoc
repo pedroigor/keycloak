@@ -2,7 +2,7 @@
 
 [WARNING]
 ====
-{project_name} Java Adapters are now deprecated and will be removed in a future release. No further enhancements or features will be added to the adapter until then.
+{project_name} Java Adapters are now deprecated and will be removed in a future release. No further enhancements or features will be added to the adapters until then.
 
 For more details about how to integrate {project_name} with Java applications, consider looking at the
 {quickstartRepo_link}[Keycloak Quickstart GitHub Repository].

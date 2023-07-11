@@ -1,10 +1,7 @@
 [[_jaas_adapter]]
 ==== JAAS plugin
 
-[WARNING]
-====
-This adapter is now in End-Of-Life (EOL), and it is no longer supported nor receiving security updates. It will be removed in future releases.
-====
+include::adapter-deprecation-notice.adoc[]
 
 It's generally not needed to use JAAS for most of the applications, especially if they are HTTP based, and you should most likely choose one of our other adapters.
 However, some applications and systems may still rely on pure legacy JAAS solution.
