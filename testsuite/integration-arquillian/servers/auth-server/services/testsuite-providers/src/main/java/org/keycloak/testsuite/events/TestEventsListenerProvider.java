@@ -22,9 +22,13 @@ import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.EventListenerTransaction;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
@@ -33,14 +37,27 @@ public class TestEventsListenerProvider implements EventListenerProvider {
 
     private static final BlockingQueue<Event> events = new LinkedBlockingQueue<Event>();
     private static final BlockingQueue<AdminEvent> adminEvents = new LinkedBlockingQueue<>();
-    private final EventListenerTransaction tx = new EventListenerTransaction((event, includeRepre) -> adminEvents.add(event), events::add);
+    private final KeycloakSession session;
+    private final EventListenerTransaction tx = new EventListenerTransaction((event, includeRepre) -> adminEvents.add(event), new Consumer<Event>() {
+        @Override
+        public void accept(Event event) {
+            events.add(event);
+            // get data shared from the details map
+            System.out.println(event.getDetails());
+        }
+    });
 
     public TestEventsListenerProvider(KeycloakSession session) {
+        this.session = session;
         session.getTransactionManager().enlistAfterCompletion(tx);
     }
 
     @Override
     public void onEvent(Event event) {
+        RealmModel realm = session.realms().getRealm(event.getRealmId());
+        UserModel user = session.users().getUserByUsername(realm, "alice");
+        Map<String, String> details = event.getDetails();
+        details.put("user.attributes", user.getAttributes().toString());
         tx.addEvent(event);
     }
 

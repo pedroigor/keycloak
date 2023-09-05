@@ -31,15 +31,19 @@ import org.keycloak.events.EventType;
 import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.EventRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.AssertEvents;
+import org.keycloak.testsuite.util.UserBuilder;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
@@ -61,6 +65,10 @@ public class EventStoreProviderTest extends AbstractEventsTest {
             adminRealmRep.setEventsEnabled(true);
             adminRealmRep.setEventsExpiration(0);
             adminRealmRep.setEventsListeners(Collections.singletonList(TestEventsListenerContextDetailsProviderFactory.PROVIDER_ID));
+            List<UserRepresentation> users = Optional.ofNullable(adminRealmRep.getUsers()).orElse(new ArrayList<>());
+            users.add(UserBuilder.create()
+                    .username("alice").build());
+            adminRealmRep.setUsers(users);
             testRealms.add(adminRealmRep);
         }
     }
