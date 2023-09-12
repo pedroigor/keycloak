@@ -22,8 +22,10 @@ import java.util.List;
 import jakarta.ws.rs.NotFoundException;
 
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.common.util.ConcurrentMultivaluedHashMap;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.testsuite.arquillian.TestContext;
 import com.google.common.collect.Streams;
 
@@ -92,6 +94,21 @@ public class TestCleanup {
         entities.add(CLIENT_UUIDS, clientUuid);
     }
 
+    public void addClientId(String clientId) {
+        addCleanup(new AutoCloseable() {
+            @Override
+            public void close() throws Exception {
+                ClientsResource clientsResource = getAdminClient().realm(realmName).clients();
+                List<ClientRepresentation> clients = clientsResource.findByClientId(clientId);
+
+                if (clients.isEmpty()) {
+                    throw new RuntimeException("No client with client_id '" + clientId + "' found when cleaning up resources");
+                }
+
+                clientsResource.get(clients.get(0).getId()).remove();
+            }
+        });
+    }
 
     public void addClientScopeId(String clientScopeId) {
         entities.add(CLIENT_SCOPE_IDS, clientScopeId);

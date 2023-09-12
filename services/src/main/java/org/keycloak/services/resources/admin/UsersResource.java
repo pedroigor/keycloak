@@ -276,7 +276,8 @@ public class UsersResource {
             @Parameter(description = "Boolean representing if user is enabled or not") @QueryParam("enabled") Boolean enabled,
             @Parameter(description = "Boolean which defines whether brief representations are returned (default: false)") @QueryParam("briefRepresentation") Boolean briefRepresentation,
             @Parameter(description = "Boolean which defines whether the params \"last\", \"first\", \"email\" and \"username\" must match exactly") @QueryParam("exact") Boolean exact,
-            @Parameter(description = "A query to search for custom attributes, in the format 'key1:value2 key2:value2'") @QueryParam("q") String searchQuery) {
+            @Parameter(description = "A query to search for custom attributes, in the format 'key1:value2 key2:value2'") @QueryParam("q") String searchQuery,
+            @Parameter(description = "Boolean which defines whether service accounts should be returned when using parameters other than 'search' (default: true)") @QueryParam("includeServiceAccount") Boolean includeServiceAccount) {
         UserPermissionEvaluator userPermissionEvaluator = auth.users();
 
         userPermissionEvaluator.requireQuery();
@@ -302,8 +303,9 @@ public class UsersResource {
                 if (enabled != null) {
                     attributes.put(UserModel.ENABLED, enabled.toString());
                 }
+                includeServiceAccount = includeServiceAccount != null && includeServiceAccount;
                 return searchForUser(attributes, realm, userPermissionEvaluator, briefRepresentation, firstResult,
-                        maxResults, false);
+                        maxResults, includeServiceAccount);
             }
         } else if (last != null || first != null || email != null || username != null || emailVerified != null
                 || idpAlias != null || idpUserId != null || enabled != null || exact != null || !searchAttributes.isEmpty()) {
@@ -338,11 +340,14 @@ public class UsersResource {
 
                     attributes.putAll(searchAttributes);
 
+                    includeServiceAccount = includeServiceAccount == null || includeServiceAccount;
+
                     return searchForUser(attributes, realm, userPermissionEvaluator, briefRepresentation, firstResult,
-                            maxResults, true);
+                            maxResults, includeServiceAccount);
                 } else {
+                    includeServiceAccount = includeServiceAccount != null && includeServiceAccount;
                     return searchForUser(new HashMap<>(), realm, userPermissionEvaluator, briefRepresentation,
-                            firstResult, maxResults, false);
+                            firstResult, maxResults, includeServiceAccount);
                 }
 
         return toRepresentation(realm, userPermissionEvaluator, briefRepresentation, userModels);

@@ -17,6 +17,7 @@
 
 package org.keycloak.testsuite.admin;
 
+import org.hamcrest.Matchers;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +39,7 @@ import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
 import org.keycloak.testsuite.arquillian.annotation.EnableFeature;
 import org.keycloak.testsuite.updaters.RealmAttributeUpdater;
 import org.keycloak.testsuite.util.AdminClientUtil;
+import org.keycloak.testsuite.util.ClientBuilder;
 import org.keycloak.testsuite.util.RealmBuilder;
 
 import java.io.IOException;
@@ -54,6 +56,8 @@ import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.emptyCollectionOf;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -400,6 +404,26 @@ public class UsersTest extends AbstractAdminTest {
         //search not specified (defaults to simply /count)
         assertThat(testRealmResource.users().count(null, null, null, null), is(0));
         assertThat(testRealmResource.users().count("", "", "", ""), is(0));
+    }
+
+    @Test
+    public void testSearchServiceAccount() {
+        Assume.assumeFalse(isJpaRealmProvider());
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put(Constants.REALM_ATTR_USERNAME_CASE_SENSITIVE, "false");
+        RealmResource realmResource = adminClient.realm(REALM_NAME);
+        ClientRepresentation client = ClientBuilder.create()
+                .clientId("test")
+                .serviceAccount()
+                .build();
+        getCleanup().addClientId(client.getClientId());
+        realmResource.clients().create(client).close();
+
+        List<UserRepresentation> users = realmResource.users().searchServiceAccount("test", false, true);
+        assertThat(users.size(), is(1));
+
+        users = realmResource.users().searchServiceAccount("test", false, false);
+        assertThat(users, emptyIterable());
     }
 
     private RealmResource setupTestEnvironmentWithPermissions(boolean grp1ViewPermissions) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
