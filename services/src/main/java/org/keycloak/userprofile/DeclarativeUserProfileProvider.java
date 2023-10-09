@@ -83,6 +83,7 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
     private static final String UP_PIECE_COMPONENT_CONFIG_KEY_BASE = "config-piece-";
 
     private static boolean isDeclarativeConfigurationEnabled;
+    private static UPConfig parsedDefaultRawConfig;
 
     /**
      * Method used for predicate which returns true if any of the configuredScopes is requested in current auth flow.
@@ -106,10 +107,9 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
     }
 
     private String defaultRawConfig;
-    private static final Map<UserProfileContext, UserProfileMetadata> DEFAULT_METADATA = Collections.synchronizedMap(new HashMap<>());
 
     public DeclarativeUserProfileProvider() {
-        defaultRawConfig = UPConfigUtils.readDefaultConfig();
+
     }
 
     public DeclarativeUserProfileProvider(KeycloakSession session, Map<UserProfileContext, UserProfileMetadata> metadataRegistry, String defaultRawConfig) {
@@ -142,6 +142,15 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
     }
 
     @Override
+    protected UserProfileMetadata configureUserProfile(UserProfileMetadata metadata) {
+        if (isDeclarativeConfigurationEnabled) {
+            return decorateUserProfileForCache(metadata, parsedDefaultRawConfig);
+        }
+
+        return metadata;
+    }
+
+    @Override
     protected UserProfileMetadata configureUserProfile(UserProfileMetadata metadata, KeycloakSession session) {
         UserProfileContext context = metadata.getContext();
         UserProfileMetadata decoratedMetadata = metadata.clone();
@@ -161,7 +170,7 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
         ComponentModel component = getComponentModel().orElse(null);
 
         if (component == null) {
-            return DEFAULT_METADATA.computeIfAbsent(context, (c) -> decorateUserProfileForCache(decoratedMetadata, getParsedConfig(defaultRawConfig)));
+            return decoratedMetadata;
         }
 
         Map<UserProfileContext, UserProfileMetadata> metadataMap = component.getNote(PARSED_CONFIG_COMPONENT_KEY);
@@ -267,8 +276,14 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
 
     @Override
     public void init(Config.Scope config) {
-        super.init(config);
         isDeclarativeConfigurationEnabled = Profile.isFeatureEnabled(Profile.Feature.DECLARATIVE_USER_PROFILE);
+        defaultRawConfig = UPConfigUtils.readDefaultConfig();
+        try {
+            parsedDefaultRawConfig = parseConfig(defaultRawConfig);
+        } catch (IOException cause) {
+            throw new RuntimeException("Failed to parse default user profile configuration", cause);
+        }
+        super.init(config);
     }
 
     @Override
@@ -300,7 +315,7 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
 
         Map<String, UPGroup> groupsByName = asHashMap(parsedConfig.getGroups());
         int guiOrder = 0;
-        
+
         for (UPAttribute attrConfig : parsedConfig.getAttributes()) {
             String attributeName = attrConfig.getName();
             List<AttributeValidatorMetadata> validators = new ArrayList<>();
@@ -533,6 +548,21 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
             List<String> errors = UPConfigUtils.validate(session, parsedConfig);
             if (!errors.isEmpty()) {
                 throw new RuntimeException("UserProfile configuration for realm '" + session.getContext().getRealm().getName() + "' is invalid: " + errors.toString());
+            }
+
+            for (AttributeMetadata metadata : decoratedMetadata.getAttributes()) {
+                String attributeName = metadata.getName();
+
+                if (isBuiltInAttribute(attributeName)) {
+                    UPAttribute upAttribute = parsedDefaultRawConfig.getAttribute(attributeName);
+                    Map<String, Map<String, Object>> validations = Optional.ofNullable(upAttribute.getValidations()).orElse(Collections.emptyMap());
+
+                    for (String id : validations.keySet()) {
+                        List<AttributeValidatorMetadata> validators = metadata.getValidators();
+                        // remove default validators to make sure the user can override them
+                        validators.removeIf(m -> m.getValidatorId().equals(id));
+                    }
+                }
             }
 
             return decorateUserProfileForCache(decoratedMetadata, parsedConfig);
