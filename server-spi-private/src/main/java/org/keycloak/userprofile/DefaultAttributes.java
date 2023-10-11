@@ -30,10 +30,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.keycloak.component.ComponentModel;
 import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.storage.StorageId;
 import org.keycloak.validate.ValidationContext;
 import org.keycloak.validate.ValidationError;
 
@@ -84,6 +86,10 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
             if (isServiceAccountUser()) {
                 return false;
             }
+        }
+
+        if (isReadOnlyFromStorage(attributeName)) {
+            return true;
         }
 
         if (isReadOnlyFromMetadata(attributeName) || isReadOnlyInternalAttribute(attributeName)) {
@@ -414,6 +420,33 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
             ValidationContext vc = validator.validate(attributeContext);
             if (!vc.isValid()) {
                 return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isReadOnlyFromStorage(String attributeName) {
+        if (user == null) {
+            // TODO: not covering user creation yet
+            return false;
+        }
+        String federationProviderId = StorageId.providerId(user.getId());
+
+        if (federationProviderId != null) {
+            RealmModel realm = session.getContext().getRealm();
+            //TODO: do not use strings to reference constants but there is no visibility to ldap classes from here
+            ComponentModel mapper = realm.getComponentsStream(StorageId.providerId(user.getId()), "org.keycloak.storage.ldap.mappers.LDAPStorageMapper")
+                    .filter(c -> attributeName.equals(c.getConfig().getOrDefault("user.model.attribute", Collections.singletonList("")).get(0)))
+                    .findAny()
+                    .orElse(null);
+
+            if (mapper != null) {
+                boolean readOnly = mapper.get("read.only", false);
+
+                if (readOnly) {
+                    return true;
+                }
             }
         }
 

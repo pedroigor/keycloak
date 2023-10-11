@@ -42,8 +42,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.component.ComponentValidationException;
@@ -55,7 +57,14 @@ import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.services.messages.Messages;
+import org.keycloak.storage.StorageId;
+import org.keycloak.storage.ldap.idm.model.LDAPObject;
+import org.keycloak.storage.ldap.mappers.LDAPStorageMapper;
+import org.keycloak.storage.ldap.mappers.UserAttributeLDAPStorageMapper;
+import org.keycloak.testsuite.federation.ldap.LDAPTestContext;
 import org.keycloak.testsuite.runonserver.RunOnServer;
+import org.keycloak.testsuite.util.LDAPRule;
+import org.keycloak.testsuite.util.LDAPTestUtils;
 import org.keycloak.userprofile.AttributeGroupMetadata;
 import org.keycloak.userprofile.DeclarativeUserProfileProvider;
 import org.keycloak.userprofile.config.UPAttribute;
@@ -83,6 +92,9 @@ import org.keycloak.validate.validators.LengthValidator;
 public class UserProfileTest extends AbstractUserProfileTest {
 
     protected static final String ATT_ADDRESS = "address";
+
+    @ClassRule
+    public static LDAPRule ldapRule = new LDAPRule();
 
     @Override
     public void configureTestRealm(RealmRepresentation testRealm) {
@@ -1406,6 +1418,44 @@ public class UserProfileTest extends AbstractUserProfileTest {
         } catch (ValidationException ve) {
             assertTrue(ve.isAttributeOnError(LDAPConstants.LDAP_ID));
         }
+    }
+
+    @Test
+    public void testReadOnlyBasedOnUserFederationSettings() {
+        Map<String, String> cfg = ldapRule.getConfig();
+        testingClient.testing().ldap(TEST_REALM_NAME).createLDAPProvider(cfg, false);
+        getTestingClient().server(TEST_REALM_NAME).run((RunOnServer) UserProfileTest::testReadOnlyBasedOnUserFederationSettings);
+    }
+
+    private static void testReadOnlyBasedOnUserFederationSettings(KeycloakSession session) {
+        LDAPTestContext ctx = LDAPTestContext.init(session);
+        RealmModel appRealm = ctx.getRealm();
+
+        LDAPTestUtils.addLocalUser(session, appRealm, "marykeycloak", "mary@test.com", "password-app");
+        // Delete all LDAP users and add some new for testing
+        LDAPTestUtils.removeAllLDAPUsers(ctx.getLdapProvider(), appRealm);
+
+        LDAPObject john = LDAPTestUtils.addLDAPUser(ctx.getLdapProvider(), appRealm, "johnkeycloak", "John", "Doe", "john@email.org", null, "1234");
+        LDAPTestUtils.updateLDAPPassword(ctx.getLdapProvider(), john, "Password1");
+
+        RealmModel realm = session.getContext().getRealm();
+        UserModel ldapUser = session.users().getUserByUsername(realm, "johnkeycloak");
+        UserProfileProvider provider = getUserProfileProvider(session);
+        UserProfile profile = provider.create(UserProfileContext.USER_API, ldapUser);
+        Attributes attributes = profile.getAttributes();
+        assertFalse(attributes.isReadOnly(UserModel.FIRST_NAME));
+
+        ComponentModel ldapAttributeMapper = realm.getComponentsStream(StorageId.providerId(ldapUser.getId()), LDAPStorageMapper.class.getName())
+                .filter(new Predicate<ComponentModel>() {
+                    @Override
+                    public boolean test(ComponentModel c) {
+                        return UserModel.FIRST_NAME.equals(c.getConfig().getOrDefault(UserAttributeLDAPStorageMapper.USER_MODEL_ATTRIBUTE, List.of("")).get(0));
+                    }
+                }).findAny().orElse(null);
+
+        ldapAttributeMapper.getConfig().put(UserAttributeLDAPStorageMapper.READ_ONLY, List.of(Boolean.TRUE.toString()));
+        realm.updateComponent(ldapAttributeMapper);
+        assertTrue(attributes.isReadOnly(UserModel.FIRST_NAME));
     }
 
     @Test
