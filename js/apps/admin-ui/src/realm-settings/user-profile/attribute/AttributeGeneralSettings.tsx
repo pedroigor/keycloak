@@ -45,10 +45,9 @@ export const AttributeGeneralSettings = () => {
   const { attributeName } = useParams<AttributeParams>();
   const editMode = attributeName ? true : false;
 
-  const selectedScopes = useWatch({
+  const hasSelector = useWatch({
     control: form.control,
-    name: "selector.scopes",
-    defaultValue: [],
+    name: "hasSelector",
   });
 
   const requiredScopes = useWatch({
@@ -69,6 +68,11 @@ export const AttributeGeneralSettings = () => {
   if (!clientScopes) {
     return <KeycloakSpinner />;
   }
+
+  function setHasSelector(hasSelector: boolean) {
+    form.setValue("hasSelector", hasSelector);
+  }
+
   return (
     <FormAccess role="manage-realm" isHorizontal>
       <FormGroup
@@ -164,87 +168,71 @@ export const AttributeGeneralSettings = () => {
             <Radio
               id="always"
               data-testid="always"
-              isChecked={selectedScopes.length === clientScopes.length}
+              isChecked={!hasSelector}
               name="enabledWhen"
               label={t("always")}
-              onChange={(value) => {
-                if (value) {
-                  form.setValue(
-                    "selector.scopes",
-                    clientScopes.map((s) => s.name),
-                  );
-                } else {
-                  form.setValue("selector.scopes", []);
-                }
-              }}
+              onChange={() => setHasSelector(false)}
               className="pf-u-mb-md"
             />
             <Radio
               id="scopesAsRequested"
               data-testid="scopesAsRequested"
-              isChecked={selectedScopes.length !== clientScopes.length}
+              isChecked={hasSelector}
               name="enabledWhen"
               label={t("scopesAsRequested")}
-              onChange={(value) => {
-                if (value) {
-                  form.setValue("selector.scopes", []);
-                } else {
-                  form.setValue(
-                    "selector.scopes",
-                    clientScopes.map((s) => s.name),
-                  );
-                }
-              }}
+              onChange={() => setHasSelector(true)}
               className="pf-u-mb-md"
             />
           </FormGroup>
-          <FormGroup fieldId="kc-scope-enabled-when">
-            <Controller
-              name="selector.scopes"
-              control={form.control}
-              defaultValue={clientScopes.map((s) => s.name)}
-              render={({ field }) => (
-                <Select
-                  name="scopes"
-                  data-testid="enabled-when-scope-field"
-                  variant={SelectVariant.typeaheadMulti}
-                  typeAheadAriaLabel="Select"
-                  chipGroupProps={{
-                    numChips: 3,
-                    expandedText: t("hide"),
-                    collapsedText: t("showRemaining"),
-                  }}
-                  onToggle={(isOpen) => setSelectEnabledWhenOpen(isOpen)}
-                  selections={field.value}
-                  onSelect={(_, selectedValue) => {
-                    const option = selectedValue.toString();
-                    let changedValue = [""];
-                    if (field.value) {
-                      changedValue = field.value.includes(option)
-                        ? field.value.filter((item: string) => item !== option)
-                        : [...field.value, option];
-                    } else {
-                      changedValue = [option];
-                    }
+          {hasSelector && (
+            <FormGroup fieldId="kc-scope-enabled-when">
+              <Controller
+                name="selector.scopes"
+                control={form.control}
+                defaultValue={[]}
+                render={({ field }) => (
+                  <Select
+                    name="scopes"
+                    data-testid="enabled-when-scope-field"
+                    variant={SelectVariant.typeaheadMulti}
+                    typeAheadAriaLabel="Select"
+                    chipGroupProps={{
+                      numChips: 3,
+                      expandedText: t("hide"),
+                      collapsedText: t("showRemaining"),
+                    }}
+                    onToggle={(isOpen) => setSelectEnabledWhenOpen(isOpen)}
+                    selections={field.value}
+                    onSelect={(_, selectedValue) => {
+                      const option = selectedValue.toString();
+                      let changedValue = [""];
+                      if (field.value) {
+                        changedValue = field.value.includes(option)
+                          ? field.value.filter(
+                              (item: string) => item !== option,
+                            )
+                          : [...field.value, option];
+                      } else {
+                        changedValue = [option];
+                      }
 
-                    field.onChange(changedValue);
-                  }}
-                  onClear={(selectedValues) => {
-                    selectedValues.stopPropagation();
-                    field.onChange([]);
-                  }}
-                  isOpen={selectEnabledWhenOpen}
-                  isDisabled={selectedScopes.length === clientScopes.length}
-                  aria-labelledby={"scope"}
-                >
-                  {clientScopes.map((option) => (
-                    <SelectOption key={option.name} value={option.name} />
-                  ))}
-                </Select>
-              )}
-            />
-          </FormGroup>
-
+                      field.onChange(changedValue);
+                    }}
+                    onClear={(selectedValues) => {
+                      selectedValues.stopPropagation();
+                      field.onChange([]);
+                    }}
+                    isOpen={selectEnabledWhenOpen}
+                    aria-labelledby={"scope"}
+                  >
+                    {clientScopes.map((option) => (
+                      <SelectOption key={option.name} value={option.name} />
+                    ))}
+                  </Select>
+                )}
+              />
+            </FormGroup>
+          )}
           <Divider />
           <FormGroup
             label={t("required")}
