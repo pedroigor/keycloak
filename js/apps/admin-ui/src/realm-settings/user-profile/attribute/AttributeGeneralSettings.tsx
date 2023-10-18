@@ -77,6 +77,7 @@ export const AttributeGeneralSettings = () => {
   function setHasSelector(hasSelector: boolean) {
     form.setValue("hasSelector", hasSelector);
   }
+
   function setHasRequiredScopes(hasRequiredScopes: boolean) {
     form.setValue("hasRequiredScopes", hasRequiredScopes);
   }
