@@ -21,6 +21,7 @@ import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 import static org.keycloak.utils.StreamsUtil.distinctByKey;
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -70,6 +71,8 @@ import org.keycloak.storage.user.UserLookupProvider;
 import org.keycloak.storage.user.UserQueryMethodsProvider;
 import org.keycloak.storage.user.UserQueryProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
+import org.keycloak.userprofile.UserProfileDecorator;
+import org.keycloak.userprofile.UserProfileMetadata;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -780,6 +783,16 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
             if (provider != null ) {
                 provider.onCache(realm, user, delegate);
             }
+        }
+    }
+
+    @Override
+    public void decorateUserProfileMetadata(Object metadata) {
+        UserProfileMetadata decoratedMetadata = (UserProfileMetadata) metadata;
+
+        for (UserProfileDecorator decorator : getEnabledStorageProviders(session.getContext().getRealm(), UserProfileDecorator.class)
+                .collect(Collectors.toList())) {
+            decorator.decorate(decoratedMetadata);
         }
     }
 }

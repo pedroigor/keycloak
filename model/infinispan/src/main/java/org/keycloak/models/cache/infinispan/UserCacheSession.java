@@ -946,4 +946,9 @@ public class UserCacheSession implements UserCache, OnCreateComponent, OnUpdateC
             ((OnCreateComponent) getDelegate()).onCreate(session, realm, model);
         }
     }
+
+    @Override
+    public void decorateUserProfileMetadata(Object metadata) {
+        getDelegate().decorateUserProfileMetadata(metadata);
+    }
 }

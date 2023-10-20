@@ -18,6 +18,7 @@
 package org.keycloak.storage.ldap;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -86,6 +87,10 @@ import org.keycloak.storage.user.ImportedUserValidation;
 import org.keycloak.storage.user.UserLookupProvider;
 import org.keycloak.storage.user.UserQueryMethodsProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
+import org.keycloak.userprofile.AttributeContext;
+import org.keycloak.userprofile.AttributeMetadata;
+import org.keycloak.userprofile.UserProfileDecorator;
+import org.keycloak.userprofile.UserProfileMetadata;
 
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
@@ -101,7 +106,8 @@ public class LDAPStorageProvider implements UserStorageProvider,
         UserLookupProvider,
         UserRegistrationProvider,
         UserQueryMethodsProvider,
-        ImportedUserValidation {
+        ImportedUserValidation,
+        UserProfileDecorator {
     private static final Logger logger = Logger.getLogger(LDAPStorageProvider.class);
     private static final int DEFAULT_MAX_RESULTS = Integer.MAX_VALUE >> 1;
 
@@ -962,5 +968,24 @@ public class LDAPStorageProvider implements UserStorageProvider,
     @Override
     public String toString() {
         return "LDAPStorageProvider - " + getModel().getName();
+    }
+
+    @Override
+    public void decorate(UserProfileMetadata metadata) {
+        Set<String> attributes = new HashSet<>(List.of("LDAP_ID", "LDAP_ENTRY_DN", "modifyTimestamp"));
+        if (getKerberosConfig().isAllowKerberosAuthentication()) {
+            attributes.add("KERBEROS_PRINCIPAL");
+        }
+        for (String s : attributes) {
+            metadata.addAttribute(s, -1, Collections.emptyList())
+                    .addWriteCondition(AttributeMetadata.ALWAYS_FALSE)
+                    .setSelector(new Predicate<AttributeContext>() {
+                        @Override
+                        public boolean test(AttributeContext context) {
+                            UserModel user = context.getUser();
+                            return getModel().getId().equals(user.getFederationLink());
+                        }
+                    });
+        }
     }
 }

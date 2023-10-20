@@ -219,7 +219,9 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
         for (String name : nameSet()) {
             AttributeMetadata metadata = getMetadata(name);
 
-            if (metadata == null || !metadata.canView(createAttributeContext(metadata))) {
+            if (metadata == null
+                    || !metadata.canView(createAttributeContext(metadata))
+                    || !metadata.isSelected(createAttributeContext(metadata))) {
                 attributes.remove(name);
             }
         }

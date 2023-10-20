@@ -47,10 +47,12 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.UserProvider;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionModel;
+import org.keycloak.storage.DatastoreProvider;
 import org.keycloak.userprofile.config.DeclarativeUserProfileModel;
 import org.keycloak.userprofile.config.UPAttribute;
 import org.keycloak.userprofile.config.UPAttributePermissions;
@@ -438,6 +440,13 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
                         .setAttributeDisplayName(attrConfig.getDisplayName())
                         .setAttributeGroupMetadata(groupMetadata);
             }
+        }
+
+        if (session != null) {
+            // makes sure user providers can override metadata for any attribute
+            DatastoreProvider userProviders = session.getProvider(DatastoreProvider.class);
+            UserProvider userProvider = userProviders.users();
+            userProvider.decorateUserProfileMetadata(decoratedMetadata);
         }
 
         return decoratedMetadata;
