@@ -1283,7 +1283,7 @@ public class AuthenticationManagementResource {
     }
 
     private ConfigPropertyRepresentation getConfigPropertyRep(ProviderConfigProperty prop) {
-        return ModelToRepresentation.toRepresentation(prop);
+        return ModelToRepresentation.toRepresentation(session, prop);
     }
 
     /**

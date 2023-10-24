@@ -284,7 +284,7 @@ public class ComponentResource {
             metadata = componentFactory.getTypeMetadata();
         }
 
-        List<ConfigPropertyRepresentation> propReps =  ModelToRepresentation.toRepresentation(props);
+        List<ConfigPropertyRepresentation> propReps =  ModelToRepresentation.toRepresentation(session, props);
         rep.setProperties(propReps);
         rep.setMetadata(metadata);
         return rep;

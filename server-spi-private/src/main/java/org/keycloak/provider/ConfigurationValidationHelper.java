@@ -19,6 +19,7 @@ package org.keycloak.provider;
 
 import org.keycloak.component.ComponentModel;
 import org.keycloak.component.ComponentValidationException;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.utils.StringUtil;
 
 import java.util.List;
@@ -28,14 +29,16 @@ import java.util.List;
  */
 public class ConfigurationValidationHelper {
 
+    private final KeycloakSession session;
     private ComponentModel model;
 
-    private ConfigurationValidationHelper(ComponentModel model) {
+    private ConfigurationValidationHelper(KeycloakSession session, ComponentModel model) {
+        this.session = session;
         this.model = model;
     }
 
-    public static ConfigurationValidationHelper check(ComponentModel model) {
-        return new ConfigurationValidationHelper(model);
+    public static ConfigurationValidationHelper check(KeycloakSession session, ComponentModel model) {
+        return new ConfigurationValidationHelper(session, model);
     }
 
     public ConfigurationValidationHelper checkInt(ProviderConfigProperty property, boolean required) throws ComponentValidationException {
@@ -46,8 +49,8 @@ public class ConfigurationValidationHelper {
         checkSingle(property.getName(), property.getLabel(), required);
 
         String value = model.getConfig().getFirst(property.getName());
-        if (value != null && !property.getOptions().contains(value)) {
-            String options = StringUtil.joinValuesWithLogicalCondition("or", property.getOptions());
+        if (value != null && !property.getOptions(session).contains(value)) {
+            String options = StringUtil.joinValuesWithLogicalCondition("or", property.getOptions(session));
             throw new ComponentValidationException("''{0}'' should be {1}", property.getLabel(), options);
         }
 

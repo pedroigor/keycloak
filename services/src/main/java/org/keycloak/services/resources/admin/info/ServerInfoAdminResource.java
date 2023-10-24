@@ -170,7 +170,7 @@ public class ServerInfoAdminResource {
                         rep.setHelpText(configured.getHelpText());
                         List<ProviderConfigProperty> configProperties = configured.getConfigProperties();
                         if (configProperties == null) configProperties = Collections.EMPTY_LIST;
-                        rep.setProperties(ModelToRepresentation.toRepresentation(configProperties));
+                        rep.setProperties(ModelToRepresentation.toRepresentation(session, configProperties));
                         if (pi instanceof ComponentFactory) {
                             rep.setMetadata(((ComponentFactory)pi).getTypeMetadata());
                         }
@@ -358,7 +358,7 @@ public class ServerInfoAdminResource {
         rep.setCategory(mapper.getDisplayCategory());
         rep.setPriority(mapper.getPriority());
         List<ProviderConfigProperty> configProperties = mapper.getConfigProperties();
-        rep.setProperties(ModelToRepresentation.toRepresentation(configProperties));
+        rep.setProperties(ModelToRepresentation.toRepresentation(session, configProperties));
         return Arrays.asList(rep);
     }
 

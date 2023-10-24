@@ -90,7 +90,7 @@ public class JavaKeystoreKeyProviderFactory extends AbstractRsaKeyProviderFactor
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         super.validateConfiguration(session, realm, model);
 
-        ConfigurationValidationHelper.check(model)
+        ConfigurationValidationHelper.check(session, model)
                 .checkSingle(KEYSTORE_PROPERTY, true)
                 .checkSingle(KEYSTORE_PASSWORD_PROPERTY, true)
                 .checkSingle(keystoreTypeProperty, false)

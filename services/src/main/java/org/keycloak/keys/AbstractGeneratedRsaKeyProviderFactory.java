@@ -78,7 +78,7 @@ public abstract class AbstractGeneratedRsaKeyProviderFactory extends AbstractRsa
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         super.validateConfiguration(session, realm, model);
 
-        ConfigurationValidationHelper.check(model).checkList(Attributes.KEY_SIZE_PROPERTY.get(), false);
+        ConfigurationValidationHelper.check(session, model).checkList(Attributes.KEY_SIZE_PROPERTY.get(), false);
 
         int size = model.get(Attributes.KEY_SIZE_KEY, 2048);
 

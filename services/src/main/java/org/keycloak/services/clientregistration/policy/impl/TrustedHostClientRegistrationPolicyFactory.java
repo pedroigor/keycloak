@@ -72,7 +72,7 @@ public class TrustedHostClientRegistrationPolicyFactory extends AbstractClientRe
 
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
-        ConfigurationValidationHelper.check(config)
+        ConfigurationValidationHelper.check(session, config)
                 .checkBoolean(HOST_SENDING_REGISTRATION_REQUEST_MUST_MATCH_PROPERTY, true)
                 .checkBoolean(CLIENT_URIS_MUST_MATCH_PROPERTY, true);
 

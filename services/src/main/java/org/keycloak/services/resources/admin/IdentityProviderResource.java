@@ -308,7 +308,7 @@ public class IdentityProviderResource {
                     rep.setName(mapper.getDisplayType());
                     rep.setHelpText(mapper.getHelpText());
                     rep.setProperties(mapper.getConfigProperties().stream()
-                            .map(ModelToRepresentation::toRepresentation)
+                            .map((cp) -> ModelToRepresentation.toRepresentation(session, cp))
                             .collect(Collectors.toList()));
                     return rep;
                 })

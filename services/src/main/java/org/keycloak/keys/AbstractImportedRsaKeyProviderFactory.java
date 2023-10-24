@@ -50,7 +50,7 @@ public abstract class AbstractImportedRsaKeyProviderFactory extends AbstractRsaK
 
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
-        ConfigurationValidationHelper.check(model)
+        ConfigurationValidationHelper.check(session, model)
                 .checkLong(Attributes.PRIORITY_PROPERTY, false)
                 .checkBoolean(Attributes.ENABLED_PROPERTY, false)
                 .checkBoolean(Attributes.ACTIVE_PROPERTY, false)

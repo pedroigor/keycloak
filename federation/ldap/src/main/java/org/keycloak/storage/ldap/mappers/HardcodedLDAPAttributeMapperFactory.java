@@ -74,7 +74,7 @@ public class HardcodedLDAPAttributeMapperFactory extends AbstractLDAPStorageMapp
 
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
-        ConfigurationValidationHelper.check(config)
+        ConfigurationValidationHelper.check(session, config)
                 .checkRequired(HardcodedLDAPAttributeMapper.LDAP_ATTRIBUTE_NAME, "LDAP Attribute Name")
                 .checkRequired(HardcodedLDAPAttributeMapper.LDAP_ATTRIBUTE_VALUE, "LDAP Attribute Value");
     }

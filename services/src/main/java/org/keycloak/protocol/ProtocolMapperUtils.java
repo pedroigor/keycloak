@@ -21,15 +21,22 @@ import org.keycloak.models.ClientSessionContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.ProtocolMapperModel;
+import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.OIDCLoginProtocolFactory;
+import org.keycloak.provider.ProviderConfigProperty;
+import org.keycloak.userprofile.UserProfileContext;
+import org.keycloak.userprofile.UserProfileProvider;
 
 import java.lang.reflect.Method;
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -157,5 +164,34 @@ public class ProtocolMapperUtils {
 
     public static boolean isEnabled(KeycloakSession session, ProtocolMapperModel mapper) {
         return session.getKeycloakSessionFactory().getProviderFactory(ProtocolMapper.class, mapper.getProtocolMapper()) != null;
+    }
+
+    public static ProviderConfigProperty createUserAttributeNameProperty() {
+        ProviderConfigProperty property = new ProviderConfigProperty();
+        property.setName(ProtocolMapperUtils.USER_ATTRIBUTE);
+        property.setLabel(ProtocolMapperUtils.USER_MODEL_ATTRIBUTE_LABEL);
+        property.setHelpText(ProtocolMapperUtils.USER_MODEL_ATTRIBUTE_HELP_TEXT);
+        property.setTypeResolver(session -> {
+            UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
+            RealmModel realm = session.getContext().getRealm();
+
+            if (provider.isEnabled(realm)) {
+                return ProviderConfigProperty.LIST_TYPE;
+            }
+
+            return ProviderConfigProperty.STRING_TYPE;
+        });
+        property.setOptionsResolver(ProtocolMapperUtils.createUserAttributeNamesResolver());
+        return property;
+    }
+
+    private static Function<KeycloakSession, Set<String>> createUserAttributeNamesResolver() {
+        return new Function<KeycloakSession, Set<String>>() {
+            @Override
+            public Set<String> apply(KeycloakSession session) {
+                UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
+                return provider.create(UserProfileContext.USER_API, Collections.emptyMap()).getAttributes().getReadable().keySet();
+            }
+        };
     }
 }

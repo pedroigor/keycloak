@@ -71,7 +71,7 @@ public class HardcodedAttributeMapperFactory extends AbstractLDAPStorageMapperFa
 
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
-        ConfigurationValidationHelper.check(config)
+        ConfigurationValidationHelper.check(session, config)
                 .checkRequired(HardcodedAttributeMapper.USER_MODEL_ATTRIBUTE, "Attribute Name")
                 .checkRequired(HardcodedAttributeMapper.ATTRIBUTE_VALUE, "Attribute Value");
         if(config.get(HardcodedAttributeMapper.USER_MODEL_ATTRIBUTE).equalsIgnoreCase("username") || config.get(HardcodedAttributeMapper.USER_MODEL_ATTRIBUTE).equalsIgnoreCase("email")){

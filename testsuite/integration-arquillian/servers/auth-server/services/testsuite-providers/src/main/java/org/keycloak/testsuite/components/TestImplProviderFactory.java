@@ -52,7 +52,7 @@ public class TestImplProviderFactory implements TestProviderFactory {
 
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
-        ConfigurationValidationHelper.check(model)
+        ConfigurationValidationHelper.check(session, model)
                 .checkRequired("required", "Required")
                 .checkInt("number", "Number", false);
     }

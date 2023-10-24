@@ -74,7 +74,7 @@ public class MaxClientsClientRegistrationPolicyFactory extends AbstractClientReg
 
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
-        ConfigurationValidationHelper.check(config)
+        ConfigurationValidationHelper.check(session, config)
                 .checkInt(MAX_CLIENTS_PROPERTY, true);
     }
 }

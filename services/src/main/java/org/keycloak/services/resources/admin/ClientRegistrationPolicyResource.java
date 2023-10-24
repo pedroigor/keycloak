@@ -82,7 +82,7 @@ public class ClientRegistrationPolicyResource {
                     ComponentTypeRepresentation rep = new ComponentTypeRepresentation();
                     rep.setId(clientRegFactory.getId());
                     rep.setHelpText(clientRegFactory.getHelpText());
-                    rep.setProperties(ModelToRepresentation.toRepresentation(configProps));
+                    rep.setProperties(ModelToRepresentation.toRepresentation(session, configProps));
                     return rep;
                 });
     }

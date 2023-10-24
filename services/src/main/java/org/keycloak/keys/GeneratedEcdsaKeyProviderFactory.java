@@ -97,7 +97,7 @@ public class GeneratedEcdsaKeyProviderFactory extends AbstractEcdsaKeyProviderFa
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         super.validateConfiguration(session, realm, model);
 
-        ConfigurationValidationHelper.check(model).checkList(ECDSA_ELLIPTIC_CURVE_PROPERTY, false);
+        ConfigurationValidationHelper.check(session, model).checkList(ECDSA_ELLIPTIC_CURVE_PROPERTY, false);
 
         String ecInNistRep = model.get(ECDSA_ELLIPTIC_CURVE_KEY);
         if (ecInNistRep == null) ecInNistRep = DEFAULT_ECDSA_ELLIPTIC_CURVE;

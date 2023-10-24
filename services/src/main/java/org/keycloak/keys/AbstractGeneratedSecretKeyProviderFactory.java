@@ -34,7 +34,7 @@ public abstract class AbstractGeneratedSecretKeyProviderFactory<T extends KeyPro
 
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
-        ConfigurationValidationHelper validation = SecretKeyProviderUtils.validateConfiguration(model);
+        ConfigurationValidationHelper validation = SecretKeyProviderUtils.validateConfiguration(session, model);
         validation.checkList(Attributes.SECRET_SIZE_PROPERTY, false);
 
         int size = model.get(Attributes.SECRET_SIZE_KEY, getDefaultKeySize());

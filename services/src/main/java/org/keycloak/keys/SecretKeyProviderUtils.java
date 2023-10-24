@@ -19,6 +19,7 @@ package org.keycloak.keys;
 
 import org.keycloak.component.ComponentModel;
 import org.keycloak.component.ComponentValidationException;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ConfigurationValidationHelper;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
@@ -34,8 +35,8 @@ public abstract class SecretKeyProviderUtils {
                 .property(Attributes.ACTIVE_PROPERTY);
     }
 
-    public static ConfigurationValidationHelper validateConfiguration(ComponentModel model) throws ComponentValidationException {
-        return ConfigurationValidationHelper.check(model)
+    public static ConfigurationValidationHelper validateConfiguration(KeycloakSession session, ComponentModel model) throws ComponentValidationException {
+        return ConfigurationValidationHelper.check(session, model)
                 .checkLong(Attributes.PRIORITY_PROPERTY, false)
                 .checkBoolean(Attributes.ENABLED_PROPERTY, false)
                 .checkBoolean(Attributes.ACTIVE_PROPERTY, false);

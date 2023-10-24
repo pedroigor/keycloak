@@ -937,22 +937,22 @@ public class ModelToRepresentation {
         return rep;
     }
 
-    public static List<ConfigPropertyRepresentation> toRepresentation(List<ProviderConfigProperty> configProperties) {
+    public static List<ConfigPropertyRepresentation> toRepresentation(KeycloakSession session, List<ProviderConfigProperty> configProperties) {
         List<ConfigPropertyRepresentation> propertiesRep = new LinkedList<>();
         for (ProviderConfigProperty prop : configProperties) {
-            ConfigPropertyRepresentation propRep = toRepresentation(prop);
+            ConfigPropertyRepresentation propRep = toRepresentation(session, prop);
             propertiesRep.add(propRep);
         }
         return propertiesRep;
     }
 
-    public static ConfigPropertyRepresentation toRepresentation(ProviderConfigProperty prop) {
+    public static ConfigPropertyRepresentation toRepresentation(KeycloakSession session, ProviderConfigProperty prop) {
         ConfigPropertyRepresentation propRep = new ConfigPropertyRepresentation();
         propRep.setName(prop.getName());
         propRep.setLabel(prop.getLabel());
-        propRep.setType(prop.getType());
+        propRep.setType(prop.getType(session));
         propRep.setDefaultValue(prop.getDefaultValue());
-        propRep.setOptions(prop.getOptions());
+        propRep.setOptions(prop.getOptions(session));
         propRep.setHelpText(prop.getHelpText());
         propRep.setSecret(prop.isSecret());
         propRep.setRequired(prop.isRequired());
