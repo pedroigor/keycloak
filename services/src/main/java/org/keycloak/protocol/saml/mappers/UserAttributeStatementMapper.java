@@ -41,11 +41,7 @@ public class UserAttributeStatementMapper extends AbstractSAMLProtocolMapper imp
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
     static {
-        ProviderConfigProperty property;
-        property = new ProviderConfigProperty();
-        property.setName(ProtocolMapperUtils.USER_ATTRIBUTE);
-        property.setLabel(ProtocolMapperUtils.USER_MODEL_ATTRIBUTE_LABEL);
-        property.setHelpText(ProtocolMapperUtils.USER_MODEL_ATTRIBUTE_HELP_TEXT);
+        ProviderConfigProperty property = ProtocolMapperUtils.createUserAttributeNameProperty();
         configProperties.add(property);
         AttributeStatementHelper.setConfigProperties(configProperties);
 

@@ -16,11 +16,7 @@ public class UserAttributeNameIdMapper extends AbstractSAMLProtocolMapper implem
 
     static {
         NameIdMapperHelper.setConfigProperties(configProperties);
-        ProviderConfigProperty property;
-        property = new ProviderConfigProperty();
-        property.setName(ProtocolMapperUtils.USER_ATTRIBUTE);
-        property.setLabel(ProtocolMapperUtils.USER_MODEL_ATTRIBUTE_LABEL);
-        property.setHelpText(ProtocolMapperUtils.USER_MODEL_ATTRIBUTE_HELP_TEXT);
+        ProviderConfigProperty property = ProtocolMapperUtils.createUserAttributeNameProperty();
         configProperties.add(property);
     }
 

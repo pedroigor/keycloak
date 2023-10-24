@@ -39,12 +39,7 @@ public class UserPropertyMapper extends AbstractOIDCProtocolMapper implements OI
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
     static {
-        ProviderConfigProperty property;
-        property = new ProviderConfigProperty();
-        property.setName(ProtocolMapperUtils.USER_ATTRIBUTE);
-        property.setLabel(ProtocolMapperUtils.USER_MODEL_PROPERTY_LABEL);
-        property.setType(ProviderConfigProperty.STRING_TYPE);
-        property.setHelpText(ProtocolMapperUtils.USER_MODEL_PROPERTY_HELP_TEXT);
+        ProviderConfigProperty property = ProtocolMapperUtils.createUserAttributeNameProperty();
         configProperties.add(property);
         OIDCAttributeMapperHelper.addAttributeConfig(configProperties, UserPropertyMapper.class);
     }
