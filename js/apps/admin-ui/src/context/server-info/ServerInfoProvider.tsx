@@ -5,6 +5,7 @@ import { createNamedContext, useRequiredContext } from "ui-shared";
 import { adminClient } from "../../admin-client";
 import { sortProviders } from "../../util";
 import { useFetch } from "../../utils/useFetch";
+import {useRealm} from "../realm-context/RealmContext";
 
 export const ServerInfoContext = createNamedContext<
   ServerInfoRepresentation | undefined
@@ -17,8 +18,9 @@ export const useLoginProviders = () =>
 
 export const ServerInfoProvider = ({ children }: PropsWithChildren) => {
   const [serverInfo, setServerInfo] = useState<ServerInfoRepresentation>({});
+  const { realm: realmName } = useRealm();
 
-  useFetch(adminClient.serverInfo.find, setServerInfo, []);
+  useFetch(() => adminClient.serverInfo.find({ realm: realmName }), setServerInfo, [realmName]);
 
   return (
     <ServerInfoContext.Provider value={serverInfo}>

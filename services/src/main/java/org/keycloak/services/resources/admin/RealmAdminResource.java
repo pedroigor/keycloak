@@ -111,6 +111,7 @@ import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.managers.ResourceAdminManager;
 import org.keycloak.services.resources.KeycloakOpenAPI;
 import org.keycloak.services.resources.admin.ext.AdminRealmResourceProvider;
+import org.keycloak.services.resources.admin.info.ServerInfoAdminResource;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionManagement;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
@@ -1215,5 +1216,10 @@ public class RealmAdminResource {
     public ClientProfilesResource getClientProfilesResource() {
         ProfileHelper.requireFeature(Profile.Feature.CLIENT_POLICIES);
         return new ClientProfilesResource(session, auth);
+    }
+
+    @Path("serverinfo")
+    public ServerInfoAdminResource getRealmInfo() {
+        return new ServerInfoAdminResource(session);
     }
 }
