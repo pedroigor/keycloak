@@ -168,13 +168,7 @@ public interface Attributes {
      * @param name the attribute name
      * @return
      */
-    default boolean isRootAttribute(String name) {
-        return UserModel.USERNAME.equals(name)
-                || UserModel.EMAIL.equals(name)
-                || UserModel.FIRST_NAME.equals(name)
-                || UserModel.LAST_NAME.equals(name)
-                || UserModel.LOCALE.equals(name);
-    }
+    boolean isRootAttribute(String name);
 
     Map<String, List<String>> toMap();
 }

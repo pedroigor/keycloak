@@ -201,7 +201,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
             if (entry.getKey().startsWith(Constants.USER_ATTRIBUTES_PREFIX)) {
                 String attrName = entry.getKey().substring(16); // length of USER_ATTRIBUTES_PREFIX
                 List<String> asList = getAttribute(attrName);
-                result.put(attrName, asList);
+                result.put(entry.getKey(), asList);
             }
         }
 

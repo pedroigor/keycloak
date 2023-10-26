@@ -33,9 +33,13 @@ import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.messages.Messages;
 
 import jakarta.ws.rs.core.Response;
+import org.keycloak.userprofile.UserProfile;
+import org.keycloak.userprofile.UserProfileContext;
+import org.keycloak.userprofile.UserProfileProvider;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -70,41 +74,7 @@ public class IdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator
 
         ExistingUserInfo duplication = brokerContext.getIdpConfig().isTransientUsers() ? null : checkExistingUser(context, username, serializedCtx, brokerContext);
 
-        UserModel federatedUser = null;
-        if (brokerContext.getIdpConfig().isTransientUsers()) {
-            logger.debugf("Transient brokering requested. Recording user details for account '%s' and from identity provider '%s' .",
-                    username, brokerContext.getIdpConfig().getAlias());
-
-            federatedUser = new LightweightUserAdapter(session, brokerContext.getBrokerSessionId());
-            federatedUser.setUsername(username);
-        } else if (duplication == null) {
-            logger.debugf("No duplication detected. Creating account for user '%s' and linking with identity provider '%s' .",
-                    username, brokerContext.getIdpConfig().getAlias());
-
-            federatedUser = session.users().addUser(realm, username);
-        }
-
-        if (federatedUser != null) {
-            federatedUser.setEnabled(true);
-
-            for (Map.Entry<String, List<String>> attr : serializedCtx.getAttributes().entrySet()) {
-                if (!UserModel.USERNAME.equalsIgnoreCase(attr.getKey())) {
-                    federatedUser.setAttribute(attr.getKey(), attr.getValue());
-                }
-            }
-
-            AuthenticatorConfigModel config = context.getAuthenticatorConfig();
-            if (config != null && Boolean.parseBoolean(config.getConfig().get(IdpCreateUserIfUniqueAuthenticatorFactory.REQUIRE_PASSWORD_UPDATE_AFTER_REGISTRATION))) {
-                logger.debugf("User '%s' required to update password", federatedUser.getUsername());
-                federatedUser.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
-            }
-
-            userRegisteredSuccess(context, federatedUser, serializedCtx, brokerContext);
-
-            context.setUser(federatedUser);
-            context.getAuthenticationSession().setAuthNote(BROKER_REGISTERED_NEW_USER, "true");
-            context.success();
-        } else {
+        if (duplication != null && !brokerContext.getIdpConfig().isTransientUsers()) {
             logger.debugf("Duplication detected. There is already existing user with %s '%s' .",
                     duplication.getDuplicateAttributeName(), duplication.getDuplicateAttributeValue());
 
@@ -125,7 +95,49 @@ public class IdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator
             } else {
                 context.attempted();
             }
+
+            return;
         }
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(UserModel.USERNAME, username);
+
+        for (Map.Entry<String, List<String>> attr : serializedCtx.getAttributes().entrySet()) {
+            if (!UserModel.USERNAME.equalsIgnoreCase(attr.getKey())) {
+                attributes.put(attr.getKey(), attr.getValue());
+            }
+        }
+
+        UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
+        UserModel federatedUser;
+
+        if (brokerContext.getIdpConfig().isTransientUsers()) {
+            logger.debugf("Transient brokering requested. Recording user details for account '%s' and from identity provider '%s' .",
+                    username, brokerContext.getIdpConfig().getAlias());
+            attributes.put("id", brokerContext.getBrokerSessionId());
+            UserProfile profile = provider.create(UserProfileContext.IDP_REGISTRATION_TRANSIENT, attributes);
+            federatedUser = profile.create();
+        } else {
+            logger.debugf("No duplication detected. Creating account for user '%s' and linking with identity provider '%s' .",
+                    username, brokerContext.getIdpConfig().getAlias());
+            UserProfile profile = provider.create(UserProfileContext.IDP_REGISTRATION, attributes);
+            federatedUser = profile.create();
+        }
+
+        federatedUser.setEnabled(true);
+
+        AuthenticatorConfigModel config = context.getAuthenticatorConfig();
+
+        if (config != null && Boolean.parseBoolean(config.getConfig().get(IdpCreateUserIfUniqueAuthenticatorFactory.REQUIRE_PASSWORD_UPDATE_AFTER_REGISTRATION))) {
+            logger.debugf("User '%s' required to update password", federatedUser.getUsername());
+            federatedUser.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
+        }
+
+        userRegisteredSuccess(context, federatedUser, serializedCtx, brokerContext);
+
+        context.setUser(federatedUser);
+        context.getAuthenticationSession().setAuthNote(BROKER_REGISTERED_NEW_USER, "true");
+        context.success();
     }
 
     // Could be overriden to detect duplication based on other criterias (firstName, lastName, ...)

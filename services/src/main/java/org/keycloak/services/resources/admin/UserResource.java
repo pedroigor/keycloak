@@ -53,16 +53,12 @@ import org.keycloak.models.UserLoginFailureModel;
 import org.keycloak.models.UserManager;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
-import org.keycloak.models.light.LightweightUserAdapter;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.models.utils.RoleUtils;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.utils.RedirectUtils;
-import org.keycloak.provider.ConfiguredProvider;
 import org.keycloak.provider.ProviderFactory;
-import org.keycloak.representations.idm.UserProfileAttributeMetadata;
-import org.keycloak.representations.idm.UserProfileMetadata;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.ErrorRepresentation;
 import org.keycloak.representations.idm.FederatedIdentityRepresentation;
@@ -84,12 +80,9 @@ import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.validation.Validation;
 import org.keycloak.storage.ReadOnlyException;
-import org.keycloak.userprofile.AttributeMetadata;
-import org.keycloak.userprofile.AttributeValidatorMetadata;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.userprofile.ValidationException;
-import org.keycloak.utils.GroupUtils;
 import org.keycloak.utils.ProfileHelper;
 
 import jakarta.ws.rs.BadRequestException;
@@ -109,7 +102,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriBuilder;
-import org.keycloak.validate.Validators;
 
 import java.net.URI;
 import java.text.MessageFormat;
@@ -617,7 +609,7 @@ public class UserResource {
     public void logout() {
         auth.users().requireManage(user);
 
-        if (! LightweightUserAdapter.isLightweightUser(user)) {
+        if (!user.isTransient()) {
             session.users().setNotBeforeForUser(realm, user, Time.currentTime());
         }
 

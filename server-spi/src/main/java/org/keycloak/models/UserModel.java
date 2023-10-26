@@ -17,9 +17,14 @@
 
 package org.keycloak.models;
 
+import org.keycloak.common.Profile;
+import org.keycloak.common.Profile.Feature;
+import org.keycloak.common.util.Base64;
 import org.keycloak.provider.ProviderEvent;
 import org.keycloak.storage.SearchableModelField;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -272,4 +277,25 @@ public interface UserModel extends RoleMapperModel {
         VERIFY_PROFILE,
         UPDATE_EMAIL
     }
+
+    default boolean isTransient() {
+        return false;
+    }
+
+    String ID_PREFIX = "lightweight-";
+
+    static boolean isTransient(String id) {
+        return Profile.isFeatureEnabled(Feature.TRANSIENT_USERS) && id != null && id.startsWith(ID_PREFIX);
+    }
+
+    static String toTransientId(String id) {
+        try {
+            return id == null || id.length() < ID_PREFIX.length()
+                    ? null
+                    : new String(Base64.decode(id.substring(ID_PREFIX.length())), StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            return null;
+        }
+    }
+
 }

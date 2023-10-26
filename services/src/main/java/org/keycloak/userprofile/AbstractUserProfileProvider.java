@@ -21,6 +21,8 @@ package org.keycloak.userprofile;
 
 import static org.keycloak.userprofile.DefaultAttributes.READ_ONLY_ATTRIBUTE_KEY;
 import static org.keycloak.userprofile.UserProfileContext.ACCOUNT;
+import static org.keycloak.userprofile.UserProfileContext.IDP_REGISTRATION;
+import static org.keycloak.userprofile.UserProfileContext.IDP_REGISTRATION_TRANSIENT;
 import static org.keycloak.userprofile.UserProfileContext.IDP_REVIEW;
 import static org.keycloak.userprofile.UserProfileContext.REGISTRATION;
 import static org.keycloak.userprofile.UserProfileContext.UPDATE_EMAIL;
@@ -44,6 +46,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.light.LightweightUserAdapter;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.services.messages.Messages;
@@ -230,7 +233,9 @@ public abstract class AbstractUserProfileProvider<U extends UserProfileProvider>
             readOnlyValidator = createReadOnlyAttributeUnchangedValidator(pattern);
         }
 
-        addContextualProfileMetadata(configureUserProfile(createBrokeringProfile(readOnlyValidator)));
+        addContextualProfileMetadata(configureUserProfile(createBrokeringProfile(IDP_REVIEW, readOnlyValidator)));
+        addContextualProfileMetadata(configureUserProfile(createBrokeringProfile(IDP_REGISTRATION, readOnlyValidator)));
+        addContextualProfileMetadata(configureUserProfile(createBrokeringProfile(IDP_REGISTRATION_TRANSIENT, readOnlyValidator)));
         addContextualProfileMetadata(configureUserProfile(createAccountProfile(ACCOUNT, readOnlyValidator)));
         addContextualProfileMetadata(configureUserProfile(createDefaultProfile(UPDATE_PROFILE, readOnlyValidator)));
         if (Profile.isFeatureEnabled(Profile.Feature.UPDATE_EMAIL)) {
@@ -301,7 +306,7 @@ public abstract class AbstractUserProfileProvider<U extends UserProfileProvider>
      *
      * @return a function for creating new users.
      */
-    private Function<Attributes, UserModel> createUserFactory() {
+    private Function<Attributes, UserModel> createUserFactory(UserProfileContext context) {
         return new Function<Attributes, UserModel>() {
             private UserModel user;
 
@@ -315,7 +320,11 @@ public abstract class AbstractUserProfileProvider<U extends UserProfileProvider>
                         userName = attributes.getFirstValue(UserModel.EMAIL);
                     }
 
-                    user = session.users().addUser(session.getContext().getRealm(), userName);
+                    if (UserProfileContext.IDP_REGISTRATION_TRANSIENT.equals(context)) {
+                        user = new LightweightUserAdapter(session, attributes.getFirstValue("id"));
+                    } else {
+                        user = session.users().addUser(session.getContext().getRealm(), userName);
+                    }
                 }
 
                 return user;
@@ -326,7 +335,7 @@ public abstract class AbstractUserProfileProvider<U extends UserProfileProvider>
     private UserProfile createUserProfile(UserProfileContext context, Map<String, ?> attributes, UserModel user) {
         UserProfileMetadata metadata = configureUserProfile(contextualMetadataRegistry.get(context), session);
         Attributes profileAttributes = createAttributes(context, attributes, user, metadata);
-        return new DefaultUserProfile(metadata, profileAttributes, createUserFactory(), user, session);
+        return new DefaultUserProfile(metadata, profileAttributes, createUserFactory(context), user, session);
     }
 
     protected Attributes createAttributes(UserProfileContext context, Map<String, ?> attributes, UserModel user,
@@ -384,8 +393,8 @@ public abstract class AbstractUserProfileProvider<U extends UserProfileProvider>
         return metadata;
     }
 
-    private UserProfileMetadata createBrokeringProfile(AttributeValidatorMetadata readOnlyValidator) {
-        UserProfileMetadata metadata = new UserProfileMetadata(IDP_REVIEW);
+    private UserProfileMetadata createBrokeringProfile(UserProfileContext context, AttributeValidatorMetadata readOnlyValidator) {
+        UserProfileMetadata metadata = new UserProfileMetadata(context);
 
         metadata.addAttribute(UserModel.USERNAME, -2, AbstractUserProfileProvider::editUsernameCondition,
                 AbstractUserProfileProvider::readUsernameCondition, new AttributeValidatorMetadata(BrokeringFederatedUsernameHasValueValidator.ID)).setAttributeDisplayName("${username}");

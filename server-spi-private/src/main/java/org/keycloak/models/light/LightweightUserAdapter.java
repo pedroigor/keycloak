@@ -60,26 +60,6 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
 
     private Consumer<LightweightUserAdapter> updateHandler = a -> {};
 
-    public static final String ID_PREFIX = "lightweight-";
-
-    public static boolean isLightweightUser(UserModel user) {
-        return Profile.isFeatureEnabled(Feature.TRANSIENT_USERS) && user instanceof LightweightUserAdapter;
-    }
-
-    public static boolean isLightweightUser(String id) {
-        return Profile.isFeatureEnabled(Feature.TRANSIENT_USERS) && id != null && id.startsWith(ID_PREFIX);
-    }
-
-    public static String getLightweightUserId(String id) {
-        try {
-            return id == null || id.length() < ID_PREFIX.length()
-              ? null
-              : new String(Base64.decode(id.substring(ID_PREFIX.length())), StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            return null;
-        }
-    }
-
     public LightweightUserAdapter(KeycloakSession session, String id) {
         super(session, null, ID_PREFIX + Base64.encodeBytes(id.getBytes(StandardCharsets.UTF_8)));
     }
@@ -234,6 +214,11 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
 
     private void update() {
         updateHandler.accept(this);
+    }
+
+    @Override
+    public boolean isTransient() {
+        return Profile.isFeatureEnabled(Feature.TRANSIENT_USERS);
     }
 
 }

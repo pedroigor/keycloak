@@ -34,7 +34,6 @@ import org.keycloak.models.light.LightweightUserAdapter;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
-import static org.keycloak.models.light.LightweightUserAdapter.isLightweightUser;
 
 /**
  * NOTE: Calling setter doesn't automatically enlist for update
@@ -320,7 +319,7 @@ public class AuthenticationSessionAdapter implements AuthenticationSessionModel 
         } else {
             entity.setAuthUserId(user.getId());
 
-            if (isLightweightUser(user)) {
+            if (user.isTransient()) {
                 LightweightUserAdapter lua = (LightweightUserAdapter) user;
                 setUserSessionNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua.serialize());
                 lua.setUpdateHandler(lua1 -> {

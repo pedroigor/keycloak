@@ -187,7 +187,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
                 continue;
             }
 
-            if (metadata == null || !metadata.canEdit(createAttributeContext(metadata))) {
+            if (metadata == null || !metadata.canEdit(createAttributeContext(metadata)) || "id".equals(name)) {
                 attributes.remove(name);
             }
         }
@@ -387,6 +387,10 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
             return true;
         }
 
+        if ("id".equals(name) && user == null) {
+            return true;
+        }
+
         // checks whether the attribute is a core attribute
         return isRootAttribute(name);
     }
@@ -418,5 +422,24 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
         }
 
         return false;
+    }
+
+    /**
+     * Returns whether the attribute with the given {@code name} is a root attribute.
+     *
+     * @param name the attribute name
+     * @return
+     */
+    @Override
+    public boolean isRootAttribute(String name) {
+        if ("id".equals(name) && user == null) {
+            return true;
+        }
+
+        return UserModel.USERNAME.equals(name)
+                || UserModel.EMAIL.equals(name)
+                || UserModel.FIRST_NAME.equals(name)
+                || UserModel.LAST_NAME.equals(name)
+                || UserModel.LOCALE.equals(name);
     }
 }

@@ -33,9 +33,11 @@ public enum UserProfileContext {
     UPDATE_PROFILE(true),
     USER_API(false),
     ACCOUNT(true),
+    IDP_REGISTRATION(false),
+    IDP_REGISTRATION_TRANSIENT(false),
     IDP_REVIEW(false),
     REGISTRATION(false),
-    UPDATE_EMAIL(false);
+    UPDATE_EMAIL(false),;
     
     protected boolean resetEmailVerified;
     

@@ -111,7 +111,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.keycloak.common.util.ServerCookie.SameSiteAttributeValue;
-import static org.keycloak.models.light.LightweightUserAdapter.isLightweightUser;
 import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 import static org.keycloak.protocol.oidc.grants.device.DeviceGrantType.isOAuth2DeviceVerificationFlow;
 import static org.keycloak.services.util.CookieHelper.getCookie;
@@ -1543,7 +1542,7 @@ public class AuthenticationManager {
             return false;
         }
 
-        if (! isLightweightUser(user)) {
+        if (!user.isTransient()) {
             int userNotBefore = session.users().getNotBeforeOfUser(realm, user);
             if (token.getIssuedAt() < userNotBefore) {
                 logger.debug("User notBefore newer than token");

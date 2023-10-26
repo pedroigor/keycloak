@@ -95,7 +95,7 @@ public class LegacyAttributes extends DefaultAttributes {
         RealmModel realm = session.getContext().getRealm();
 
         for (String name : nameSet()) {
-            if (isReadOnly(name)) {
+            if (isReadOnly(name) || "id".equals(name)) {
                 if (UserModel.USERNAME.equals(name)
                         && realm.isRegistrationEmailAsUsername()) {
                     continue;
