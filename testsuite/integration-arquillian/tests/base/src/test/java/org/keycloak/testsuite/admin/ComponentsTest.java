@@ -28,6 +28,8 @@ import org.keycloak.admin.client.resource.ComponentsResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.models.utils.KeycloakModelUtils;
+import org.keycloak.protocol.ProtocolMapperUtils;
+import org.keycloak.protocol.oidc.mappers.UserAttributeMapper;
 import org.keycloak.representations.idm.*;
 import org.keycloak.testsuite.components.TestProvider;
 
@@ -376,6 +378,22 @@ public class ComponentsTest extends AbstractAdminTest {
 
         ComponentRepresentation returned = components.component(id).toRepresentation();
         assertEquals(value, returned.getConfig().getFirst("val1"));
+    }
+
+    @Test
+    public void testGetMetadata() {
+        ComponentTypeRepresentation metadata = components.getMetadata(UserAttributeMapper.PROVIDER_ID);
+
+        assertNotNull(metadata);
+
+        assertEquals(UserAttributeMapper.PROVIDER_ID, metadata.getId());
+        assertEquals("Map a custom user attribute to a token claim.", metadata.getHelpText());
+        assertEquals(9, metadata.getProperties().size());
+        assertThat(metadata.getProperties(), Matchers.hasItems(
+                Matchers.hasProperty("name", Matchers.is(ProtocolMapperUtils.USER_ATTRIBUTE)),
+                Matchers.hasProperty("label", Matchers.is(ProtocolMapperUtils.USER_MODEL_ATTRIBUTE_LABEL)),
+                Matchers.hasProperty("helpText", Matchers.is(ProtocolMapperUtils.USER_MODEL_ATTRIBUTE_HELP_TEXT))
+        ));
     }
 
     private java.lang.String createComponent(ComponentRepresentation rep) {

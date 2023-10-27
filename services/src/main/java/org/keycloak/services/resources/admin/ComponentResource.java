@@ -16,6 +16,9 @@
  */
 package org.keycloak.services.resources.admin;
 
+import static java.util.Optional.ofNullable;
+import static org.keycloak.models.utils.ModelToRepresentation.toRepresentation;
+
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.extensions.Extension;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -30,14 +33,17 @@ import org.keycloak.component.SubComponentFactory;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.models.utils.StripSecretsUtils;
+import org.keycloak.provider.ConfiguredProvider;
 import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderFactory;
+import org.keycloak.provider.Spi;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.ComponentTypeRepresentation;
 import org.keycloak.representations.idm.ConfigPropertyRepresentation;
@@ -61,10 +67,13 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -122,7 +131,7 @@ public class ComponentResource {
                 .filter(component -> Objects.isNull(name) || Objects.equals(component.getName(), name))
                 .map(component -> {
                     try {
-                        return ModelToRepresentation.toRepresentation(session, component, false);
+                        return toRepresentation(session, component, false);
                     } catch (Exception e) {
                         logger.error("Failed to get component list for component model" + component.getName() + "of realm " + realm.getName());
                         return ModelToRepresentation.toRepresentationWithoutConfig(component);
@@ -166,7 +175,7 @@ public class ComponentResource {
         if (model == null) {
             throw new NotFoundException("Could not find component");
         }
-        ComponentRepresentation rep = ModelToRepresentation.toRepresentation(session, model, false);
+        ComponentRepresentation rep = toRepresentation(session, model, false);
         return rep;
     }
 
@@ -288,5 +297,44 @@ public class ComponentResource {
         rep.setProperties(propReps);
         rep.setMetadata(metadata);
         return rep;
+    }
+
+    @GET
+    @Path("/metadata/{factoryId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @NoCache
+    @Tag(name = KeycloakOpenAPI.Admin.Tags.COMPONENT)
+    @Operation( summary = "Returns the metadata for the a provider factory with the given id.")
+    public ComponentTypeRepresentation getMetadata(@PathParam("factoryId") String factoryId) {
+        auth.realm().requireViewRealm();
+
+        if (factoryId == null) {
+            throw new BadRequestException("Factory id not provided");
+        }
+
+        KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
+        Set<Spi> spis = sessionFactory.getSpis();
+
+        return spis.stream()
+                .map((Function<Spi, ProviderFactory>) spi -> sessionFactory.getProviderFactory(spi.getProviderClass(), factoryId))
+                .filter(Objects::nonNull)
+                .filter(ConfiguredProvider.class::isInstance)
+                .map(ConfiguredProvider.class::cast)
+                .map(this::toComponentTypeRepresentation)
+                .findAny().orElseThrow(NotFoundException::new);
+    }
+
+    private ComponentTypeRepresentation toComponentTypeRepresentation(ConfiguredProvider factoryConfig) {
+        ComponentTypeRepresentation metadata = new ComponentTypeRepresentation();
+
+        metadata.setId(((ProviderFactory<?>) factoryConfig).getId());
+        metadata.setHelpText(factoryConfig.getHelpText());
+
+        List<ProviderConfigProperty> configProperties = ofNullable(factoryConfig.getConfigProperties())
+                .orElse(Collections.emptyList());
+
+        metadata.setProperties(toRepresentation(session, configProperties));
+
+        return metadata;
     }
 }
