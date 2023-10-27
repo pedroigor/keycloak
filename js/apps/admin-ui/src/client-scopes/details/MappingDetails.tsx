@@ -103,9 +103,13 @@ export default function MappingDetails() {
         }
         const protocolMappers =
           serverInfo.protocolMapperTypes![model.protocol!];
-        const mapping = protocolMappers.find(
+        const { name } = protocolMappers.find(
           (mapper) => mapper.id === mapperId,
-        );
+        )!;
+        const mapping = await adminClient.components.metaDataComponents({
+          factoryId: mapperId,
+        });
+        mapping.name = name;
         if (!mapping) {
           throw new Error(t("notFound"));
         }
