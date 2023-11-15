@@ -85,7 +85,7 @@
                 </div>
 
                 <#if recaptchaRequired?? && !(recaptchaVisible!false)>
-                    <script type="text/javascript" type="module">
+                    <script>
                         function onSubmitRecaptcha(token) {
                             document.getElementById("kc-register-form").submit();
                         }
