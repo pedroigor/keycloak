@@ -62,8 +62,8 @@ public class ProvidersTest extends AbstractAuthenticationTest {
 
         List<Map<String, Object>> expected = new LinkedList<>();
         addProviderInfo(expected, "registration-recaptcha-action", "Recaptcha",
-                "Adds Google Recaptcha button.  Recaptchas verify that the entity that is registering is a human.  " +
-                        "This can only be used on the internet and must be configured after you add it.");
+                "Adds Google ReCAPTCHA Enterprise to the form. " +
+                        "Requires a Google API key and a reCAPTCHA Enterprise Key (invisible, score-based or visible, checkbox-based).");
         addProviderInfo(expected, "registration-password-action", "Password Validation",
                 "Validates that password matches password confirmation field.  It also will store password in user's credential store.");
         addProviderInfo(expected, "registration-user-creation", "Registration User Profile Creation",
