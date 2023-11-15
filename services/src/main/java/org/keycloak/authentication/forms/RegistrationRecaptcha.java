@@ -69,6 +69,7 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
     public static final String ACTION = "action";
     public static final String INVISIBLE = "recaptcha.v3";
     public static final String SCORE_THRESHOLD = "score.threshold";
+    public static final String USE_RECAPTCHA_NET = "useRecaptchaNet";
 
     private static final Logger LOGGER = Logger.getLogger(RegistrationRecaptcha.class);
 
@@ -117,6 +118,14 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
             .type(ProviderConfigProperty.STRING_TYPE)
             .defaultValue("0.7")
             .add()
+            .property()
+            .name(USE_RECAPTCHA_NET)
+            .label("Use recaptcha.net")
+            .helpText("Whether to use recaptcha.net instead of google.com, "
+                    + "which may have other cookies set.")
+            .type(ProviderConfigProperty.BOOLEAN_TYPE)
+            .defaultValue(false)
+            .add()
             .build();
 
     @Override
@@ -127,7 +136,7 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
     @Override
     public String getHelpText() {
         return "Adds Google ReCAPTCHA Enterprise to the form. "
-                + "Requires a Google API key and a reCAPTCHA Enterprise Key (invisible, score-base or checkbox-based).";
+                + "Requires a Google API key and a reCAPTCHA Enterprise Key (invisible, score-based or visible, checkbox-based).";
     }
 
     @Override
@@ -163,13 +172,14 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
 
         String userLanguageTag = context.getSession().getContext().resolveLocale(context.getUser())
                 .toLanguageTag();
-        boolean invisible = Boolean.parseBoolean(config.getOrDefault(INVISIBLE, "true"));
+        boolean invisible = Boolean.parseBoolean(config.get(INVISIBLE));
+        String recaptchatDomain = Boolean.parseBoolean(config.get(USE_RECAPTCHA_NET)) ? "recaptcha.net" : "google.com";
 
         form.setAttribute("recaptchaRequired", true);
         form.setAttribute("recaptchaSiteKey", config.get(SITE_KEY));
         form.setAttribute("recaptchaAction", config.get(ACTION));
         form.setAttribute("recaptchaVisible", !invisible);
-        form.addScript("https://www.google.com/recaptcha/enterprise.js?hl=" + userLanguageTag);
+        form.addScript("https://www." + recaptchatDomain + "/recaptcha/enterprise.js?hl=" + userLanguageTag);
     }
 
     @Override

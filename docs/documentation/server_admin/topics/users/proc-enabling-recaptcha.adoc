@@ -44,13 +44,14 @@ image:images/recaptcha-enterprise-config.png[]
 .. Toggle **ReCAPTCHA v3** according to your Site Key type: on for invisible, score-based reCAPTCHA (v3), off for visible, checkbox-based reCAPTCHA (v2).
 .. (Optional) Customize the *Min. Score Threshold* as you see fit: this is the minimal score a user should achieve on reCAPTCHA to be allowed to register, between 0.0 and 1.0 (see https://cloud.google.com/recaptcha-enterprise/docs/interpret-assessment-website#interpret_scores[interpret scores]).
 . Authorize Google to use the registration page as an iframe.
+.. (Optional) Toggle *Use recaptcha.net* to use `www.recatcha.net` instead of `www.google.com` domain for cookies. See https://developers.google.com/recaptcha/docs/faq[reCAPTCHA faq] for more information.
 +
 NOTE: In {project_name}, websites cannot include a login page dialog in an iframe. This restriction is to prevent clickjacking attacks. You need to change the default HTTP response headers that is set in {project_name}.
 +
 .. Click *Realm Settings* in the menu. 
 .. Click the *Security Defenses* tab.  
-.. Enter `https://www.google.com` in the field for the *X-Frame-Options* header.
-.. Enter `https://www.google.com` in the field for the *Content-Security-Policy* header.
+.. Enter `https://www.google.com` in the field for the *X-Frame-Options* header (or `https//www.recaptcha.net` if you enabled *Use recaptcha.net*).
+.. Enter `https://www.google.com` in the field for the *Content-Security-Policy* header (or `https//www.recaptcha.net` if you enabled *Use recaptcha.net*).
 
 [role="_additional-resources"]
 .Additional resources
