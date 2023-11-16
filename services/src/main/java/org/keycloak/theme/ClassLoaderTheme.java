@@ -106,7 +106,7 @@ public class ClassLoaderTheme implements Theme {
     }
 
     @Override
-    public InputStream getResourceAsStream(String path) throws IOException {
+    public URL getResource(String path) throws IOException {
         final URL rootResourceURL = classLoader.getResource(resourceRoot);
         if (rootResourceURL == null) {
             return null;
@@ -123,7 +123,7 @@ public class ClassLoaderTheme implements Theme {
             return null;
         }
         else {
-            return resourceURL.openConnection().getInputStream();
+            return resourceURL;
         }
     }
 

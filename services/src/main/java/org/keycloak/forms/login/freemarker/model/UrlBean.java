@@ -24,7 +24,9 @@ import org.keycloak.services.Urls;
 import org.keycloak.theme.Theme;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
@@ -122,6 +124,24 @@ public class UrlBean {
     public String getResourcesPath() {
         URI uri = getThemeRootUri();
         return uri.getPath() + "/" + theme.getType().toString().toLowerCase() +"/" + theme.getName();
+    }
+
+    public String getFaviconPath() {
+        URL faviconUrl;
+
+        try {
+            faviconUrl = theme.getResource("/img/favicon.svg");
+
+            if (faviconUrl == null) {
+                faviconUrl = theme.getResource("/img/favicon.ico");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to resolve favicon", e);
+        }
+
+        String resourcesDirName = "resources";
+
+        return getResourcesPath() + faviconUrl.getPath().substring(faviconUrl.getPath().indexOf(resourcesDirName) + resourcesDirName.length() + 1);
     }
 
     public String getResourcesCommonPath() {

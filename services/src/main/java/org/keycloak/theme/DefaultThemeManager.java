@@ -208,16 +208,16 @@ public class DefaultThemeManager implements ThemeManager {
         }
 
         @Override
-        public InputStream getResourceAsStream(String path) throws IOException {
+        public URL getResource(String path) throws IOException {
             for (Theme t : themes) {
-                InputStream resource = t.getResourceAsStream(path);
+                URL resource = t.getResource(path);
                 if (resource != null) {
                     return resource;
                 }
             }
 
             for (ThemeResourceProvider t : themeResourceProviders) {
-                InputStream resource = t.getResourceAsStream(path);
+                URL resource = t.getResource(path);
                 if (resource != null) {
                     return resource;
                 }

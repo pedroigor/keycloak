@@ -30,14 +30,14 @@ public class FlatClasspathThemeResourceProviderFactory extends ClasspathThemeRes
     public static final String ID = "flat-classpath";
 
     @Override
-    public InputStream getResourceAsStream(String path) throws IOException {
+    public URL getResource(String path) throws IOException {
         Enumeration<URL> resources = classLoader.getResources(THEME_RESOURCES_RESOURCES);
 
         while (resources.hasMoreElements()) {
-            InputStream is = getResourceAsStream(path, resources.nextElement());
+            URL url = getResource(path, resources.nextElement());
 
-            if (is != null) {
-                return is;
+            if (url != null) {
+                return url;
             }
         }
 

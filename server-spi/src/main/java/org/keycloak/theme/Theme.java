@@ -44,7 +44,11 @@ public interface Theme {
 
     URL getTemplate(String name) throws IOException;
 
-    InputStream getResourceAsStream(String path) throws IOException;
+    URL getResource(String path) throws IOException;
+
+    default InputStream getResourceAsStream(String path) throws IOException {
+        return getResource(path).openConnection().getInputStream();
+    }
 
     /**
      * Same as getMessages(baseBundlename, locale), but uses a default baseBundlename

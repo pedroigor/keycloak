@@ -52,7 +52,11 @@ public interface ThemeResourceProvider extends Provider {
      * @return an InputStream to read the resource, or null if the resource is unknown
      * @throws IOException
      */
-    InputStream getResourceAsStream(String path) throws IOException;
+    default InputStream getResourceAsStream(String path) throws IOException {
+        return getResource(path).openConnection().getInputStream();
+    }
+
+    URL getResource(String path) throws IOException;
 
     /**
      * Load the message bundle for the specific name and locale

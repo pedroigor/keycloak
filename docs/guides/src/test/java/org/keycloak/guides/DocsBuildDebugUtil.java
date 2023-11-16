@@ -18,7 +18,7 @@ public class DocsBuildDebugUtil {
             }
             File targetDir = usrDir.toPath().resolve("target/generated-guides/" + srcDir.getName()).toFile();
             targetDir.mkdirs();
-            GuideBuilder builder = new GuideBuilder(srcDir, targetDir, null);
+            GuideBuilder builder = new GuideBuilder(srcDir, targetDir, null, null);
             builder.build();
             System.out.println("Guides generated to: " + targetDir.getAbsolutePath().toString());
         }
