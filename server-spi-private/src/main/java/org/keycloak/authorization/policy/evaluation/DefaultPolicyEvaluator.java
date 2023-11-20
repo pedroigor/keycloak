@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.Decision;
@@ -44,6 +43,13 @@ import org.keycloak.representations.idm.authorization.PolicyEnforcementMode;
 public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
     @Override
+    /**
+     * As the entry point for policy evaluations, the responsibility of this class/method is to create the root evaluation objects with the assigned
+     * root policies from the provided resource and scopes and evaluate on the specific evaluation providers.
+     *
+     * There is currently an undefined state where there are more than 2 levels in the hierarchy. For instance if a parent scope policy has another scope
+     * policy and that policy has N children. This use case is not accounted for in the design of this method and is left to the specific evalution implementations.
+     */
     public void evaluate(ResourcePermission permission, AuthorizationProvider authorizationProvider, EvaluationContext executionContext, Decision decision, Map<Policy, Map<Object, Decision.Effect>> decisionCache) {
         StoreFactory storeFactory = authorizationProvider.getStoreFactory();
         PolicyStore policyStore = storeFactory.getPolicyStore();
@@ -66,26 +72,16 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         AtomicBoolean verified = new AtomicBoolean();
         Consumer<Policy> policyConsumer = createPolicyEvaluator(permission, authorizationProvider, executionContext, decision, verified, decisionCache);
         Resource resource = permission.getResource();
-
-        if (resource != null) {
-            policyStore.findByResource(resourceServer, resource, policyConsumer);
-
-            if (resource.getType() != null) {
-                policyStore.findByResourceType(resourceServer, resource.getType(), policyConsumer);
-
-                if (!resource.getOwner().equals(resourceServer.getClientId())) {
-                    for (Resource typedResource : resourceStore.findByType(resourceServer, resource.getType())) {
-                        policyStore.findByResource(resourceServer, typedResource, policyConsumer);
-                    }
-                }
-            }
-        }
-
         Collection<Scope> scopes = permission.getScopes();
 
-        if (!scopes.isEmpty()) {
+        if(resource != null && !scopes.isEmpty()) {
+            policyStore.findByScopes(resourceServer, resource, new LinkedList<>(scopes), policyConsumer);
+        } else if(!scopes.isEmpty()) {
             policyStore.findByScopes(resourceServer, null, new LinkedList<>(scopes), policyConsumer);
+        } else if(resource != null) {
+            policyStore.findByResource(resourceServer, resource, policyConsumer);
         }
+        // if we have no resource and no scopes then we don't have anything to do
 
         if (verified.get()) {
             decision.onComplete(permission);
@@ -114,7 +110,8 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
                 throw new RuntimeException("Unknown parentPolicy provider for type [" + parentPolicy.getType() + "].");
             }
 
-            policyProvider.evaluate(new DefaultEvaluation(permission, executionContext, parentPolicy, decision, authorizationProvider, decisionCache));
+            // create an evaluation object with the current policy as the parent and child, indicating to the decision collector that this is the root level
+            policyProvider.evaluate(new DefaultEvaluation(permission, executionContext, parentPolicy, parentPolicy, decision, authorizationProvider, decisionCache));
 
             verified.compareAndSet(false, true);
         };

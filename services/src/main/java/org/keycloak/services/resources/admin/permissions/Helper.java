@@ -55,8 +55,8 @@ class Helper {
         representation.setName(name);
         representation.setDecisionStrategy(DecisionStrategy.UNANIMOUS);
         representation.setLogic(Logic.POSITIVE);
-        representation.addResource(resource.getName());
-        representation.addScope(scope.getName());
+        representation.addResource(resource.getId());
+        representation.addScope(scope.getId());
 
         return authz.getStoreFactory().getPolicyStore().create(resourceServer, representation);
     }

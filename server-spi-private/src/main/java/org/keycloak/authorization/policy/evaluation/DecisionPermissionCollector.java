@@ -71,14 +71,17 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
             boolean resourceGranted = false;
             boolean anyDeny = false;
 
+            // top level policy results for a permission
             for (Result.PolicyResult policyResult : result.getResults()) {
                 Policy policy = policyResult.getPolicy();
                 Set<Scope> policyScopes = policy.getScopes();
                 Set<Resource> policyResources = policy.getResources();
                 boolean containsResource = policyResources.contains(resource);
 
-                if (isGranted(policyResult)) {
+                if (Effect.PERMIT.equals(policyResult.getEffect())) {
                     if (isScopePermission(policy)) {
+                        //TODO this seems easy to mismanage. If a permissions requests more scopes than necessary and only some are granted this
+                        // is a potential point of vulnerability
                         for (Scope scope : requestedScopes) {
                             if (policyScopes.contains(scope)) {
                                 grantedScopes.add(scope);

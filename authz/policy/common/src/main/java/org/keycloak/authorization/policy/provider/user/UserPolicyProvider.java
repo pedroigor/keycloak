@@ -18,7 +18,6 @@
 package org.keycloak.authorization.policy.provider.user;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.Policy;

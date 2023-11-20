@@ -315,15 +315,6 @@ public class PolicyEvaluationService {
         }
 
         @Override
-        protected boolean isGranted(Result.PolicyResult policyResult) {
-            if (super.isGranted(policyResult)) {
-                policyResult.setEffect(Effect.PERMIT);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
         protected void grantPermission(AuthorizationProvider authorizationProvider, Set<Permission> permissions, ResourcePermission permission, Collection<Scope> grantedScopes, ResourceServer resourceServer, AuthorizationRequest request, Result result) {
             result.setStatus(Effect.PERMIT);
             result.getPermission().getScopes().retainAll(grantedScopes);
