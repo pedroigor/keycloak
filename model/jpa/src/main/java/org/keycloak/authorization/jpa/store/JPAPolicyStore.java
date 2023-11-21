@@ -104,7 +104,6 @@ public class JPAPolicyStore implements PolicyStore {
 
         entity.setDecisionStrategy(representation.getDecisionStrategy());
         entity.setLogic(representation.getLogic());
-        entity.setOwner(/* TODO who owns the policy, surely someone has to */ "");
 
         this.entityManager.persist(entity);
         this.entityManager.flush();
