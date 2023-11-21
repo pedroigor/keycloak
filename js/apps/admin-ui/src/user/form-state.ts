@@ -7,9 +7,10 @@ import {
 
 export type UserFormFields = Omit<
   UserRepresentation,
-  "attributes" | "userProfileMetadata"
+  "attributes" | "userProfileMetadata | unmanagedAttributes"
 > & {
   attributes?: KeyValueType[] | Record<string, string | string[]>;
+  unmanagedAttributes?: KeyValueType[] | Record<string, string | string[]>;
 };
 
 export function toUserFormFields(
@@ -19,8 +20,8 @@ export function toUserFormFields(
   const attributes = userProfileEnabled
     ? data.attributes
     : arrayToKeyValue(data.attributes);
-
-  return { ...data, attributes };
+  const unmanagedAttributes = arrayToKeyValue(data.unmanagedAttributes);
+  return { ...data, attributes, unmanagedAttributes };
 }
 
 export function toUserRepresentation(data: UserFormFields): UserRepresentation {
@@ -28,6 +29,9 @@ export function toUserRepresentation(data: UserFormFields): UserRepresentation {
   const attributes = Array.isArray(data.attributes)
     ? keyValueToArray(data.attributes)
     : data.attributes;
+  const unmanagedAttributes = Array.isArray(data.unmanagedAttributes)
+    ? keyValueToArray(data.unmanagedAttributes)
+    : data.unmanagedAttributes;
 
-  return { ...data, username, attributes };
+  return { ...data, username, attributes, unmanagedAttributes };
 }

@@ -12,6 +12,7 @@ import {
 } from "../routes/UserProfile";
 import { AttributesGroupTab } from "./AttributesGroupTab";
 import { AttributesTab } from "./AttributesTab";
+import { UnmanagedAttributesTab } from "./UnmanagedAttributesTab";
 import { JsonEditorTab } from "./JsonEditorTab";
 import { UserProfileProvider } from "./UserProfileContext";
 
@@ -24,6 +25,7 @@ export const UserProfileTab = () => {
 
   const attributesTab = useTab("attributes");
   const attributesGroupTab = useTab("attributes-group");
+  const unmanagedAttributesTab = useTab("unmanaged-attributes");
   const jsonEditorTab = useTab("json-editor");
 
   return (
@@ -52,6 +54,13 @@ export const UserProfileTab = () => {
           {...jsonEditorTab}
         >
           <JsonEditorTab />
+        </Tab>
+        <Tab
+          title={<TabTitleText>{t("unmanagedAttributes")}</TabTitleText>}
+          data-testid="unmanagedAttributesTab"
+          {...unmanagedAttributesTab}
+        >
+          <UnmanagedAttributesTab />
         </Tab>
       </RoutableTabs>
     </UserProfileProvider>

@@ -7,14 +7,26 @@ import {
   AttributesForm,
 } from "../components/key-value-form/AttributeForm";
 import { UserFormFields, toUserFormFields } from "./form-state";
+import useIsFeatureEnabled, { Feature } from "../utils/useIsFeatureEnabled";
+import {
+  Policy,
+  UserProfileConfig,
+} from "@keycloak/keycloak-admin-client/lib/defs/userProfileMetadata";
 
 type UserAttributesProps = {
   user: UserRepresentation;
   save: (user: UserFormFields) => void;
+  upConfig?: UserProfileConfig;
 };
 
-export const UserAttributes = ({ user, save }: UserAttributesProps) => {
+export const UserAttributes = ({
+  user,
+  save,
+  upConfig,
+}: UserAttributesProps) => {
   const form = useFormContext<UserFormFields>();
+  const isFeatureEnabled = useIsFeatureEnabled();
+  const userProfileEnabled = isFeatureEnabled(Feature.DeclarativeUserProfile);
 
   return (
     <PageSection variant={PageSectionVariants.light}>
@@ -25,9 +37,11 @@ export const UserAttributes = ({ user, save }: UserAttributesProps) => {
         reset={() =>
           form.reset({
             ...form.getValues(),
-            attributes: toUserFormFields(user, false).attributes,
+            attributes: toUserFormFields(user, userProfileEnabled).attributes,
           })
         }
+        name={userProfileEnabled ? "unmanagedAttributes" : "attributes"}
+        readOnly={Policy.adminView == upConfig?.unmanagedAttributesPolicy}
       />
     </PageSection>
   );

@@ -7,8 +7,10 @@ import type { RequiredActionAlias } from "../defs/requiredActionProviderRepresen
 import type RoleRepresentation from "../defs/roleRepresentation.js";
 import type { RoleMappingPayload } from "../defs/roleRepresentation.js";
 import type UserConsentRepresentation from "../defs/userConsentRepresentation.js";
-import type UserProfileConfig from "../defs/userProfileMetadata.js";
-import type { UserProfileMetadata } from "../defs/userProfileMetadata.js";
+import type {
+  UserProfileConfig,
+  UserProfileMetadata,
+} from "../defs/userProfileMetadata.js";
 import type UserRepresentation from "../defs/userRepresentation.js";
 import type UserSessionRepresentation from "../defs/userSessionRepresentation.js";
 import Resource from "./resource.js";
@@ -117,6 +119,16 @@ export class Users extends Resource<{ realm?: string }> {
     path: "/{id}/role-mappings/realm",
     urlParamKeys: ["id"],
     payloadKey: "roles",
+  });
+
+  public getUnmanagedAttributes = this.makeRequest<
+    { id: string },
+    Record<string, string[]> | undefined
+  >({
+    method: "GET",
+    path: "/{id}/attributes",
+    urlParamKeys: ["id"],
+    catchNotFound: true,
   });
 
   public listRealmRoleMappings = this.makeRequest<

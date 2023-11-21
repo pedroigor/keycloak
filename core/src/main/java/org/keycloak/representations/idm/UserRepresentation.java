@@ -50,6 +50,8 @@ public class UserRepresentation {
 
     @JsonDeserialize(using = StringListMapDeserializer.class)
     protected Map<String, List<String>> attributes;
+    @JsonDeserialize(using = StringListMapDeserializer.class)
+    protected Map<String, List<String>> unmanagedAttributes;
     protected List<CredentialRepresentation> credentials;
     protected Set<String> disableableCredentialTypes;
     protected List<String> requiredActions;
@@ -156,6 +158,14 @@ public class UserRepresentation {
 
     public void setAttributes(Map<String, List<String>> attributes) {
         this.attributes = attributes;
+    }
+
+    public Map<String, List<String>> getUnmanagedAttributes() {
+        return unmanagedAttributes;
+    }
+
+    public void setUnmanagedAttributes(Map<String, List<String>> unmanagedAttributes) {
+        this.unmanagedAttributes = unmanagedAttributes;
     }
 
     public UserRepresentation singleAttribute(String name, String value) {

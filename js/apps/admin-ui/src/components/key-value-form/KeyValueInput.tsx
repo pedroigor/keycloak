@@ -32,11 +32,13 @@ export type DefaultValue = {
 type KeyValueInputProps = {
   name: string;
   defaultKeyValue?: DefaultValue[];
+  readOnly?: boolean;
 };
 
 export const KeyValueInput = ({
   name,
   defaultKeyValue,
+  readOnly = false,
 }: KeyValueInputProps) => {
   const { t } = useTranslation();
   const {
@@ -89,6 +91,7 @@ export const KeyValueInput = ({
                     {...register(`${name}.${index}.key`, { required: true })}
                     validated={keyError ? "error" : "default"}
                     isRequired
+                    readOnly={readOnly}
                   />
                 )}
                 {keyError && (
@@ -115,6 +118,7 @@ export const KeyValueInput = ({
                     {...register(`${name}.${index}.value`, { required: true })}
                     validated={valueError ? "error" : "default"}
                     isRequired
+                    readOnly={readOnly}
                   />
                 )}
                 {valueError && (
@@ -125,33 +129,37 @@ export const KeyValueInput = ({
                   </HelperText>
                 )}
               </GridItem>
-              <GridItem span={2}>
-                <Button
-                  variant="link"
-                  title={t("removeAttribute")}
-                  onClick={() => remove(index)}
-                  data-testid={`${name}-remove`}
-                >
-                  <MinusCircleIcon />
-                </Button>
-              </GridItem>
+              {!readOnly && (
+                <GridItem span={2}>
+                  <Button
+                    variant="link"
+                    title={t("removeAttribute")}
+                    onClick={() => remove(index)}
+                    data-testid={`${name}-remove`}
+                  >
+                    <MinusCircleIcon />
+                  </Button>
+                </GridItem>
+              )}
             </Fragment>
           );
         })}
       </Grid>
-      <ActionList>
-        <ActionListItem>
-          <Button
-            data-testid={`${name}-add-row`}
-            className="pf-u-px-0 pf-u-mt-sm"
-            variant="link"
-            icon={<PlusCircleIcon />}
-            onClick={appendNew}
-          >
-            {t("addAttribute")}
-          </Button>
-        </ActionListItem>
-      </ActionList>
+      {!readOnly && (
+        <ActionList>
+          <ActionListItem>
+            <Button
+              data-testid={`${name}-add-row`}
+              className="pf-u-px-0 pf-u-mt-sm"
+              variant="link"
+              icon={<PlusCircleIcon />}
+              onClick={appendNew}
+            >
+              {t("addAttribute")}
+            </Button>
+          </ActionListItem>
+        </ActionList>
+      )}
     </>
   ) : (
     <EmptyState
@@ -160,15 +168,17 @@ export const KeyValueInput = ({
       variant="xs"
     >
       <EmptyStateBody>{t("missingAttributes")}</EmptyStateBody>
-      <Button
-        data-testid={`${name}-add-row`}
-        variant="link"
-        icon={<PlusCircleIcon />}
-        isSmall
-        onClick={appendNew}
-      >
-        {t("addAttribute")}
-      </Button>
+      {!readOnly && (
+        <Button
+          data-testid={`${name}-add-row`}
+          variant="link"
+          icon={<PlusCircleIcon />}
+          isSmall
+          onClick={appendNew}
+        >
+          {t("addAttribute")}
+        </Button>
+      )}
     </EmptyState>
   );
 };

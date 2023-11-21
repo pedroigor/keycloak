@@ -1,4 +1,7 @@
-import type { UserProfileMetadata } from "@keycloak/keycloak-admin-client/lib/defs//userProfileMetadata";
+import type {
+  UserProfileMetadata,
+  UserProfileConfig,
+} from "@keycloak/keycloak-admin-client/lib/defs/userProfileMetadata";
 import RealmRepresentation from "@keycloak/keycloak-admin-client/lib/defs/realmRepresentation";
 import type UserRepresentation from "@keycloak/keycloak-admin-client/lib/defs/userRepresentation";
 import {
@@ -63,11 +66,14 @@ export default function EditUser() {
   const [realm, setRealm] = useState<RealmRepresentation>();
   const [user, setUser] = useState<UserRepresentation>();
   const [bruteForced, setBruteForced] = useState<BruteForced>();
+  const [isUnmanagedAttributesEnabled, setUnmanagedAttributesEnabled] =
+    useState<boolean>();
   const [userProfileMetadata, setUserProfileMetadata] =
     useState<UserProfileMetadata>();
   const [refreshCount, setRefreshCount] = useState(0);
   const refresh = () => setRefreshCount((count) => count + 1);
   const lightweightUser = isLightweightUser(user?.id);
+  const [upConfig, setUpConfig] = useState<UserProfileConfig>();
 
   const toTab = (tab: UserTab) =>
     toUser({
@@ -93,19 +99,13 @@ export default function EditUser() {
         adminClient.realms.findOne({ realm: realmName }),
         adminClient.users.findOne({ id: id!, userProfileMetadata: true }),
         adminClient.attackDetection.findOne({ id: id! }),
+        adminClient.users.getUnmanagedAttributes({ id: id! }),
+        adminClient.users.getProfile({ realm: realmName }),
       ]),
-    ([realm, user, attackDetection]) => {
+    ([realm, user, attackDetection, unmanagedAttributes, upConfig]) => {
       if (!user || !realm || !attackDetection) {
         throw new Error(t("notFound"));
       }
-
-      setRealm(realm);
-      setUser(user);
-
-      const isBruteForceProtected = realm.bruteForceProtected;
-      const isLocked = isBruteForceProtected && attackDetection.disabled;
-
-      setBruteForced({ isBruteForceProtected, isLocked });
 
       const isUserProfileEnabled =
         isFeatureEnabled(Feature.DeclarativeUserProfile) &&
@@ -114,6 +114,43 @@ export default function EditUser() {
       setUserProfileMetadata(
         isUserProfileEnabled ? user.userProfileMetadata : undefined,
       );
+
+      user.unmanagedAttributes = unmanagedAttributes;
+
+      function filterManagedAttributes(attributes: Record<string, any[]> = {}) {
+        const v: Record<string, any> = {};
+        Object.entries(attributes)
+          .filter(
+            ([key]) =>
+              !Object.prototype.hasOwnProperty.call(unmanagedAttributes, key),
+          )
+          .forEach((value) => {
+            v[value[0]] = value[1];
+            return v;
+          });
+
+        return v;
+      }
+
+      if (isUserProfileEnabled) {
+        user.attributes = filterManagedAttributes(user.attributes);
+      }
+
+      if (
+        upConfig.unmanagedAttributesPolicy !== undefined ||
+        !isUserProfileEnabled
+      ) {
+        setUnmanagedAttributesEnabled(true);
+      }
+
+      setRealm(realm);
+      setUser(user);
+      setUpConfig(upConfig);
+
+      const isBruteForceProtected = realm.bruteForceProtected;
+      const isLocked = isBruteForceProtected && attackDetection.disabled;
+
+      setBruteForced({ isBruteForceProtected, isLocked });
 
       form.reset(toUserFormFields(user, isUserProfileEnabled));
     },
@@ -259,13 +296,13 @@ export default function EditUser() {
                   />
                 </PageSection>
               </Tab>
-              {!userProfileMetadata && (
+              {isUnmanagedAttributesEnabled && (
                 <Tab
                   data-testid="attributes"
                   title={<TabTitleText>{t("attributes")}</TabTitleText>}
                   {...attributesTab}
                 >
-                  <UserAttributes user={user} save={save} />
+                  <UserAttributes user={user} save={save} upConfig={upConfig} />
                 </Tab>
               )}
               <Tab

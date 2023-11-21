@@ -59,10 +59,7 @@ import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.models.utils.RoleUtils;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.utils.RedirectUtils;
-import org.keycloak.provider.ConfiguredProvider;
 import org.keycloak.provider.ProviderFactory;
-import org.keycloak.representations.idm.UserProfileAttributeMetadata;
-import org.keycloak.representations.idm.UserProfileMetadata;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.ErrorRepresentation;
 import org.keycloak.representations.idm.FederatedIdentityRepresentation;
@@ -70,6 +67,7 @@ import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserConsentRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.UserSessionRepresentation;
+import org.keycloak.representations.userprofile.config.UPConfig;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.ForbiddenException;
@@ -84,12 +82,9 @@ import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.validation.Validation;
 import org.keycloak.storage.ReadOnlyException;
-import org.keycloak.userprofile.AttributeMetadata;
-import org.keycloak.userprofile.AttributeValidatorMetadata;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.userprofile.ValidationException;
-import org.keycloak.utils.GroupUtils;
 import org.keycloak.utils.ProfileHelper;
 
 import jakarta.ws.rs.BadRequestException;
@@ -109,7 +104,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriBuilder;
-import org.keycloak.validate.Validators;
 
 import java.net.URI;
 import java.text.MessageFormat;
@@ -121,6 +115,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -192,6 +187,8 @@ public class UserResource {
             }
 
             Map<String, List<String>> attributes = new HashMap<>(rep.toAttributes());
+
+            attributes.putAll(Optional.ofNullable(rep.getUnmanagedAttributes()).orElse(Collections.emptyMap()));
 
             if (rep.getAttributes() == null) {
                 // include existing attributes in case no attributes are set so that validation takes into account the existing
@@ -334,6 +331,40 @@ public class UserResource {
         }
 
         return rep;
+    }
+
+    @GET
+    @Path("attributes")
+    @NoCache
+    @Produces(MediaType.APPLICATION_JSON)
+    @Tag(name = KeycloakOpenAPI.Admin.Tags.USERS)
+    @Operation( summary = "Get the attributes for a given user other than those managed by the user profile")
+    public Map<String, List<String>> getUnmanagedAttributes() {
+        auth.users().requireView(user);
+
+        UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
+        UserProfile profile = provider.create(USER_API, user);
+        Map<String, List<String>> managedAttributes = profile.getAttributes().getReadable(false);
+        Map<String, List<String>> attributes = new HashMap<>(user.getAttributes());
+
+        if (provider.isEnabled(realm)) {
+            UPConfig upConfig = provider.getConfiguration();
+
+            if (upConfig.getUnmanagedAttributesPolicy() == null) {
+                return Collections.emptyMap();
+            }
+
+            Map<String, List<String>> unmanagedAttributes = profile.getAttributes().getUnmanagedAttributes();
+            managedAttributes.entrySet().removeAll(unmanagedAttributes.entrySet());
+            attributes.entrySet().removeAll(managedAttributes.entrySet());
+        }
+
+        attributes.remove(UserModel.USERNAME);
+        attributes.remove(UserModel.EMAIL);
+        attributes.remove(UserModel.FIRST_NAME);
+        attributes.remove(UserModel.LAST_NAME);
+
+        return attributes;
     }
 
     /**

@@ -16,6 +16,8 @@ export type AttributesFormProps = {
   save?: (model: AttributeForm) => void;
   reset?: () => void;
   fineGrainedAccess?: boolean;
+  name?: string;
+  readOnly?: boolean;
 };
 
 export const AttributesForm = ({
@@ -23,6 +25,8 @@ export const AttributesForm = ({
   reset,
   save,
   fineGrainedAccess,
+  name = "attributes",
+  readOnly = false,
 }: AttributesFormProps) => {
   const { t } = useTranslation();
   const noSaveCancelButtons = !save && !reset;
@@ -30,7 +34,6 @@ export const AttributesForm = ({
     formState: { isDirty },
     handleSubmit,
   } = form;
-
   return (
     <FormAccess
       role="manage-realm"
@@ -38,7 +41,7 @@ export const AttributesForm = ({
       fineGrainedAccess={fineGrainedAccess}
     >
       <FormProvider {...form}>
-        <KeyValueInput name="attributes" />
+        <KeyValueInput name={name} readOnly={readOnly} />
       </FormProvider>
       {!noSaveCancelButtons && (
         <ActionGroup className="kc-attributes__action-group">

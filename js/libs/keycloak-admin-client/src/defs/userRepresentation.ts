@@ -18,6 +18,7 @@ export default interface UserRepresentation {
 
   // optional from response
   attributes?: Record<string, any>;
+  unmanagedAttributes?: Record<string, any>;
   clientConsents?: UserConsentRepresentation[];
   clientRoles?: Record<string, any>;
   credentials?: CredentialRepresentation[];

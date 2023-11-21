@@ -56,6 +56,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.userprofile.config.UPConfig.UnmanagedAttributePolicy;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.testsuite.runonserver.RunOnServer;
 import org.keycloak.userprofile.AttributeGroupMetadata;
@@ -1756,5 +1757,67 @@ public class UserProfileTest extends AbstractUserProfileTest {
         profile = provider.create(UserProfileContext.UPDATE_PROFILE, attributes, user);
         assertTrue(profile.getAttributes().contains(UserModel.FIRST_NAME));
         assertTrue(profile.getAttributes().contains(UserModel.LAST_NAME));
+    }
+
+    @Test
+    public void testUnmanagedPolicy() {
+        getTestingClient().server(TEST_REALM_NAME).run((RunOnServer) UserProfileTest::testUnmanagedPolicy);
+    }
+
+    private static void testUnmanagedPolicy(KeycloakSession session) throws IOException {
+        UPConfig config = new UPConfig();
+        UPAttribute bar = new UPAttribute("bar");
+        UPAttributePermissions permissions = new UPAttributePermissions();
+
+        permissions.setEdit(Set.of("user", "admin"));
+
+        bar.setPermissions(permissions);
+
+        config.addAttribute(bar);
+
+        UserProfileProvider provider = getUserProfileProvider(session);
+        provider.setConfiguration(JsonSerialization.writeValueAsString(config));
+
+        // can't create attribute if policy is disabled
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(UserModel.USERNAME, org.keycloak.models.utils.KeycloakModelUtils.generateId() + "@keycloak.org");
+        attributes.put(UserModel.EMAIL, org.keycloak.models.utils.KeycloakModelUtils.generateId() + "@keycloak.org");
+        attributes.put("foo", List.of("foo"));
+        UserProfile profile = provider.create(UserProfileContext.USER_API, attributes);
+        UserModel user = profile.create();
+        assertFalse(user.getAttributes().containsKey("foo"));
+
+        // user already set with an unmanaged attribute, and it should be visible if policy is adminEdit
+        user.setSingleAttribute("foo", "foo");
+        profile = provider.create(UserProfileContext.USER_API, attributes, user);
+        assertFalse(profile.getAttributes().contains("foo"));
+        config.setUnmanagedAttributesPolicy(UnmanagedAttributePolicy.adminEdit);
+        provider.setConfiguration(JsonSerialization.writeValueAsString(config));
+        profile = provider.create(UserProfileContext.USER_API, attributes, user);
+        assertTrue(profile.getAttributes().contains("foo"));
+        assertFalse(profile.getAttributes().isReadOnly("foo"));
+
+        // user already set with an unmanaged attribute, and it should be visible if policy is adminView but read-only
+        config.setUnmanagedAttributesPolicy(UnmanagedAttributePolicy.adminView);
+        provider.setConfiguration(JsonSerialization.writeValueAsString(config));
+        profile = provider.create(UserProfileContext.USER_API, attributes, user);
+        assertTrue(profile.getAttributes().contains("foo"));
+        assertTrue(profile.getAttributes().isReadOnly("foo"));
+
+        // user already set with an unmanaged attribute, but it is not available to user-facing contexts
+        config.setUnmanagedAttributesPolicy(UnmanagedAttributePolicy.adminView);
+        provider.setConfiguration(JsonSerialization.writeValueAsString(config));
+        profile = provider.create(UserProfileContext.UPDATE_PROFILE, attributes, user);
+        assertFalse(profile.getAttributes().contains("foo"));
+
+        // user already set with an unmanaged attribute, and it is available to all contexts
+        config.setUnmanagedAttributesPolicy(UnmanagedAttributePolicy.enabled);
+        provider.setConfiguration(JsonSerialization.writeValueAsString(config));
+        profile = provider.create(UserProfileContext.UPDATE_PROFILE, attributes, user);
+        assertTrue(profile.getAttributes().contains("foo"));
+        assertFalse(profile.getAttributes().isReadOnly("foo"));
+        profile = provider.create(UserProfileContext.USER_API, attributes, user);
+        assertTrue(profile.getAttributes().contains("foo"));
+        assertFalse(profile.getAttributes().isReadOnly("foo"));
     }
 }
