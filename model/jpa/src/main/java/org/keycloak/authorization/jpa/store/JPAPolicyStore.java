@@ -245,9 +245,13 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public void findByResource(ResourceServer resourceServer, Resource resource, Consumer<Policy> consumer) {
-        TypedQuery<PolicyEntity> query = entityManager.createNamedQuery("findPolicyIdByResource", PolicyEntity.class);
-
+    public void findByResource(ResourceServer resourceServer, Boolean includeScopes, Resource resource, Consumer<Policy> consumer) {
+        TypedQuery<PolicyEntity> query;
+        if(Boolean.TRUE.equals(includeScopes)) {
+            query = entityManager.createNamedQuery("findPolicyIdByResource", PolicyEntity.class);
+        } else {
+            query = entityManager.createNamedQuery("findPolicyIdByResourceNoScope", PolicyEntity.class);
+        }
         query.setFlushMode(FlushModeType.COMMIT);
         query.setParameter("resourceId", resource.getId());
         query.setParameter("serverId", resourceServer.getId());
@@ -261,8 +265,14 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public void findByResourceType(ResourceServer resourceServer, String resourceType, Consumer<Policy> consumer) {
-        TypedQuery<PolicyEntity> query = entityManager.createNamedQuery("findPolicyIdByResourceType", PolicyEntity.class);
+    public void findByResourceType(ResourceServer resourceServer, Boolean allPolicies, String resourceType, Consumer<Policy> consumer) {
+        TypedQuery<PolicyEntity> query;
+        if(Boolean.FALSE.equals(allPolicies)) {
+            query = entityManager.createNamedQuery("findPolicyIdByNullResourceType", PolicyEntity.class);
+        } else {
+            query = entityManager.createNamedQuery("findPolicyIdByResourceType", PolicyEntity.class);
+        }
+
 
         query.setFlushMode(FlushModeType.COMMIT);
         query.setParameter("type", resourceType);

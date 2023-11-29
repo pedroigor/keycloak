@@ -18,9 +18,13 @@
 
 package org.keycloak.authorization.policy.evaluation;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -53,11 +57,9 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
     public void evaluate(ResourcePermission permission, AuthorizationProvider authorizationProvider, EvaluationContext executionContext, Decision decision, Map<Policy, Map<Object, Decision.Effect>> decisionCache) {
         StoreFactory storeFactory = authorizationProvider.getStoreFactory();
         PolicyStore policyStore = storeFactory.getPolicyStore();
-        ResourceStore resourceStore = storeFactory.getResourceStore();
-
         ResourceServer resourceServer = permission.getResourceServer();
-        PolicyEnforcementMode enforcementMode = resourceServer.getPolicyEnforcementMode();
 
+        PolicyEnforcementMode enforcementMode = resourceServer.getPolicyEnforcementMode();
         if (PolicyEnforcementMode.DISABLED.equals(enforcementMode)) {
             grantAndComplete(permission, authorizationProvider, executionContext, decision);
             return;
@@ -71,17 +73,8 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
         AtomicBoolean verified = new AtomicBoolean();
         Consumer<Policy> policyConsumer = createPolicyEvaluator(permission, authorizationProvider, executionContext, decision, verified, decisionCache);
-        Resource resource = permission.getResource();
-        Collection<Scope> scopes = permission.getScopes();
 
-        if(resource != null && !scopes.isEmpty()) {
-            policyStore.findByScopes(resourceServer, resource, new LinkedList<>(scopes), policyConsumer);
-        } else if(!scopes.isEmpty()) {
-            policyStore.findByScopes(resourceServer, null, new LinkedList<>(scopes), policyConsumer);
-        } else if(resource != null) {
-            policyStore.findByResource(resourceServer, resource, policyConsumer);
-        }
-        // if we have no resource and no scopes then we don't have anything to do
+        PolicyQueryBuilder.init(resourceServer, policyStore, permission).allConsumers(policyConsumer).query();
 
         if (verified.get()) {
             decision.onComplete(permission);
