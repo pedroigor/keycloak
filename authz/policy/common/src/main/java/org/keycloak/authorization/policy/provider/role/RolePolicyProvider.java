@@ -60,6 +60,7 @@ public class RolePolicyProvider implements PolicyProvider {
                     return;
                 } else if (hasRole) {
                     evaluation.grant();
+                    break;
                 }
             }
         }
