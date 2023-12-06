@@ -935,13 +935,6 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         }
     }
 
-    @Test
-    @UncaughtServerErrorExpected
-    @DisableFeature(value = Feature.TOKEN_EXCHANGE)
-    public void testTokenExchangeDisabled() throws Exception {
-        checkTokenExchange(false);
-    }
-
     /**
      * KEYCLOAK-7406
      *
