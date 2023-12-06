@@ -67,7 +67,8 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         }
 
         // if the current identity owns the resource then they should be exempt from the policy evaluation results
-        if(permission.getResource() != null && executionContext.getIdentity().getId().equals(permission.getResource().getOwner())) {
+        String currentIdentity = executionContext.getIdentity().getId();
+        if(permission.getResource() != null && currentIdentity != null && currentIdentity.equals(permission.getResource().getId())) {
             grantAndComplete(permission, authorizationProvider, executionContext, decision);
             return;
         }
