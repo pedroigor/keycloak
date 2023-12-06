@@ -366,7 +366,6 @@ public class PermissionClaimTest extends AbstractAuthzTest {
         // create a new resource with the associated scopes
         ResourceRepresentation resourceInstance = new ResourceRepresentation(KeycloakModelUtils.generateId(), "create", "update");
         resourceInstance.setType(resourceA.getType());
-        resourceInstance.setOwner("marta");
 
         try (Response response1 = authorization.resources().create(resourceInstance)) {
             resourceInstance = response1.readEntity(ResourceRepresentation.class);
