@@ -60,7 +60,15 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         ResourceServer resourceServer = permission.getResourceServer();
 
         PolicyEnforcementMode enforcementMode = resourceServer.getPolicyEnforcementMode();
-        if (PolicyEnforcementMode.DISABLED.equals(enforcementMode)) {
+        // if we aren't enforcing policies then we should just grant and return.
+        // There isn't much of a difference between disabling policy evaluation and being permissive. Either way we don't care about the results
+        if (PolicyEnforcementMode.DISABLED.equals(enforcementMode) || PolicyEnforcementMode.PERMISSIVE.equals(enforcementMode)) {
+            grantAndComplete(permission, authorizationProvider, executionContext, decision);
+            return;
+        }
+
+        // if the current identity owns the resource then they should be exempt from the policy evaluation results
+        if(permission.getResource() != null && executionContext.getIdentity().getId().equals(permission.getResource().getOwner())) {
             grantAndComplete(permission, authorizationProvider, executionContext, decision);
             return;
         }
@@ -79,10 +87,6 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         if (verified.get()) {
             decision.onComplete(permission);
             return;
-        }
-
-        if (PolicyEnforcementMode.PERMISSIVE.equals(enforcementMode)) {
-            grantAndComplete(permission, authorizationProvider, executionContext, decision);
         }
     }
 
