@@ -1790,11 +1790,11 @@ public class EntitlementAPITest extends AbstractAuthzTest {
             typedResource = response.readEntity(ResourceRepresentation.class);
         }
 
+        // create a resource owned by kolo with private visibility
         ResourceRepresentation userResource = new ResourceRepresentation();
-
         userResource.setName(KeycloakModelUtils.generateId());
         userResource.setType("resource");
-        userResource.setOwner("marta");
+        userResource.setOwner("kolo");
         Map<String, List<String>> attributes = new HashMap<>();
         attributes.put("visibility", Arrays.asList("private"));
         userResource.setAttributes(attributes);
@@ -1803,8 +1803,8 @@ public class EntitlementAPITest extends AbstractAuthzTest {
             userResource = response.readEntity(ResourceRepresentation.class);
         }
 
+        // Create a resource permission for all "resource" types that only allows public resources to be accessed
         ResourcePermissionRepresentation typedResourcePermission = new ResourcePermissionRepresentation();
-
         typedResourcePermission.setName(KeycloakModelUtils.generateId());
         typedResourcePermission.setResourceType("resource");
         typedResourcePermission.addPolicy(onlyPublicResourcesPolicy.getName());
@@ -1813,10 +1813,10 @@ public class EntitlementAPITest extends AbstractAuthzTest {
             typedResourcePermission = response.readEntity(ResourcePermissionRepresentation.class);
         }
 
-        // marta can access any public resource
+        // marta can access any public resource and resources that she owns. She doesn't own any so only the one resource will show
         AuthzClient authzClient = getAuthzClient(AUTHZ_CLIENT_CONFIG);
-        AuthorizationRequest request = new AuthorizationRequest();
 
+        AuthorizationRequest request = new AuthorizationRequest();
         request.addPermission(typedResource.getId());
         request.addPermission(userResource.getId());
 
@@ -1829,105 +1829,94 @@ public class EntitlementAPITest extends AbstractAuthzTest {
             assertEquals(typedResource.getName(), grantedPermission.getResourceName());
         }
 
-        typedResourcePermission.addPolicy(onlyOwnerPolicy.getName());
-        typedResourcePermission.setDecisionStrategy(DecisionStrategy.AFFIRMATIVE);
-
-        authorization.permissions().resource().findById(typedResourcePermission.getId()).update(typedResourcePermission);
-
-        response = authzClient.authorization("marta", "password").authorize(request);
+        // kolo can access the resource they own in addition to the public resource
+        response = authzClient.authorization("kolo", "password").authorize(request);
         assertNotNull(response.getToken());
         permissions = toAccessToken(response.getToken()).getAuthorization().getPermissions();
         assertEquals(2, permissions.size());
 
-        for (Permission grantedPermission : permissions) {
-            assertThat(Arrays.asList(typedResource.getName(), userResource.getName()), Matchers.hasItem(grantedPermission.getResourceName()));
-        }
+        // we now set an only owner policy on this which will conflict with the "only public" policy
+        typedResourcePermission.addPolicy(onlyOwnerPolicy.getName());
+        // set to affirmative so only one of the policies has to pass
+        typedResourcePermission.setDecisionStrategy(DecisionStrategy.AFFIRMATIVE);
 
-        typedResource.setAttributes(attributes);
+        authorization.permissions().resource().findById(typedResourcePermission.getId()).update(typedResourcePermission);
 
-        authorization.resources().resource(typedResource.getId()).update(typedResource);
-
+        // The resource still isn't owned by marta, so we should expect access to only one resource
         response = authzClient.authorization("marta", "password").authorize(request);
         assertNotNull(response.getToken());
         permissions = toAccessToken(response.getToken()).getAuthorization().getPermissions();
         assertEquals(1, permissions.size());
 
         for (Permission grantedPermission : permissions) {
-            assertThat(userResource.getName(), Matchers.equalTo(grantedPermission.getResourceName()));
+            assertEquals(typedResource.getName(), grantedPermission.getResourceName());
         }
 
+        // now we set the typed resource to private as we did with the resource owned by kolo
+        typedResource.setAttributes(attributes);
+
+        authorization.resources().resource(typedResource.getId()).update(typedResource);
+
+        // marta does not own either resource and both are private, we expect this query to fail
+        try {
+            authzClient.authorization("marta", "password").authorize(request);
+            fail("marta can not access any of the private resources");
+        } catch (RuntimeException expected) {
+            assertEquals(403, HttpResponseException.class.cast(expected.getCause()).getStatusCode());
+            assertTrue(HttpResponseException.class.cast(expected.getCause()).toString().contains("access_denied"));
+        }
+
+        // the private resource owned by kolo now has two scopes associated with it
         userResource.addScope("create", "read");
         authorization.resources().resource(userResource.getId()).update(userResource);
 
+        // the private resource owned by no one also has two scopes associated with it
         typedResource.addScope("create", "read");
         authorization.resources().resource(typedResource.getId()).update(typedResource);
 
+        // we create a scope permission that stands on its own and is associated with the create scope + "only public" policy
+        // the type permission is associated with "only owner" + "only public" in affirmative mode
         ScopePermissionRepresentation createPermission = new ScopePermissionRepresentation();
-
         createPermission.setName(KeycloakModelUtils.generateId());
         createPermission.addScope("create");
         createPermission.addPolicy(onlyPublicResourcesPolicy.getName());
 
         authorization.permissions().scope().create(createPermission).close();
 
-        response = authzClient.authorization("marta", "password").authorize(request);
+        // Marta still won't be able to access these resources as neither are public and neither are owned by marta
+        try {
+            authzClient.authorization("marta", "password").authorize(request);
+            fail("marta can not access any of the private resources");
+        } catch (RuntimeException expected) {
+            assertEquals(403, HttpResponseException.class.cast(expected.getCause()).getStatusCode());
+            assertTrue(HttpResponseException.class.cast(expected.getCause()).toString().contains("access_denied"));
+        }
+
+        // kolo will have access to the create scope on the resource owned by them
+        response = authzClient.authorization("kolo", "password").authorize(request);
         assertNotNull(response.getToken());
         permissions = toAccessToken(response.getToken()).getAuthorization().getPermissions();
         assertEquals(1, permissions.size());
 
         for (Permission grantedPermission : permissions) {
             assertThat(userResource.getName(), Matchers.equalTo(grantedPermission.getResourceName()));
-            assertThat(grantedPermission.getScopes(), Matchers.not(Matchers.hasItem("create")));
+            assertThat(grantedPermission.getScopes(), Matchers.hasItem("create"));
         }
 
+        // remove the private visibility from the resource owned by no one
         typedResource.setAttributes(new HashMap<>());
 
         authorization.resources().resource(typedResource.getId()).update(typedResource);
 
-        response = authzClient.authorization("marta", "password").authorize();
-        assertNotNull(response.getToken());
-        permissions = toAccessToken(response.getToken()).getAuthorization().getPermissions();
-
-        for (Permission grantedPermission : permissions) {
-            if (grantedPermission.getResourceName().equals(userResource.getName())) {
-                assertThat(grantedPermission.getScopes(), Matchers.not(Matchers.hasItem("create")));
-            } else if (grantedPermission.getResourceName().equals(typedResource.getName())) {
-                assertThat(grantedPermission.getScopes(), Matchers.containsInAnyOrder("create", "read"));
-            }
-        }
-
-        request = new AuthorizationRequest();
-
-        request.addPermission(typedResource.getId());
-        request.addPermission(userResource.getId());
-
+        // marta can now access that resource on the create scope and the update scope (because the type policy allows public while the scope policy only grants for one scope)
+        // Marta still can't access the resource not owned by them as it is not public
         response = authzClient.authorization("marta", "password").authorize(request);
         assertNotNull(response.getToken());
         permissions = toAccessToken(response.getToken()).getAuthorization().getPermissions();
-
+        assertThat(permissions.size(), Matchers.is(1));
         for (Permission grantedPermission : permissions) {
-            if (grantedPermission.getResourceName().equals(userResource.getName())) {
-                assertThat(grantedPermission.getScopes(), Matchers.not(Matchers.hasItem("create")));
-            } else if (grantedPermission.getResourceName().equals(typedResource.getName())) {
-                assertThat(grantedPermission.getScopes(), Matchers.containsInAnyOrder("create", "read"));
-            }
-        }
-
-        request = new AuthorizationRequest();
-
-        request.addPermission(userResource.getId());
-        request.addPermission(typedResource.getId());
-
-        response = authzClient.authorization("marta", "password").authorize(request);
-        assertNotNull(response.getToken());
-        permissions = toAccessToken(response.getToken()).getAuthorization().getPermissions();
-
-        for (Permission grantedPermission : permissions) {
-            if (grantedPermission.getResourceName().equals(userResource.getName())) {
-                assertThat(grantedPermission.getScopes(), Matchers.not(Matchers.hasItem("create")));
-            } else if (grantedPermission.getResourceName().equals(typedResource.getName())) {
-                assertThat(grantedPermission.getScopes(), Matchers.containsInAnyOrder("create", "read"));
-            }
+            assertThat(grantedPermission.getResourceName(), Matchers.is(typedResource.getName()));
+            assertThat(grantedPermission.getScopes(), Matchers.containsInAnyOrder("create", "read"));
         }
     }
 
@@ -2190,13 +2179,14 @@ public class EntitlementAPITest extends AbstractAuthzTest {
 
         JSPolicyRepresentation policy = new JSPolicyRepresentation();
 
+        // create a policy associated with nothing
         policy.setName(KeycloakModelUtils.generateId());
         policy.setType("script-scripts/default-policy.js");
 
         authorization.policies().js().create(policy).close();
 
+        // create  a resource associated with no policies, but has three scopes
         ResourceRepresentation resource = new ResourceRepresentation();
-
         resource.setName(KeycloakModelUtils.generateId());
         resource.addScope("sensors:view", "sensors:update", "sensors:delete");
 
@@ -2204,8 +2194,8 @@ public class EntitlementAPITest extends AbstractAuthzTest {
             resource = response.readEntity(ResourceRepresentation.class);
         }
 
+        // create a scope permission that takes the JS policy above as an associated policy, and only matches on the created resource and scope
         ScopePermissionRepresentation permission = new ScopePermissionRepresentation();
-
         permission.setName(KeycloakModelUtils.generateId());
         permission.addResource(resource.getId());
         permission.addScope("sensors:view");
@@ -2215,8 +2205,8 @@ public class EntitlementAPITest extends AbstractAuthzTest {
 
         String accessToken = new OAuthClient().realm("authz-test").clientId(RESOURCE_SERVER_TEST).doGrantAccessTokenRequest("secret", "kolo", "password").getAccessToken();
         AuthzClient authzClient = getAuthzClient(AUTHZ_CLIENT_CONFIG);
-        AuthorizationRequest request = new AuthorizationRequest();
 
+        AuthorizationRequest request = new AuthorizationRequest();
         request.addPermission(resource.getId(), "sensors:view");
 
         AuthorizationResponse response = authzClient.authorization(accessToken).authorize(request);
@@ -2236,7 +2226,7 @@ public class EntitlementAPITest extends AbstractAuthzTest {
         this.expectedException.expectCause(Matchers.allOf(Matchers.instanceOf(HttpResponseException.class), Matchers.hasProperty("statusCode", Matchers.is(403))));
         this.expectedException.reportMissingExceptionWithMessage("should fail, session invalidated");
 
-        authzClient.authorization().authorize(request);
+        response = authzClient.authorization(accessToken).authorize(request);
     }
 
     @Test
