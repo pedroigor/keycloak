@@ -153,12 +153,8 @@ public class GroupNamePolicyTest extends AbstractAuthzTest {
 
         }
 
-        try {
-            authzClient.authorization(authzClient.obtainAccessToken().getToken()).authorize(new AuthorizationRequest(ticket));
-            fail("Should fail because service account is not granted with expected group");
-        } catch (AuthorizationDeniedException ignore) {
-
-        }
+        // we expect this to pass because the service account owns the resource -- it is the resource server and no owner was set explicitly
+        authzClient.authorization(authzClient.obtainAccessToken().getToken()).authorize(new AuthorizationRequest(ticket));
     }
 
     @Test
