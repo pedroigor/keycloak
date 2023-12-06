@@ -60,9 +60,8 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         ResourceServer resourceServer = permission.getResourceServer();
 
         PolicyEnforcementMode enforcementMode = resourceServer.getPolicyEnforcementMode();
-        // if we aren't enforcing policies then we should just grant and return.
-        // There isn't much of a difference between disabling policy evaluation and being permissive. Either way we don't care about the results
-        if (PolicyEnforcementMode.DISABLED.equals(enforcementMode) || PolicyEnforcementMode.PERMISSIVE.equals(enforcementMode)) {
+        // if we aren't enforcing policies then we should just grant and return
+        if (PolicyEnforcementMode.DISABLED.equals(enforcementMode)) {
             grantAndComplete(permission, authorizationProvider, executionContext, decision);
             return;
         }
@@ -87,6 +86,11 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         if (verified.get()) {
             decision.onComplete(permission);
             return;
+        }
+
+        // requests are allowed even when no policies are evaluated, but we still want to keep track of what was denied
+        if (PolicyEnforcementMode.PERMISSIVE.equals(enforcementMode)) {
+            grantAndComplete(permission, authorizationProvider, executionContext, decision);
         }
     }
 
