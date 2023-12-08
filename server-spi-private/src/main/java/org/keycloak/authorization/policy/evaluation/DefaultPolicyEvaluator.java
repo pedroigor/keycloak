@@ -18,26 +18,17 @@
 
 package org.keycloak.authorization.policy.evaluation;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.Decision;
 import org.keycloak.authorization.model.Policy;
-import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.ResourceServer;
-import org.keycloak.authorization.model.Scope;
 import org.keycloak.authorization.permission.ResourcePermission;
 import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.keycloak.authorization.store.PolicyStore;
-import org.keycloak.authorization.store.ResourceStore;
 import org.keycloak.authorization.store.StoreFactory;
 import org.keycloak.representations.idm.authorization.PolicyEnforcementMode;
 

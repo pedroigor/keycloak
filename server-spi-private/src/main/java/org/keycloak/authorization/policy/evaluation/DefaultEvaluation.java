@@ -122,13 +122,8 @@ public class DefaultEvaluation implements Evaluation {
         return this.parentPolicy;
     }
 
-    @Override
     public Effect getEffect() {
         return effect;
-    }
-
-    public Decision getDecision() {
-        return decision;
     }
 
     public Map<Policy, Map<Object, Effect>> getDecisionCache() {
@@ -271,7 +266,6 @@ public class DefaultEvaluation implements Evaluation {
         this.effect = null;
     }
 
-    @Override
     public void setEffect(Effect effect) {
         this.effect = effect;
         this.decision.onDecision(this);

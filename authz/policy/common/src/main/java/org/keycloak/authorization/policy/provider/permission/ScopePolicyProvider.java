@@ -18,6 +18,7 @@ package org.keycloak.authorization.policy.provider.permission;
 
 import org.keycloak.authorization.Decision;
 import org.keycloak.authorization.model.Policy;
+import org.keycloak.authorization.model.Scope;
 import org.keycloak.authorization.permission.ResourcePermission;
 import org.keycloak.authorization.policy.evaluation.DefaultEvaluation;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
@@ -34,7 +35,7 @@ public class ScopePolicyProvider extends AbstractPermissionProvider {
     public void evaluate(Evaluation evaluation) {
         DefaultEvaluation defaultEvaluation = DefaultEvaluation.class.cast(evaluation);
         Map<Policy, Map<Object, Decision.Effect>> decisionCache = defaultEvaluation.getDecisionCache();
-        Policy policy = defaultEvaluation.getPolicy();
+        Policy policy = defaultEvaluation.getParentPolicy();
         Map<Object, Decision.Effect> decisions = decisionCache.computeIfAbsent(policy, p -> new HashMap<>());
         ResourcePermission permission = evaluation.getPermission();
 
@@ -49,7 +50,7 @@ public class ScopePolicyProvider extends AbstractPermissionProvider {
 
         if (decision == null) {
             super.evaluate(evaluation);
-            evaluation.denyIfNoEffect();
+
             decisions.put(permission, defaultEvaluation.getEffect());
         }
     }

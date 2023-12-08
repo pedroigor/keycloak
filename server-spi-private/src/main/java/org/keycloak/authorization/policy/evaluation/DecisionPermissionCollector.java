@@ -42,10 +42,10 @@ import java.util.stream.Collectors;
  */
 public class DecisionPermissionCollector extends AbstractDecisionCollector {
 
-    protected final AuthorizationProvider authorizationProvider;
-    protected final ResourceServer resourceServer;
-    protected final AuthorizationRequest request;
-    protected final Set<Permission> permissions = new LinkedHashSet<>();
+    private final AuthorizationProvider authorizationProvider;
+    private final ResourceServer resourceServer;
+    private final AuthorizationRequest request;
+    private final Set<Permission> permissions = new LinkedHashSet<>();
 
     public DecisionPermissionCollector(AuthorizationProvider authorizationProvider, ResourceServer resourceServer, AuthorizationRequest request) {
         this.authorizationProvider = authorizationProvider;
@@ -71,14 +71,13 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
             boolean resourceGranted = false;
             boolean anyDeny = false;
 
-            // top level policy results for a permission
             for (Result.PolicyResult policyResult : result.getResults()) {
                 Policy policy = policyResult.getPolicy();
                 Set<Scope> policyScopes = policy.getScopes();
                 Set<Resource> policyResources = policy.getResources();
                 boolean containsResource = policyResources.contains(resource);
 
-                if (Effect.PERMIT.equals(policyResult.getEffect())) {
+                if (isGranted(policyResult)) {
                     if (isScopePermission(policy)) {
                         for (Scope scope : requestedScopes) {
                             if (policyScopes.contains(scope)) {

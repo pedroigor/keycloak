@@ -17,7 +17,9 @@
  */
 package org.keycloak.authorization.policy.provider.aggregated;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.keycloak.authorization.AuthorizationProvider;
@@ -27,6 +29,7 @@ import org.keycloak.authorization.permission.ResourcePermission;
 import org.keycloak.authorization.policy.evaluation.DecisionResultCollector;
 import org.keycloak.authorization.policy.evaluation.DefaultEvaluation;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
+import org.keycloak.authorization.policy.evaluation.Result;
 import org.keycloak.authorization.policy.provider.PolicyProvider;
 
 /**
@@ -36,7 +39,16 @@ public class AggregatePolicyProvider implements PolicyProvider {
 
     @Override
     public void evaluate(Evaluation evaluation) {
-        DecisionResultCollector decision = new DecisionResultCollector();
+        DecisionResultCollector decision = new DecisionResultCollector() {
+            @Override
+            protected void onComplete(Result result) {
+                if (isGranted(result.getResults().iterator().next())) {
+                    evaluation.grant();
+                } else {
+                    evaluation.deny();
+                }
+            }
+        };
         AuthorizationProvider authorization = evaluation.getAuthorizationProvider();
         Policy policy = evaluation.getPolicy();
         DefaultEvaluation defaultEvaluation = DefaultEvaluation.class.cast(evaluation);
