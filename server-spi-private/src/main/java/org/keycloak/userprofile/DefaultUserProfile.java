@@ -19,6 +19,8 @@
 
 package org.keycloak.userprofile;
 
+import static org.keycloak.userprofile.UserProfileUtil.isRootAttribute;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -168,7 +170,7 @@ public final class DefaultUserProfile implements UserProfile {
     }
 
     private boolean isCustomAttribute(String name) {
-        return !getAttributes().isRootAttribute(name);
+        return !isRootAttribute(name);
     }
 
     @Override

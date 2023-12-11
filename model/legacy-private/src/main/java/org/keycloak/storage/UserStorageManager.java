@@ -790,10 +790,10 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
     }
 
     @Override
-    public void decorateUserProfile(RealmModel realm, UserProfileMetadata metadata) {
+    public void decorateUserProfile(RealmModel realm, UserProfileMetadata decorate) {
         for (UserProfileDecorator decorator : getEnabledStorageProviders(session.getContext().getRealm(), UserProfileDecorator.class)
                 .collect(Collectors.toList())) {
-            decorator.decorateUserProfile(realm, metadata);
+            decorator.decorateUserProfile(realm, decorate);
         }
     }
 }

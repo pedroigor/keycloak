@@ -123,8 +123,8 @@ import java.util.stream.Stream;
 
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_ID;
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_USERNAME;
-import static org.keycloak.services.resources.admin.UserProfileResource.createUserProfileMetadata;
 import static org.keycloak.userprofile.UserProfileContext.USER_API;
+import static org.keycloak.userprofile.UserProfileUtil.createUserProfileMetadata;
 
 /**
  * Base resource for managing users
@@ -184,7 +184,7 @@ public class UserResource {
                 wasPermanentlyLockedOut = session.getProvider(BruteForceProtector.class).isPermanentlyLockedOut(session, realm, user);
             }
 
-            Map<String, List<String>> attributes = new HashMap<>(rep.toAttributes());
+            Map<String, List<String>> attributes = new HashMap<>(rep.getRawAttributes());
 
             if (rep.getAttributes() == null) {
                 // include existing attributes in case no attributes are set so that validation takes into account the existing
@@ -316,7 +316,7 @@ public class UserResource {
 
         UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
         UserProfile profile = provider.create(USER_API, user);
-        Map<String, List<String>> readableAttributes = profile.getAttributes().getReadable(false);
+        Map<String, List<String>> readableAttributes = profile.getAttributes().getReadable();
 
         if (rep.getAttributes() != null) {
             rep.setAttributes(readableAttributes);
