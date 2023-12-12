@@ -42,7 +42,7 @@ public class UserResource {
 
         if (provider.isEnabled(realm)) {
             UserProfile profile = provider.create(USER_API, user);
-            Map<String, List<String>> managedAttributes = profile.getAttributes().getReadable(false);
+            Map<String, List<String>> managedAttributes = profile.getAttributes().getReadable();
             Map<String, List<String>> attributes = new HashMap<>(user.getAttributes());
             UPConfig upConfig = provider.getConfiguration();
 
@@ -56,8 +56,6 @@ public class UserResource {
 
             attributes.remove(UserModel.USERNAME);
             attributes.remove(UserModel.EMAIL);
-            attributes.remove(UserModel.FIRST_NAME);
-            attributes.remove(UserModel.LAST_NAME);
 
             return attributes;
         }

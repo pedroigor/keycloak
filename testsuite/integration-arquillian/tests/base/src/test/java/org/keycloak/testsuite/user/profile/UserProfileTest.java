@@ -174,7 +174,7 @@ public class UserProfileTest extends AbstractUserProfileTest {
 
         // once created, profile attributes can not be changed
         assertTrue(profile.getAttributes().contains(UserModel.USERNAME));
-        assertNull(profile.getAttributes().getFirstValue(UserModel.USERNAME));
+        assertNull(profile.getAttributes().getFirst(UserModel.USERNAME));
     }
 
     @Test
@@ -413,11 +413,11 @@ public class UserProfileTest extends AbstractUserProfileTest {
             assertTrue(ve.isAttributeOnError("address"));
         }
 
-        assertNotNull(attributes.getFirstValue(UserModel.USERNAME));
-        assertNotNull(attributes.getFirstValue(UserModel.EMAIL));
-        assertNotNull(attributes.getFirstValue(UserModel.FIRST_NAME));
-        assertNotNull(attributes.getFirstValue(UserModel.LAST_NAME));
-        assertNull(attributes.getFirstValue("address"));
+        assertNotNull(attributes.getFirst(UserModel.USERNAME));
+        assertNotNull(attributes.getFirst(UserModel.EMAIL));
+        assertNotNull(attributes.getFirst(UserModel.FIRST_NAME));
+        assertNotNull(attributes.getFirst(UserModel.LAST_NAME));
+        assertNull(attributes.getFirst("address"));
 
         user.setAttribute("address", Arrays.asList("fixed-address"));
 
@@ -426,7 +426,7 @@ public class UserProfileTest extends AbstractUserProfileTest {
 
         profile.validate();
 
-        assertNotNull(attributes.getFirstValue("address"));
+        assertNotNull(attributes.getFirst("address"));
     }
 
     @Test
@@ -1516,20 +1516,20 @@ public class UserProfileTest extends AbstractUserProfileTest {
 
         profile = provider.create(UserProfileContext.USER_API, user);
         Attributes userAttributes = profile.getAttributes();
-        assertEquals("new-email@test.com", userAttributes.getFirstValue(UserModel.EMAIL));
-        assertEquals("Test Value", userAttributes.getFirstValue("test-attribute"));
-        assertEquals("changed", userAttributes.getFirstValue("foo"));
+        assertEquals("new-email@test.com", userAttributes.getFirst(UserModel.EMAIL));
+        assertEquals("Test Value", userAttributes.getFirst("test-attribute"));
+        assertEquals("changed", userAttributes.getFirst("foo"));
 
         attributes.remove("foo");
-        attributes.put("test-attribute", userAttributes.getFirstValue("test-attribute"));
+        attributes.put("test-attribute", userAttributes.getFirst("test-attribute"));
         profile = provider.create(UserProfileContext.USER_API, attributes, user);
         profile.update(true);
         profile = provider.create(UserProfileContext.USER_API, user);
         userAttributes = profile.getAttributes();
         // remove attribute if not set
-        assertEquals("new-email@test.com", userAttributes.getFirstValue(UserModel.EMAIL));
-        assertEquals("Test Value", userAttributes.getFirstValue("test-attribute"));
-        assertNull(userAttributes.getFirstValue("foo"));
+        assertEquals("new-email@test.com", userAttributes.getFirst(UserModel.EMAIL));
+        assertEquals("Test Value", userAttributes.getFirst("test-attribute"));
+        assertNull(userAttributes.getFirst("foo"));
 
         config.addOrReplaceAttribute(new UPAttribute("test-attribute", new UPAttributePermissions(Set.of(), Set.of(ROLE_USER))));
         provider.setConfiguration(JsonSerialization.writeValueAsString(config));
@@ -1539,8 +1539,8 @@ public class UserProfileTest extends AbstractUserProfileTest {
         profile = provider.create(UserProfileContext.USER_API, user);
         userAttributes = profile.getAttributes();
         // do not remove test-attribute because admin does not have write permissions
-        assertEquals("new-email@test.com", userAttributes.getFirstValue(UserModel.EMAIL));
-        assertEquals("Test Value", userAttributes.getFirstValue("test-attribute"));
+        assertEquals("new-email@test.com", userAttributes.getFirst(UserModel.EMAIL));
+        assertEquals("Test Value", userAttributes.getFirst("test-attribute"));
 
         config.addOrReplaceAttribute(new UPAttribute("test-attribute", new UPAttributePermissions(Set.of(), Set.of(ROLE_USER, ROLE_ADMIN))));
         provider.setConfiguration(JsonSerialization.writeValueAsString(config));
@@ -1550,8 +1550,8 @@ public class UserProfileTest extends AbstractUserProfileTest {
         profile = provider.create(UserProfileContext.USER_API, user);
         userAttributes = profile.getAttributes();
         // removes the test-attribute attribute because now admin has write permission
-        assertEquals("new-email@test.com", userAttributes.getFirstValue(UserModel.EMAIL));
-        assertNull(userAttributes.getFirstValue("test-attribute"));
+        assertEquals("new-email@test.com", userAttributes.getFirst(UserModel.EMAIL));
+        assertNull(userAttributes.getFirst("test-attribute"));
     }
 
     @Test
@@ -1594,11 +1594,11 @@ public class UserProfileTest extends AbstractUserProfileTest {
     }
 
     private static void assertRemoveEmptyRootAttribute(Map<String, List<String>> attributes, UserModel user, Attributes upAttributes) {
-        assertNull(upAttributes.getFirstValue(UserModel.LAST_NAME));
+        assertNull(upAttributes.getFirst(UserModel.LAST_NAME));
         assertNull(user.getLastName());
-        assertNull(upAttributes.getFirstValue(UserModel.EMAIL));
+        assertNull(upAttributes.getFirst(UserModel.EMAIL));
         assertNull(user.getEmail());
-        assertEquals(upAttributes.getFirstValue(UserModel.FIRST_NAME), attributes.get(UserModel.FIRST_NAME).get(0));
+        assertEquals(upAttributes.getFirst(UserModel.FIRST_NAME), attributes.get(UserModel.FIRST_NAME).get(0));
     }
 
     @Test
@@ -1705,7 +1705,7 @@ public class UserProfileTest extends AbstractUserProfileTest {
         attributes.put(UserModel.EMAIL, "TesT@TesT.org");
         UserProfile profile = provider.create(UserProfileContext.USER_API, attributes);
         Attributes profileAttributes = profile.getAttributes();
-        assertEquals(attributes.get(UserModel.USERNAME).toLowerCase(), profileAttributes.getFirstValue(UserModel.USERNAME));
-        assertEquals(attributes.get(UserModel.EMAIL).toLowerCase(), profileAttributes.getFirstValue(UserModel.EMAIL));
+        assertEquals(attributes.get(UserModel.USERNAME).toLowerCase(), profileAttributes.getFirst(UserModel.USERNAME));
+        assertEquals(attributes.get(UserModel.EMAIL).toLowerCase(), profileAttributes.getFirst(UserModel.EMAIL));
     }
 }
