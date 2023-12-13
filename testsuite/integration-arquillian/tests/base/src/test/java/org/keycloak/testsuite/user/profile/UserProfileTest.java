@@ -62,6 +62,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.userprofile.config.UPConfig.UnmanagedAttributePolicy;
 import org.keycloak.representations.userprofile.config.UPGroup;
 import org.keycloak.services.messages.Messages;
+import org.keycloak.testsuite.arquillian.annotation.ModelTest;
 import org.keycloak.testsuite.runonserver.RunOnServer;
 import org.keycloak.testsuite.util.LDAPRule;
 import org.keycloak.userprofile.AttributeGroupMetadata;
@@ -100,8 +101,10 @@ public class UserProfileTest extends AbstractUserProfileTest {
         testRealm.setClientScopes(new ArrayList<>());
         testRealm.getClientScopes().add(ClientScopeBuilder.create().name("customer").protocol("openid-connect").build());
         testRealm.getClientScopes().add(ClientScopeBuilder.create().name("client-a").protocol("openid-connect").build());
+        testRealm.getClientScopes().add(ClientScopeBuilder.create().name("some-optional-scope").protocol("openid-connect").build());
         ClientRepresentation client = KeycloakModelUtils.createClient(testRealm, "client-a");
         client.setDefaultClientScopes(Collections.singletonList("customer"));
+        client.setOptionalClientScopes(Collections.singletonList("some-optional-scope"));
         KeycloakModelUtils.createClient(testRealm, "client-b");
     }
 
@@ -1431,6 +1434,87 @@ public class UserProfileTest extends AbstractUserProfileTest {
             assertTrue(ve.isAttributeOnError(ATT_ADDRESS));
         }
 
+    }
+
+    @Test
+    @ModelTest
+    public void testRequiredByOptionalClientScope(KeycloakSession session) throws IOException {
+        RealmModel realm = session.realms().getRealmByName("test");
+        session.getContext().setRealm(realm);
+
+        UserProfileProvider provider = getUserProfileProvider(session);
+        UPConfig config = parseDefaultConfig();
+        config.addOrReplaceAttribute(new UPAttribute(ATT_ADDRESS, new UPAttributePermissions(Set.of(), Set.of(ROLE_ADMIN, ROLE_USER)), new UPAttributeRequired(Set.of(ROLE_ADMIN, ROLE_USER), Set.of("some-optional-scope"))));
+        provider.setConfiguration(JsonSerialization.writeValueAsString(config));
+
+        Map<String, Object> attributes = new HashMap<>();
+
+        attributes.put(UserModel.USERNAME, "user");
+        attributes.put(UserModel.FIRST_NAME, "John");
+        attributes.put(UserModel.LAST_NAME, "Doe");
+        attributes.put(UserModel.EMAIL, "user@email.test");
+
+        // client with default scopes. No address scope included
+        configureAuthenticationSession(session, "client-a", null);
+
+        // Fails on admin console even if there is no scope as scope validation is ignored for admin context
+        UserProfile profile;
+        try {
+            profile = provider.create(UserProfileContext.USER_API, attributes);
+            profile.validate();
+            fail("Should fail validation");
+        } catch (ValidationException ve) {
+            assertTrue(ve.isAttributeOnError(ATT_ADDRESS));
+        }
+
+        // no fail on account console as they do not have scopes
+        profile = provider.create(UserProfileContext.ACCOUNT, attributes);
+        profile.validate();
+
+        // no fail on auth flow scopes when scope is not required
+        profile = provider.create(UserProfileContext.REGISTRATION, attributes);
+        profile.validate();
+        profile = provider.create(UserProfileContext.UPDATE_PROFILE, attributes);
+        profile.validate();
+        profile = provider.create(UserProfileContext.IDP_REVIEW, attributes);
+        profile.validate();
+
+        // client with default scopes for which is attribute NOT configured as required
+        configureAuthenticationSession(session, "client-a", Set.of("some-optional-scope"));
+
+        // Fails on User API (regardless of scope). No fail on account console as they do not have scopes
+        try {
+            profile = provider.create(UserProfileContext.USER_API, attributes);
+            profile.validate();
+            fail("Should fail validation");
+        } catch (ValidationException ve) {
+            assertTrue(ve.isAttributeOnError(ATT_ADDRESS));
+        }
+        profile = provider.create(UserProfileContext.ACCOUNT, attributes);
+        profile.validate();
+
+        // fail on auth flow scopes when scope is required
+        try {
+            profile = provider.create(UserProfileContext.UPDATE_PROFILE, attributes);
+            profile.validate();
+            fail("Should fail validation");
+        } catch (ValidationException ve) {
+            assertTrue(ve.isAttributeOnError(ATT_ADDRESS));
+        }
+        try {
+            profile = provider.create(UserProfileContext.REGISTRATION, attributes);
+            profile.validate();
+            fail("Should fail validation");
+        } catch (ValidationException ve) {
+            assertTrue(ve.isAttributeOnError(ATT_ADDRESS));
+        }
+        try {
+            profile = provider.create(UserProfileContext.IDP_REVIEW, attributes);
+            profile.validate();
+            fail("Should fail validation");
+        } catch (ValidationException ve) {
+            assertTrue(ve.isAttributeOnError(ATT_ADDRESS));
+        }
     }
 
     @Test
