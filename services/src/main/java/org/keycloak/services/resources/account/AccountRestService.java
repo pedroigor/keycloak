@@ -62,6 +62,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserConsentModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.account.ClientRepresentation;
 import org.keycloak.representations.account.ConsentRepresentation;
@@ -114,6 +115,8 @@ public class AccountRestService {
         this.user = auth.getUser();
         this.event = event;
         this.locale = session.getContext().resolveLocale(user);
+        session.setAttribute(UserSessionModel.class.getName(), auth.getSession());
+        session.getContext().setClient(auth.getClient());
         this.version = version;
         event.client(auth.getClient()).user(auth.getUser());
         this.request = session.getContext().getHttpRequest();

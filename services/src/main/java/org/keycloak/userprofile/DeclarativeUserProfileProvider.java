@@ -35,11 +35,13 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.keycloak.component.ComponentModel;
+import org.keycloak.models.AuthenticatedClientSessionModel;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserProvider;
+import org.keycloak.models.UserSessionModel;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionModel;
@@ -79,16 +81,32 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
      */
     private static boolean requestedScopePredicate(AttributeContext context, Set<String> configuredScopes) {
         KeycloakSession session = context.getSession();
+        String requestedScopesString = null;
         AuthenticationSessionModel authenticationSession = session.getContext().getAuthenticationSession();
+        ClientModel client = null;
 
-        if (authenticationSession == null) {
-            return false;
+        if (authenticationSession != null) {
+            requestedScopesString = authenticationSession.getClientNote(OIDCLoginProtocol.SCOPE_PARAM);
+            client = authenticationSession.getClient();
+        } else {
+            UserSessionModel userSession = (UserSessionModel) session.getAttribute(UserSessionModel.class.getName());
+
+            if (userSession == null) {
+                return false;
+            }
+
+            for (AuthenticatedClientSessionModel clientSession : userSession.getAuthenticatedClientSessions().values()) {
+                requestedScopesString = clientSession.getNote(OIDCLoginProtocol.SCOPE_PARAM);
+                if (requestedScopesString != null) {
+                    client = clientSession.getClient();
+                    break;
+                }
+            }
+
         }
 
-        String requestedScopesString = authenticationSession.getClientNote(OIDCLoginProtocol.SCOPE_PARAM);
-        ClientModel client = authenticationSession.getClient();
-
-        return getRequestedClientScopes(requestedScopesString, client).map((csm) -> csm.getName()).anyMatch(configuredScopes::contains);
+        boolean b = getRequestedClientScopes(requestedScopesString, client).map((csm) -> csm.getName()).anyMatch(configuredScopes::contains);
+        return b;
     }
 
     private final KeycloakSession session;
@@ -301,14 +319,8 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
                     // If scopes are configured, we will use scope-based selector and require the attribute just if scope is
                     // in current authenticationSession (either default scope or by 'scope' parameter)
                     if (rc.getScopes() != null && !rc.getScopes().isEmpty()) {
-                        if (UPConfigUtils.canBeAuthFlowContext(context)) {
+                        if (context != UserProfileContext.USER_API) {
                             required = (c) -> requestedScopePredicate(c, rc.getScopes());
-                        } else {
-                            // For the admin context, we ignore scope selector as scopes are never available. Otherwise (like for account console),
-                            // we don't require attribute as scopes are never available
-                            if (context != UserProfileContext.USER_API) {
-                                required = AttributeMetadata.ALWAYS_FALSE;
-                            }
                         }
                     }
                 } else if (UPConfigUtils.canBeAuthFlowContext(context) && rc.getScopes() != null && !rc.getScopes().isEmpty()) {
@@ -340,7 +352,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
 
             Predicate<AttributeContext> selector = AttributeMetadata.ALWAYS_TRUE;
             UPAttributeSelector sc = attrConfig.getSelector();
-            if (sc != null && !isBuiltInAttribute(attributeName) && UPConfigUtils.canBeAuthFlowContext(context) && sc.getScopes() != null && !sc.getScopes().isEmpty()) {
+            if (sc != null && !isBuiltInAttribute(attributeName) && sc.getScopes() != null && !sc.getScopes().isEmpty()) {
                 // for contexts executed from auth flow and with configured scopes selector
                 // we have to create correct predicate
                 selector = (c) -> requestedScopePredicate(c, sc.getScopes());
@@ -485,7 +497,8 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
      * @param validatorConfig of the validator
      * @return validator metadata to run given validation
      */
-    protected AttributeValidatorMetadata createConfiguredValidator(String validator, Map<String, Object> validatorConfig) {
+    protected AttributeValidatorMetadata
+    createConfiguredValidator(String validator, Map<String, Object> validatorConfig) {
         return new AttributeValidatorMetadata(validator, ValidatorConfig.builder().config(validatorConfig).config(AbstractSimpleValidator.IGNORE_EMPTY_VALUE, true).build());
     }
 
