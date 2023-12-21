@@ -29,6 +29,7 @@ import org.keycloak.events.Details;
 import org.keycloak.events.Errors;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.models.*;
+import org.keycloak.protocol.oidc.grants.clientcredential.ClientCredentialGrantType;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.JsonWebToken;
 import org.keycloak.services.CorsErrorResponseException;
@@ -67,6 +68,7 @@ public class DefaultAssertionGrantProvider implements AssertionGrantProvider {
     private Map<String, String> clientAuthAttributes;
 
     private List<CrossDomainTrust> trustedIssuers;
+    private ClientCredentialGrantType clientCredentialsGrantType;
 
     @Override
     public boolean supports(AssertionGrantContext context) {
@@ -91,6 +93,7 @@ public class DefaultAssertionGrantProvider implements AssertionGrantProvider {
         this.tokenManager = (TokenManager)context.getTokenManager();
         this.clientAuthAttributes = context.getClientAuthAttributes();
         this.trustedIssuers = AssertionGrantUtils.getTrustedIssuerConfigs(realm, client);
+        this.clientCredentialsGrantType = new ClientCredentialGrantType(client, event, session, cors, formParams, clientAuthAttributes, tokenManager);
 
         checkTrustedIssuerConfig();
         checkConfidentialClient();
@@ -118,23 +121,13 @@ public class DefaultAssertionGrantProvider implements AssertionGrantProvider {
 
         checkImpersonationAllowed(requestedUser);
 
-        // log user in
-        UserSessionModel userSession = session.sessions().createUserSession(realm, requestedUser, requestedUser.getUsername(), clientConnection.getRemoteAddr(), "impersonate", false, null, null);
-        event.session(userSession);
+        Response response = clientCredentialsGrantType.clientCredentialsGrant(requestedUser);
+        UserSessionModel userSession = clientCredentialsGrantType.getUserSession();
 
         // provide decoded assertion in notes so mappers can access it
         setAssertionInUserSessionNotes(jwt, userSession);
 
-        // create user authentication session
-        AuthenticationSessionModel authSession = createAuthSession(requestedUser);
-        updateUserSessionFromClientAuth(userSession, clientAuthAttributes);
-
-        // generate token response
-        AccessTokenResponse res = createAccessTokenResponse(userSession, authSession);
-
-        event.success();
-
-        return cors.builder(Response.ok(res, MediaType.APPLICATION_JSON_TYPE)).build();
+        return response;
     }
 
     /**

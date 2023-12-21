@@ -289,9 +289,14 @@ public class AssertionGrantTest extends AbstractTestRealmKeycloakTest {
      */
     private void addClient(String clientId, String clientSecret, boolean isPublicClient, boolean assertionGrantEnabled) {
         // create the client
-        ClientBuilder builder = ClientBuilder.create().clientId(clientId).name(clientId).enabled(true).attribute(Constants.OIDC_ASSERTION_GRANT_ENABLED, Boolean.toString(assertionGrantEnabled)).protocol(OIDCLoginProtocol.LOGIN_PROTOCOL);
+        ClientBuilder builder = ClientBuilder.create().clientId(clientId)
+                .name(clientId)
+                .enabled(true)
+                .attribute(Constants.OIDC_ASSERTION_GRANT_ENABLED, Boolean.toString(assertionGrantEnabled))
+                .protocol(OIDCLoginProtocol.LOGIN_PROTOCOL);
         if (clientSecret != null) {
             builder.secret(clientSecret);
+            builder.serviceAccountsEnabled(true);
         }
 
         ClientRepresentation rep = builder.build();
