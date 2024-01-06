@@ -18,17 +18,24 @@
 package org.keycloak.authentication.forms;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
@@ -65,7 +72,7 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
     // option keys
     public static final String PROJECT_ID = "project.id";
     public static final String SITE_KEY = "site.key";
-    public static final String API_KEY = "api.key";
+    public static final String SECRET_KEY = "secret.key";
     public static final String ACTION = "action";
     public static final String INVISIBLE = "recaptcha.v3";
     public static final String SCORE_THRESHOLD = "score.threshold";
@@ -76,22 +83,31 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = ProviderConfigurationBuilder.create()
             .property()
             .name(PROJECT_ID)
-            .label("Recaptcha Project ID")
-            .helpText("Google Recaptcha Enterprise Project ID the Site Key belongs to")
+            .label("(ReCAPTCHA Enterprise Only) Project ID")
+            .helpText("Project ID the Site Key belongs to. If empty, ReCAPTCHA is used.")
             .type(ProviderConfigProperty.STRING_TYPE)
             .add()
             .property()
             .name(SITE_KEY)
-            .label("Recaptcha Site Key")
-            .helpText("Google Recaptcha Enterprise Site Key")
+            .label("ReCAPTCHA Site Key")
+            .helpText("ReCAPTCHA Site Key")
             .type(ProviderConfigProperty.STRING_TYPE)
             .add()
             .property()
-            .name(API_KEY)
-            .label("Google API Key")
-            .helpText("An API key with the reCAPTCHA Enterprise API enabled in the given project ID")
+            .name(SECRET_KEY)
+            .label("ReCAPTCHA Secret/Google API Key")
+            .helpText("For ReCAPTCHA: the secret key. "
+                    + "For ReCAPTCHA Enterprise: An API key with the reCAPTCHA Enterprise API enabled in the given project ID.")
             .type(ProviderConfigProperty.STRING_TYPE)
             .secret(true)
+            .add()
+            .property()
+            .name(INVISIBLE)
+            .label("ReCAPTCHA v3")
+            .helpText("Whether the site key belongs to a v3 (invisible, score-based reCAPTCHA) "
+                    + "or v2 site (visible, checkbox-based).")
+            .type(ProviderConfigProperty.BOOLEAN_TYPE)
+            .defaultValue(false)
             .add()
             .property()
             .name(ACTION)
@@ -103,22 +119,6 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
             .defaultValue("register")
             .add()
             .property()
-            .name(INVISIBLE)
-            .label("ReCAPTCHA v3")
-            .helpText("Whether this API Key is configured for invisible, score-based reCAPTCHA (v3, true) "
-                    + "or visible, checkbox-based reCAPTCHA (v2, false)")
-            .type(ProviderConfigProperty.BOOLEAN_TYPE)
-            .defaultValue(false)
-            .add()
-            .property()
-            .name(SCORE_THRESHOLD)
-            .label("Min. Score Threshold")
-            .helpText("The minimum score threshold for considering the reCAPTCHA valid (inclusive). "
-                    + "Must be a valid double between 0.0 and 1.0.")
-            .type(ProviderConfigProperty.STRING_TYPE)
-            .defaultValue("0.7")
-            .add()
-            .property()
             .name(USE_RECAPTCHA_NET)
             .label("Use recaptcha.net")
             .helpText("Whether to use recaptcha.net instead of google.com, "
@@ -126,17 +126,25 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
             .type(ProviderConfigProperty.BOOLEAN_TYPE)
             .defaultValue(false)
             .add()
+            .property()
+            .name(SCORE_THRESHOLD)
+            .label("(Enterprise Only) Min. Score Threshold")
+            .helpText("The minimum score threshold for considering the reCAPTCHA valid (inclusive). "
+                    + "Must be a valid double between 0.0 and 1.0.")
+            .type(ProviderConfigProperty.STRING_TYPE)
+            .defaultValue("0.7")
+            .add()
             .build();
 
     @Override
     public String getDisplayType() {
-        return "Recaptcha Enterprise";
+        return "ReCAPTCHA";
     }
 
     @Override
     public String getHelpText() {
-        return "Adds Google ReCAPTCHA Enterprise to the form. "
-                + "Requires a Google API key and a reCAPTCHA Enterprise Key (invisible, score-based or visible, checkbox-based).";
+        return "Adds Google ReCAPTCHA to the form. "
+                + "Supports both ReCAPTCHA and ReCAPTCHA Enterprise, with v2 or v3 (checkbox or invisible).";
     }
 
     @Override
@@ -157,56 +165,110 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
         };
     }
 
+    private String getRecaptchaDomain(Map<String, String> config) {
+        return Boolean.parseBoolean(config.get(USE_RECAPTCHA_NET)) ? "recaptcha.net" : "google.com";
+    }
+
+    private boolean isEnterprise(Map<String, String> config) {
+        return !Strings.isNullOrEmpty(config.get(PROJECT_ID));
+    }
+
     @Override
     public void buildPage(FormContext context, LoginFormsProvider form) {
         LOGGER.trace("Building page with reCAPTCHA");
 
         Map<String, String> config = context.getAuthenticatorConfig().getConfig();
-        if (config == null
-                || Stream.of(PROJECT_ID, SITE_KEY, API_KEY, ACTION)
-                        .anyMatch(key -> Strings.isNullOrEmpty(config.get(key)))
-                || parseDoubleFromConfig(config, SCORE_THRESHOLD) == null) {
+        if (config == null) {
             form.addError(new FormMessage(null, Messages.RECAPTCHA_NOT_CONFIGURED));
             return;
+        }
+
+        boolean isEnterprise = isEnterprise(config);
+        if (isEnterprise) {
+            if (Stream.of(PROJECT_ID, SITE_KEY, SECRET_KEY, ACTION)
+                    .anyMatch(key -> Strings.isNullOrEmpty(config.get(key)))
+                    || parseDoubleFromConfig(config, SCORE_THRESHOLD) == null) {
+                form.addError(new FormMessage(null, Messages.RECAPTCHA_NOT_CONFIGURED));
+                return;
+            }
+        } else {
+            if (Strings.isNullOrEmpty(config.get(SITE_KEY))
+                    || Strings.isNullOrEmpty(config.get(SECRET_KEY))) {
+                form.addError(new FormMessage(null, Messages.RECAPTCHA_NOT_CONFIGURED));
+                return;
+            }
         }
 
         String userLanguageTag = context.getSession().getContext().resolveLocale(context.getUser())
                 .toLanguageTag();
         boolean invisible = Boolean.parseBoolean(config.get(INVISIBLE));
-        String recaptchatDomain = Boolean.parseBoolean(config.get(USE_RECAPTCHA_NET)) ? "recaptcha.net" : "google.com";
+        String action = Strings.isNullOrEmpty(config.get(ACTION)) ? "register" : config.get(ACTION);
 
         form.setAttribute("recaptchaRequired", true);
         form.setAttribute("recaptchaSiteKey", config.get(SITE_KEY));
-        form.setAttribute("recaptchaAction", config.get(ACTION));
+        form.setAttribute("recaptchaAction", action);
         form.setAttribute("recaptchaVisible", !invisible);
-        form.addScript("https://www." + recaptchatDomain + "/recaptcha/enterprise.js?hl=" + userLanguageTag);
+        form.addScript("https://www." + getRecaptchaDomain(config) + "/recaptcha/"
+                + (isEnterprise ? "enterprise.js" : "api.js") + "?hl=" + userLanguageTag);
     }
 
     @Override
     public void validate(ValidationContext context) {
-        LOGGER.trace("Validating form with ReCAPTCHA enterprise");
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         String captcha = formData.getFirst(G_RECAPTCHA_RESPONSE);
         LOGGER.trace("Got captcha: " + captcha);
 
-        if (!Validation.isBlank(captcha) && validateRecaptcha(context, captcha)) {
-            context.success();
-        } else {
-            List<FormMessage> errors = new ArrayList<>();
-            errors.add(new FormMessage(null, Messages.RECAPTCHA_FAILED));
-            formData.remove(G_RECAPTCHA_RESPONSE);
-            context.error(Errors.INVALID_REGISTRATION);
-            context.validationError(formData, errors);
-            context.excludeOtherErrors();
-        }
-    }
-
-    protected boolean validateRecaptcha(ValidationContext context, String captcha) {
-        LOGGER.trace("Requesting assessment of Google reCAPTCHA Enterprise");
         Map<String, String> config = context.getAuthenticatorConfig().getConfig();
 
+        if (!Validation.isBlank(captcha)) {
+            if (isEnterprise(config) ? validateRecaptchaEnterprise(context, captcha, config)
+                    : validateRecaptcha(context, captcha, config)) {
+                context.success();
+                return;
+            }
+        }
+
+        List<FormMessage> errors = new ArrayList<>();
+        errors.add(new FormMessage(null, Messages.RECAPTCHA_FAILED));
+        formData.remove(G_RECAPTCHA_RESPONSE);
+        context.error(Errors.INVALID_REGISTRATION);
+        context.validationError(formData, errors);
+        context.excludeOtherErrors();
+
+    }
+
+    protected boolean validateRecaptcha(ValidationContext context, String captcha, Map<String, String> config) {
+        LOGGER.trace("Verifying reCAPTCHA using non-enterprise API");
+        CloseableHttpClient httpClient = context.getSession().getProvider(HttpClientProvider.class).getHttpClient();
+
+        HttpPost post = new HttpPost("https://www." + getRecaptchaDomain(config) + "/recaptcha/api/siteverify");
+        List<NameValuePair> formparams = new LinkedList<>();
+        formparams.add(new BasicNameValuePair("secret", config.get(SECRET_KEY)));
+        formparams.add(new BasicNameValuePair("response", captcha));
+        formparams.add(new BasicNameValuePair("remoteip", context.getConnection().getRemoteAddr()));
+
         try {
-            HttpPost request = buildAssessmentRequest(captcha, config);
+            UrlEncodedFormEntity form = new UrlEncodedFormEntity(formparams, "UTF-8");
+            post.setEntity(form);
+            try (CloseableHttpResponse response = httpClient.execute(post)) {
+                InputStream content = response.getEntity().getContent();
+                try {
+                    Map json = JsonSerialization.readValue(content, Map.class);
+                    return Boolean.TRUE.equals(json.get("success"));
+                } finally {
+                    EntityUtils.consumeQuietly(response.getEntity());
+                }
+            }
+        } catch (Exception e) {
+            ServicesLogger.LOGGER.recaptchaFailed(e);
+        }
+        return false;
+    }
+
+    protected boolean validateRecaptchaEnterprise(ValidationContext context, String captcha, Map<String, String> config) {
+        LOGGER.trace("Requesting assessment of Google reCAPTCHA Enterprise");
+        try {
+            HttpPost request = buildEnterpriseAssessmentRequest(captcha, config);
             HttpClient httpClient = context.getSession().getProvider(HttpClientProvider.class).getHttpClient();
             HttpResponse response = httpClient.execute(request);
 
@@ -242,11 +304,11 @@ public class RegistrationRecaptcha implements FormAction, FormActionFactory {
         return false;
     }
 
-    private HttpPost buildAssessmentRequest(String captcha, Map<String, String> config)
+    private HttpPost buildEnterpriseAssessmentRequest(String captcha, Map<String, String> config)
             throws UnsupportedEncodingException, IOException {
 
         String url = String.format("https://recaptchaenterprise.googleapis.com/v1/projects/%s/assessments?key=%s",
-                config.get(PROJECT_ID), config.get(API_KEY));
+                config.get(PROJECT_ID), config.get(SECRET_KEY));
 
         HttpPost request = new HttpPost(url);
         RecaptchaAssessmentRequest body = new RecaptchaAssessmentRequest(
