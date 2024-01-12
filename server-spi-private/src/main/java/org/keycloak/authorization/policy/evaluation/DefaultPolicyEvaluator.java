@@ -76,17 +76,16 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
         if(resource != null) {
             // get type policies that are explicitly not linked to any resources
-            if(resource.getType() != null) {
+            if (isTypedResourcePermissionEnabled(resource)) {
                 // evaluate policies explicitly set with a resource type
                 policyStore.findByResourceType(resourceServer, true, resource.getType(), policyConsumer);
 
-                if (!resource.getOwner().equals(resourceServer.getClientId())) {
-                    // evaluate permissions for typed-resources owned by the resource server itself
-                    ResourceStore resourceStore = authorizationProvider.getStoreFactory().getResourceStore();
 
-                    for (Resource typedResource : resourceStore.findByType(resourceServer, resource.getType())) {
-                        policyStore.findByResource(resourceServer, true, typedResource, policyConsumer);
-                    }
+                // evaluate permissions for typed-resources owned by the resource server itself
+                ResourceStore resourceStore = authorizationProvider.getStoreFactory().getResourceStore();
+
+                for (Resource typedResource : resourceStore.findByType(resourceServer, resource.getType())) {
+                    policyStore.findByResource(resourceServer, true, typedResource, policyConsumer);
                 }
             }
 
@@ -103,6 +102,23 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         if (PolicyEnforcementMode.PERMISSIVE.equals(enforcementMode)) {
             grantAndComplete(permission, authorizationProvider, executionContext, decision);
         }
+    }
+
+    private boolean isTypedResourcePermissionEnabled(Resource resource) {
+        ResourceServer resourceServer = resource.getResourceServer();
+
+        if (!resourceServer.isTypedPermissionAllowed()) {
+            return false;
+        }
+
+        if (resource.getType() == null) {
+            // no type set to the resource
+            return false;
+        }
+
+        // resource is owned by the resource server and is considered a typed-resource to which policies associated with it
+        // are going to run for any other user-owned (typed-resource instance) resource with the same type
+        return !resource.getOwner().equals(resourceServer.getClientId());
     }
 
     private void grantAndComplete(ResourcePermission permission, AuthorizationProvider authorizationProvider,

@@ -30,6 +30,7 @@ public class ResourceServerRepresentation {
     private String clientId;
     private String name;
     private boolean allowRemoteResourceManagement = true;
+
     private PolicyEnforcementMode policyEnforcementMode = PolicyEnforcementMode.ENFORCING;
     private List<ResourceRepresentation> resources = emptyList();
     private List<PolicyRepresentation> policies = emptyList();

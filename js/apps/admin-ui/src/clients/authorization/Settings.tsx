@@ -174,6 +174,34 @@ export const AuthorizationSettings = ({ clientId }: { clientId: string }) => {
             )}
           />
         </FormGroup>
+        <FormGroup
+          hasNoPaddingTop
+          label={t("typeResourcesEnabled")}
+          fieldId="typeResourcesEnabled"
+          labelIcon={
+            <HelpItem
+              helpText={t("typeResourcesEnabledHelp")}
+              fieldLabelId="typeResourcesEnabled"
+            />
+          }
+        >
+          <Controller
+            name="typeResourcesEnabled"
+            data-testid="typeResourcesEnabled"
+            defaultValue={false}
+            control={control}
+            render={({ field }) => (
+              <Switch
+                id="typeResourcesEnabled"
+                label={t("on")}
+                labelOff={t("off")}
+                isChecked={field.value}
+                onChange={field.onChange}
+                aria-label={t("typeResourcesEnabled")}
+              />
+            )}
+          />
+        </FormGroup>
         <FixedButtonsGroup
           name="authenticationSettings"
           reset={() => reset(resource)}
