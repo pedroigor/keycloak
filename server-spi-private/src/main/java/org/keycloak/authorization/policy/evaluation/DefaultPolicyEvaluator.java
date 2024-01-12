@@ -78,16 +78,7 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
             // get type policies that are explicitly not linked to any resources
             if(resource.getType() != null) {
                 // evaluate policies explicitly set with a resource type
-                policyStore.findByResourceType(resourceServer, true, resource.getType(), policyConsumer);
-
-                if (!resource.getOwner().equals(resourceServer.getClientId())) {
-                    // evaluate permissions for typed-resources owned by the resource server itself
-                    ResourceStore resourceStore = authorizationProvider.getStoreFactory().getResourceStore();
-
-                    for (Resource typedResource : resourceStore.findByType(resourceServer, resource.getType())) {
-                        policyStore.findByResource(resourceServer, true, typedResource, policyConsumer);
-                    }
-                }
+                policyStore.findByResourceType(resourceServer, resource.getType(), policyConsumer);
             }
 
             // get resource policies that are explicitly not linked to any scopes but are to the resource

@@ -229,14 +229,8 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public void findByResourceType(ResourceServer resourceServer, boolean withResourceTypeSet, String resourceType, Consumer<Policy> consumer) {
-        TypedQuery<PolicyEntity> query;
-        if(withResourceTypeSet) {
-            query = entityManager.createNamedQuery("findPolicyIdByResourceType", PolicyEntity.class);
-        } else {
-            query = entityManager.createNamedQuery("findPolicyIdByNullResourceType", PolicyEntity.class);
-        }
-
+    public void findByResourceType(ResourceServer resourceServer, String resourceType, Consumer<Policy> consumer) {
+        TypedQuery<PolicyEntity> query = entityManager.createNamedQuery("findPolicyIdByResourceType", PolicyEntity.class);
 
         query.setFlushMode(FlushModeType.COMMIT);
         query.setParameter("type", resourceType);

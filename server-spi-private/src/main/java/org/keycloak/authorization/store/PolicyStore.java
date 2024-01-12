@@ -131,7 +131,7 @@ public interface PolicyStore {
     default List<Policy> findByResourceType(ResourceServer resourceServer, String resourceType) {
         List<Policy> result = new LinkedList<>();
 
-        findByResourceType(resourceServer, true, resourceType, result::add);
+        findByResourceType(resourceServer, resourceType, result::add);
 
         return result;
     }
@@ -143,7 +143,7 @@ public interface PolicyStore {
      * @param type the type of a resource
      * @param policyConsumer consumer of policies resulted from the search
      */
-    void findByResourceType(ResourceServer resourceServer, boolean withResourceType, String type, Consumer<Policy> policyConsumer);
+    void findByResourceType(ResourceServer resourceServer, String type, Consumer<Policy> policyConsumer);
 
     /**
      * Returns a list of {@link Policy} associated with a {@link org.keycloak.authorization.model.Scope} within the given <code>scope</code>.

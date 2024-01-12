@@ -130,8 +130,7 @@ public class StoreFactoryCacheManager extends CacheManager {
 
         if (resourceTypes != null) {
             for (String type : resourceTypes) {
-                invalidations.add(StoreFactoryCacheSession.getPolicyByResourceType(type, serverId, false));
-                invalidations.add(StoreFactoryCacheSession.getPolicyByResourceType(type, serverId, true));
+                invalidations.add(StoreFactoryCacheSession.getPolicyByResourceType(type, serverId));
             }
         }
 

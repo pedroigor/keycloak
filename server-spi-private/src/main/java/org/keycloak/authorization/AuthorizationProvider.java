@@ -440,8 +440,8 @@ public final class AuthorizationProvider implements Provider {
             }
 
             @Override
-            public void findByResourceType(ResourceServer resourceServer, boolean withResourceType, String type, Consumer<Policy> policyConsumer) {
-                policyStore.findByResourceType(resourceServer, withResourceType, type, policyConsumer);
+            public void findByResourceType(ResourceServer resourceServer, String type, Consumer<Policy> policyConsumer) {
+                policyStore.findByResourceType(resourceServer, type, policyConsumer);
             }
         };
     }
