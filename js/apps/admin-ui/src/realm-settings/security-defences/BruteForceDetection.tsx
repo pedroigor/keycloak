@@ -43,6 +43,11 @@ export const BruteForceDetection = ({
     name: "permanentLockout",
   });
 
+  const maxTemporaryLockouts = useWatch({
+    control,
+    name: "maxTemporaryLockouts",
+  });
+
   const setupForm = () => convertToFormValues(realm, setValue);
   useEffect(setupForm, []);
 
@@ -108,6 +113,12 @@ export const BruteForceDetection = ({
             </FormGroup>
             <FormGroup
               label={t("permanentLockout")}
+              labelIcon={
+                <HelpItem
+                  helpText={t("permanentLockoutHelp")}
+                  fieldLabelId="permanentLockout"
+                />
+              }
               fieldId="permanentLockout"
               hasNoPaddingTop
             >
@@ -127,8 +138,42 @@ export const BruteForceDetection = ({
                 )}
               />
             </FormGroup>
+            {permanentLockout && (
+              <FormGroup
+                label={t("maxTemporaryLockouts")}
+                labelIcon={
+                  <HelpItem
+                    helpText={t("maxTemporaryLockoutsHelp")}
+                    fieldLabelId="maxTemporaryLockouts"
+                  />
+                }
+                fieldId="maxTemporaryLockouts"
+                hasNoPaddingTop
+              >
+                <Controller
+                  name="maxTemporaryLockouts"
+                  defaultValue={0}
+                  control={control}
+                  render={({ field }) => (
+                    <NumberInput
+                      type="text"
+                      id="maxTemporaryLockouts"
+                      value={field.value}
+                      onPlus={() => field.onChange(field.value + 1)}
+                      onMinus={() => field.onChange(field.value - 1)}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number((event.target as HTMLInputElement).value),
+                        )
+                      }
+                      aria-label={t("maxTemporaryLockouts")}
+                    />
+                  )}
+                />
+              </FormGroup>
+            )}
 
-            {!permanentLockout && (
+            {(!permanentLockout || maxTemporaryLockouts > 0) && (
               <>
                 <Time name="waitIncrementSeconds" />
                 <Time name="maxFailureWaitSeconds" />

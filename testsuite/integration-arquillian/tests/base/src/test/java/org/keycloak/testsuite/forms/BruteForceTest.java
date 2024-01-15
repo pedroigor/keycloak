@@ -516,6 +516,54 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
     }
 
     @Test
+    public void testExceedMaxTemporaryLockouts() {
+        RealmRepresentation realm = testRealm().toRepresentation();
+        try {
+            realm.setPermanentLockout(true);
+            realm.setMaxTemporaryLockouts(2);
+            testRealm().update(realm);
+
+            loginInvalidPassword();
+            loginInvalidPassword();
+            expectTemporarilyDisabled();
+            testingClient.testing().setTimeOffset(Collections.singletonMap("offset", String.valueOf(6)));
+
+            loginInvalidPassword();
+            expectTemporarilyDisabled();
+            testingClient.testing().setTimeOffset(Collections.singletonMap("offset", String.valueOf(11)));
+
+            loginInvalidPassword();
+            expectPermanentlyDisabled();
+        } finally {
+            realm.setPermanentLockout(false);
+            realm.setMaxTemporaryLockouts(0);
+            testRealm().update(realm);
+            UserRepresentation user = adminClient.realm("test").users().search("test-user@localhost", 0, 1).get(0);
+            user.setEnabled(true);
+            updateUser(user);
+        }
+    }
+
+    @Test
+    public void testMaxTemporaryLockoutsReset() {
+        RealmRepresentation realm = testRealm().toRepresentation();
+        realm.setPermanentLockout(true);
+        realm.setMaxTemporaryLockouts(2);
+        testRealm().update(realm);
+
+        loginInvalidPassword();
+        loginInvalidPassword();
+        expectTemporarilyDisabled();
+        testingClient.testing().setTimeOffset(Collections.singletonMap("offset", String.valueOf(6)));
+        UserRepresentation user = adminClient.realm("test").users().search("test-user@localhost", 0, 1).get(0);
+        Map<String, Object> status = adminClient.realm("test").attackDetection().bruteForceUserStatus(user.getId());
+        assertEquals(1, status.get("numTemporaryLockouts"));
+        loginSuccess();
+        status = adminClient.realm("test").attackDetection().bruteForceUserStatus(user.getId());
+        assertEquals(0, status.get("numTemporaryLockouts"));
+    }
+
+    @Test
     public void testResetLoginFailureCount() {
         RealmRepresentation realm = testRealm().toRepresentation();
 
@@ -797,6 +845,10 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
 
     private void assertUserDisabledEvent(String error) {
         events.expect(EventType.LOGIN_ERROR).error(error).assertEvent();
+    }
+
+    private void assertUserPermanentlyDisabledEvent() {
+        events.expect(EventType.LOGIN_ERROR).error(Errors.USER_DISABLED).assertEvent();
     }
 
     private void assertUserDisabledReason(String expected) {

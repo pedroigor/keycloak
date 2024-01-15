@@ -164,37 +164,6 @@ public class DefaultBruteForceProtector implements Runnable, BruteForceProtector
         }
         userLoginFailure.setLastFailure(currentTime);
 
-        if(realm.isPermanentLockout()) {
-            userLoginFailure.incrementFailures();
-            logger.debugv("new num failures: {0}", userLoginFailure.getNumFailures());
-
-            if(userLoginFailure.getNumFailures() == realm.getFailureFactor()) {
-                UserModel user = session.users().getUserById(realm, userId);
-                if (user == null) {
-                    return;
-                }
-                logger.debugv("user {0} locked permanently due to too many login attempts", user.getUsername());
-                user.setEnabled(false);
-                user.setSingleAttribute(DISABLED_REASON, DISABLED_BY_PERMANENT_LOCKOUT);
-                // Send event
-                new EventBuilder(realm, session, event.clientConnection)
-                        .event(EventType.USER_DISABLED_BY_PERMANENT_LOCKOUT)
-                        .detail(Details.REASON, "brute_force_attack detected")
-                        .user(user)
-                        .success();
-                return;
-            }
-
-            if (last > 0 && deltaTime < realm.getQuickLoginCheckMilliSeconds()) {
-                logger.debugv("quick login, set min wait seconds");
-                int waitSeconds = realm.getMinimumQuickLoginWaitSeconds();
-                int notBefore = (int) (currentTime / 1000) + waitSeconds;
-                logger.debugv("set notBefore: {0}", notBefore);
-                userLoginFailure.setFailedLoginNotBefore(notBefore);
-            }
-            return;
-        }
-
         if (deltaTime > 0) {
             // if last failure was more than MAX_DELTA clear failures
             if (deltaTime > (long) realm.getMaxDeltaTimeSeconds() * 1000L) {
@@ -208,10 +177,12 @@ public class DefaultBruteForceProtector implements Runnable, BruteForceProtector
         logger.debugv("waitSeconds: {0}", waitSeconds);
         logger.debugv("deltaTime: {0}", deltaTime);
 
+        boolean quickWait = false;
         if (waitSeconds == 0) {
             if (last > 0 && deltaTime < realm.getQuickLoginCheckMilliSeconds()) {
                 logger.debugv("quick login, set min wait seconds");
                 waitSeconds = realm.getMinimumQuickLoginWaitSeconds();
+                quickWait = true;
             }
         }
         if (waitSeconds > 0) {
@@ -219,6 +190,29 @@ public class DefaultBruteForceProtector implements Runnable, BruteForceProtector
             int notBefore = (int) (currentTime / 1000) + waitSeconds;
             logger.debugv("set notBefore: {0}", notBefore);
             userLoginFailure.setFailedLoginNotBefore(notBefore);
+            if (!quickWait) {
+                userLoginFailure.incrementTemporaryLockouts();
+            }
+        }
+
+        if(!realm.isPermanentLockout()) {
+            return;
+        }
+
+        if(userLoginFailure.getNumTemporaryLockouts() > realm.getMaxTemporaryLockouts()) {
+            UserModel user = session.users().getUserById(realm, userId);
+            if (user == null) {
+                return;
+            }
+            logger.debugv("user {0} locked permanently due to too many login attempts", user.getUsername());
+            user.setEnabled(false);
+            user.setSingleAttribute(DISABLED_REASON, DISABLED_BY_PERMANENT_LOCKOUT);
+            // Send event
+            new EventBuilder(realm, session, event.clientConnection)
+                    .event(EventType.USER_DISABLED_BY_PERMANENT_LOCKOUT)
+                    .detail(Details.REASON, "brute_force_attack detected")
+                    .user(user)
+                    .success();
         }
     }
 
