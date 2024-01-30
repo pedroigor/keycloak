@@ -19,6 +19,8 @@ package org.keycloak.testsuite.admin.authentication;
 
 import org.junit.Test;
 import org.keycloak.authentication.authenticators.broker.IdpCreateUserIfUniqueAuthenticatorFactory;
+import org.keycloak.authentication.forms.RegistrationRecaptcha;
+import org.keycloak.authentication.forms.RegistrationRecaptchaEnterprise;
 import org.keycloak.common.Profile;
 import org.keycloak.representations.idm.AuthenticatorConfigInfoRepresentation;
 import org.keycloak.representations.idm.ConfigPropertyRepresentation;
@@ -61,9 +63,8 @@ public class ProvidersTest extends AbstractAuthenticationTest {
         List<Map<String, Object>> result = authMgmtResource.getFormActionProviders();
 
         List<Map<String, Object>> expected = new LinkedList<>();
-        addProviderInfo(expected, "registration-recaptcha-action", "Recaptcha",
-                "Adds Google ReCAPTCHA Enterprise to the form. " +
-                        "Requires a Google API key and a reCAPTCHA Enterprise Key (invisible, score-based or visible, checkbox-based).");
+        addProviderInfo(expected, RegistrationRecaptcha.PROVIDER_ID, "ReCAPTCHA", "Adds Google ReCAPTCHA to the form.");
+        addProviderInfo(expected, RegistrationRecaptchaEnterprise.PROVIDER_ID, "ReCAPTCHA Enterprise", "Adds Google ReCAPTCHA Enterprise to the form.");
         addProviderInfo(expected, "registration-password-action", "Password Validation",
                 "Validates that password matches password confirmation field.  It also will store password in user's credential store.");
         addProviderInfo(expected, "registration-user-creation", "Registration User Profile Creation",
