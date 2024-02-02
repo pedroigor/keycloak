@@ -4,9 +4,11 @@ import {
   Button,
   FormGroup,
   NumberInput,
-  Switch,
+  Select,
+  SelectOption,
+  SelectVariant,
 } from "@patternfly/react-core";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -38,15 +40,23 @@ export const BruteForceDetection = ({
     name: "bruteForceProtected",
   });
 
-  const permanentLockout = useWatch({
-    control,
-    name: "permanentLockout",
-  });
+  const [isBruteForceModeOpen, setIsBruteForceModeOpen] = useState(false);
 
-  const maxTemporaryLockouts = useWatch({
-    control,
-    name: "maxTemporaryLockouts",
-  });
+  enum BruteForceMode {
+    Disabled = "Disabled",
+    PermanentLockout = "PermanentLockout",
+    TemporaryLockout = "TemporaryLockout",
+    PermanentAfterTemporaryLockout = "PermanentAfterTemporaryLockout",
+  }
+
+  const [bruteForceMode, setBruteForceMode] = useState(String);
+
+  const bruteForceModes = [
+    BruteForceMode.Disabled,
+    BruteForceMode.PermanentLockout,
+    BruteForceMode.TemporaryLockout,
+    BruteForceMode.PermanentAfterTemporaryLockout,
+  ];
 
   const setupForm = () => convertToFormValues(realm, setValue);
   useEffect(setupForm, []);
@@ -59,24 +69,59 @@ export const BruteForceDetection = ({
         onSubmit={handleSubmit(save)}
       >
         <FormGroup
-          label={t("enabled")}
-          fieldId="bruteForceProtected"
-          hasNoPaddingTop
+          label={t("bruteForceMode")}
+          fieldId="kc-brute-force-mode"
+          labelIcon={
+            <HelpItem
+              helpText={t("bruteForceModeHelpText")}
+              fieldLabelId="bruteForceMode"
+            />
+          }
         >
-          <Controller
-            name="bruteForceProtected"
-            defaultValue={false}
-            control={control}
-            render={({ field }) => (
-              <Switch
-                id="bruteForceProtected"
-                label={t("on")}
-                labelOff={t("off")}
-                isChecked={field.value}
-                onChange={field.onChange}
-              />
-            )}
-          />
+          <Select
+            toggleId="kc-brute-force-mode"
+            onToggle={() => setIsBruteForceModeOpen(!isBruteForceModeOpen)}
+            onSelect={(_, value) => {
+              form.setValue(
+                "bruteForceProtected",
+                value !== BruteForceMode.Disabled,
+              );
+              form.setValue(
+                "permanentLockout",
+                value === BruteForceMode.PermanentLockout ||
+                  value === BruteForceMode.PermanentAfterTemporaryLockout,
+              );
+              if (value === BruteForceMode.PermanentAfterTemporaryLockout) {
+                let maxTemporaryLockouts = form.getValues(
+                  "maxTemporaryLockouts",
+                );
+
+                if (maxTemporaryLockouts <= 0) {
+                  maxTemporaryLockouts = 1;
+                }
+
+                form.setValue("maxTemporaryLockouts", maxTemporaryLockouts);
+              }
+              if (
+                value === BruteForceMode.TemporaryLockout ||
+                value === BruteForceMode.PermanentLockout
+              ) {
+                form.setValue("maxTemporaryLockouts", 0);
+              }
+              setBruteForceMode(value as BruteForceMode);
+              setIsBruteForceModeOpen(false);
+            }}
+            selections={bruteForceMode}
+            variant={SelectVariant.single}
+            isOpen={isBruteForceModeOpen}
+            aria-label={t("selectUnmanagedAttributePolicy")}
+          >
+            {bruteForceModes.map((mode) => (
+              <SelectOption key={mode} value={mode}>
+                {t(`bruteForceMode.${mode}`)}
+              </SelectOption>
+            ))}
+          </Select>
         </FormGroup>
         {enable && (
           <>
@@ -111,34 +156,9 @@ export const BruteForceDetection = ({
                 )}
               />
             </FormGroup>
-            <FormGroup
-              label={t("permanentLockout")}
-              labelIcon={
-                <HelpItem
-                  helpText={t("permanentLockoutHelp")}
-                  fieldLabelId="permanentLockout"
-                />
-              }
-              fieldId="permanentLockout"
-              hasNoPaddingTop
-            >
-              <Controller
-                name="permanentLockout"
-                defaultValue={false}
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    id="permanentLockout"
-                    label={t("on")}
-                    labelOff={t("off")}
-                    isChecked={field.value}
-                    onChange={field.onChange}
-                    aria-label={t("permanentLockout")}
-                  />
-                )}
-              />
-            </FormGroup>
-            {permanentLockout && (
+
+            {bruteForceMode ==
+              BruteForceMode.PermanentAfterTemporaryLockout && (
               <FormGroup
                 label={t("maxTemporaryLockouts")}
                 labelIcon={
@@ -173,7 +193,9 @@ export const BruteForceDetection = ({
               </FormGroup>
             )}
 
-            {(!permanentLockout || maxTemporaryLockouts > 0) && (
+            {(bruteForceMode === BruteForceMode.TemporaryLockout ||
+              bruteForceMode ===
+                BruteForceMode.PermanentAfterTemporaryLockout) && (
               <>
                 <Time name="waitIncrementSeconds" />
                 <Time name="maxFailureWaitSeconds" />
