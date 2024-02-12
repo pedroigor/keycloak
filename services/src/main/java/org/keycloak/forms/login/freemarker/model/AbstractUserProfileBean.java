@@ -1,8 +1,10 @@
 package org.keycloak.forms.login.freemarker.model;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -127,6 +129,10 @@ public abstract class AbstractUserProfileBean {
             return metadata.getAttributeDisplayName();
         }
 
+        public boolean isMultivalued() {
+            return metadata.isMultivalued();
+        }
+
         public String getValue() {
             List<String> v = getValues();
             if (v == null || v.isEmpty()) {
@@ -177,8 +183,15 @@ public abstract class AbstractUserProfileBean {
         }
 
         public Map<String, Object> getHtml5DataAnnotations() {
-            return getAnnotations().entrySet().stream()
-                    .filter((entry) -> entry.getKey().startsWith("kc")).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<String, Object> annotations = getAnnotations().entrySet().stream()
+                    .filter((entry) -> entry.getKey().startsWith("kc")).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+            if (isMultivalued()) {
+                annotations = new HashMap<>(annotations);
+                annotations.put("kcMultivalued", "");
+            }
+
+            return annotations;
         }
       
         /**

@@ -151,6 +151,10 @@ The name of the attribute, used to uniquely identify an attribute.
 Display name::
 A user-friendly name for the attribute, mainly used when rendering user-facing forms. It also supports link:#_using-internationalized-messages[Using Internationalized Messages]
 
+Multivalued::
+If enabled, the attribute supports multiple values and UIs are rendered accordingly to allow setting many values. When enabling this
+setting, make sure to add a validator to set a hard limit to the number of values.
+
 Attribute Group::
 The attribute group to which the attribute belongs to, if any.
 
@@ -287,6 +291,15 @@ The list below provides a list of all the built-in validators:
 |
 
 *error-message*: the key of the error message in i18n bundle. If not set a generic message is used.
+
+|multivalued
+|Validates the size of a multivalued attribute.
+|
+
+*min*: an integer to define the minimum allowed count of attribute values.
+
+*max*: an integer to define the maximum allowed count of attribute values.
+
 
 |===
 
@@ -578,6 +591,19 @@ and decorate them accordingly by modifying their DOM representation.
 For instance, if you add a `kcMyCustomValidation` annotation to a field, the HTML attribute `data-kcMyCustomValidation` is added to
 the corresponding HTML element for the attribute, and a JavaScript file is loaded from your custom theme at `<THEME TYPE>/resources/js/kcMyCustomValidation.js`. See the {developerguide_link}[{developerguide_name}] for more information about
 how to deploy a custom JS script file to your theme.
+
+The JavaScript file must define a `render` function that will be called everytime the page is rendered. For instance, a bare minimal
+JavaScript file looks like the following:
+
+[source,javascript]
+----
+export function render() {
+    // do something
+}
+----
+
+You can also force the page to re-render and re-execute any script associated with `kc` annotations by calling the `renderAttributes` function. By calling this
+function, all the `render` methods from the JavaScript files associated with `kc` annotations will be invoked.
 
 == Managing Attribute Groups
 

@@ -54,9 +54,24 @@
 		<#nested "afterField" attribute>
 	</#list>
 
-	<#list profile.html5DataAnnotations?keys as key>
-		<script type="module" src="${url.resourcesPath}/js/${key}.js"></script>
-	</#list>
+		<script>
+			const kcModules = [];
+
+			function renderAttributes() {
+				if (kcModules.length == 0) {
+					<#list profile.html5DataAnnotations?keys as key>
+						import("${url.resourcesPath}/js/${key}.js").then((module) => {
+							module.render();
+							kcModules.push(module);
+						});
+					</#list>
+				} else {
+					kcModules.forEach((module) => module.render());
+				}
+			}
+
+			renderAttributes();
+		</script>
 </#macro>
 
 <#macro inputFieldByType attribute>
@@ -73,12 +88,18 @@
 		<@inputTagSelects attribute=attribute/>
 		<#break>
 	<#default>
-		<@inputTag attribute=attribute/>
+		<#if attribute.multivalued && attribute.values?has_content>
+			<#list attribute.values as value>
+				<@inputTag attribute=attribute value=value!''/>
+			</#list>
+		<#else>
+			<@inputTag attribute=attribute value=attribute.value!''/>
+		</#if>
 	</#switch>
 </#macro>
 
-<#macro inputTag attribute>
-	<input type="<@inputTagType attribute=attribute/>" id="${attribute.name}" name="${attribute.name}" value="${(attribute.value!'')}" class="${properties.kcInputClass!}"
+<#macro inputTag attribute value>
+	<input type="<@inputTagType attribute=attribute/>" id="${attribute.name}" name="${attribute.name}" value="${(value!'')}" class="${properties.kcInputClass!}"
 		aria-invalid="<#if messagesPerField.existsError('${attribute.name}')>true</#if>"
 		<#if attribute.readOnly>disabled</#if>
 		<#if attribute.autocomplete??>autocomplete="${attribute.autocomplete}"</#if>

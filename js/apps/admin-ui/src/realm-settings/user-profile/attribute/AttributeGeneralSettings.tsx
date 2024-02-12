@@ -61,6 +61,12 @@ export const AttributeGeneralSettings = () => {
     defaultValue: false,
   });
 
+  const multivalued = useWatch({
+    control: form.control,
+    name: "multivalued",
+    defaultValue: false,
+  });
+
   useFetch(() => adminClient.clientScopes.find(), setClientScopes, []);
   useFetch(() => adminClient.users.getProfile(), setConfig, []);
 
@@ -74,6 +80,10 @@ export const AttributeGeneralSettings = () => {
 
   function setHasRequiredScopes(hasRequiredScopes: boolean) {
     form.setValue("hasRequiredScopes", hasRequiredScopes);
+  }
+
+  function setMultivalued(multivalued: boolean) {
+    form.setValue("multivalued", multivalued);
   }
 
   return (
@@ -116,6 +126,26 @@ export const AttributeGeneralSettings = () => {
           defaultValue=""
           data-testid="attribute-display-name"
           {...form.register("displayName")}
+        />
+      </FormGroup>
+      <FormGroup
+        label={t("multivalued")}
+        labelIcon={
+          <HelpItem
+            helpText={t("multivaluedHelp")}
+            fieldLabelId="multivalued"
+          />
+        }
+        fieldId="kc-required"
+        hasNoPaddingTop
+      >
+        <Switch
+          id={"kc-multivalued"}
+          onChange={(checked) => setMultivalued(checked)}
+          isChecked={multivalued}
+          label={t("on")}
+          labelOff={t("off")}
+          aria-label={t("multivalued")}
         />
       </FormGroup>
       <FormGroup

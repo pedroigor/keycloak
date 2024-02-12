@@ -219,16 +219,16 @@ function determineInputType(
     return "text";
   }
 
+  // If the attribute has no valid input type and it's multi value use "multi-input"
+  if (attribute.multivalued || isMultiValue(value)) {
+    return "multi-input";
+  }
+
   const inputType = attribute.annotations?.inputType;
 
   // if we have an valid input type use that to render
   if (isValidInputType(inputType)) {
     return inputType;
-  }
-
-  // If the attribute has no valid input type and it's multi value use "multi-input"
-  if (isMultiValue(value)) {
-    return "multi-input";
   }
 
   // In all other cases use the default
