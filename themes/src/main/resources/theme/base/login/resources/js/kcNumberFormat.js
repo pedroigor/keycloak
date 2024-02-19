@@ -1,16 +1,19 @@
-import {formatNumber} from "./common.js";
-import {registerField} from "./userProfileFields.js"
+// @ts-check
+import { formatNumber } from "./common.js";
+import { registerField } from "./userProfileFields.js";
 
-const KC_NUMBER_FORMAT = 'data-kcNumberFormat';
+const KC_NUMBER_FORMAT = "kcNumberFormat";
 
-function enhanceInput(input) {
-    const format = input.getAttribute(KC_NUMBER_FORMAT);
+registerField({
+  name: KC_NUMBER_FORMAT,
+  onMount(input) {
+    const formatValue = () => {
+      const format = input.getAttribute(`data-${KC_NUMBER_FORMAT}`);
+      input.value = formatNumber(input.value, format);
+    };
 
-    input.addEventListener('keyup', (event) => {
-        input.value = formatNumber(input.value, format);
-    });
+    input.addEventListener("keyup", formatValue);
 
-    input.value = formatNumber(input.value, format);
-}
-
-registerField(KC_NUMBER_FORMAT, enhanceInput);
+    return () => input.removeEventListener("keyup", formatValue);
+  },
+});
