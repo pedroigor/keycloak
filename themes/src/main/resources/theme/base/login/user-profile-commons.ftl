@@ -54,24 +54,9 @@
 		<#nested "afterField" attribute>
 	</#list>
 
-		<script type="module">
-			const kcModules = [];
-
-			function renderAttributes() {
-				if (kcModules.length == 0) {
-					<#list profile.html5DataAnnotations?keys as key>
-						import("${url.resourcesPath}/js/${key}.js").then((module) => {
-							module.render();
-							kcModules.push(module);
-						});
-					</#list>
-				} else {
-					kcModules.forEach((module) => module.render());
-				}
-			}
-
-			renderAttributes();
-		</script>
+		<#list profile.html5DataAnnotations?keys as key>
+			<script type="module" src="${url.resourcesPath}/js/${key}.js"></script>
+		</#list>
 </#macro>
 
 <#macro inputFieldByType attribute>

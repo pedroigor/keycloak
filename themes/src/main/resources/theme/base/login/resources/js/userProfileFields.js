@@ -1,24 +1,69 @@
-// Options for the observer (which mutations to observe)
-const config = { attributes: true, childList: true, subtree: true };
+// @ts-check
+/**
+ * @typedef {Object} FieldDescriptor
+ * @property {string} name - The name of the field to register (e.g. `numberFormat`).
+ * @property {(element: HTMLInputElement) => (() => void) | void} onMount - The function to call when a new element is added to the DOM.
+ */
 
-// Callback function to execute when mutations are observed
-const callback = (mutationList, observer) => {
-    for (const mutation of mutationList) {
-        if (mutation.type === "childList") {
-            console.log("A child node has been added or removed.");
-        } else if (mutation.type === "attributes") {
-            console.log(`The ${mutation.attributeName} attribute was modified.`);
-        }
+const observer = new MutationObserver(onMutate);
+observer.observe(document.body, { childList: true, subtree: true });
+
+/** @type {FieldDescriptor[]} */
+const registeredFields = [];
+
+/** @type {WeakMap<HTMLInputElement, () => void>} */
+const cleanupFunctions = new WeakMap();
+
+/**
+ * @param {FieldDescriptor} descriptor
+ */
+export function registerField(descriptor) {
+  registeredFields.push(descriptor);
+
+  document.querySelectorAll(`[data-${descriptor.name}]`).forEach((element) => {
+    if (element instanceof HTMLInputElement) {
+      mountFieldOnNode(element, descriptor);
     }
-};
+  });
+}
 
-// Create an observer instance linked to the callback function
-const observer = new MutationObserver(callback);
+/**
+ * @type {MutationCallback}
+ */
+function onMutate(mutations) {
+  const removedNodes = mutations.flatMap((mutation) => Array.from(mutation.removedNodes));
 
-export function registerField(name, callback) {
-    document.querySelectorAll(`[${name}]`)
-        .forEach(input => {
-            observer.observe(input, config);
-            callback(input)
-        });
+  for (const node of removedNodes) {
+    if (!(node instanceof HTMLInputElement)) {
+      continue;
+    }
+
+    const cleanup = cleanupFunctions.get(node);
+
+    if (cleanup) {
+      cleanup();
+    }
+  }
+
+  const addedNodes = mutations.flatMap((mutation) => Array.from(mutation.addedNodes));
+
+  for (const descriptor of registeredFields) {
+    for (const node of addedNodes) {
+      if (node instanceof HTMLInputElement && node.hasAttribute(`data-${descriptor.name}`)) {
+        mountFieldOnNode(node, descriptor);
+      }
+    }
+  }
+}
+
+/**
+ * @param {HTMLInputElement} element
+ * @param {FieldDescriptor} descriptor
+ */
+function mountFieldOnNode(element, descriptor) {
+  const cleanup = descriptor.onMount(element);
+
+  if (cleanup) {
+    cleanupFunctions.set(element, cleanup);
+  }
 }
