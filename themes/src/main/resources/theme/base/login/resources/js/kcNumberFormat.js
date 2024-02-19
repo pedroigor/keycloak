@@ -1,16 +1,16 @@
 import {formatNumber} from "./common.js";
+import {registerField} from "./userProfileFields.js"
 
-const DATA_KC_NUMBER_FORMAT = 'data-kcNumberFormat';
+const KC_NUMBER_FORMAT = 'data-kcNumberFormat';
 
-export function render() {
-    document.querySelectorAll(`[${DATA_KC_NUMBER_FORMAT}]`)
-        .forEach(input => {
-            const format = input.getAttribute(DATA_KC_NUMBER_FORMAT);
+function enhanceInput(input) {
+    const format = input.getAttribute(KC_NUMBER_FORMAT);
 
-            input.addEventListener('keyup', (event) => {
-                input.value = formatNumber(input.value, format);
-            });
+    input.addEventListener('keyup', (event) => {
+        input.value = formatNumber(input.value, format);
+    });
 
-            input.value = formatNumber(input.value, format);
-        });
+    input.value = formatNumber(input.value, format);
 }
+
+registerField(KC_NUMBER_FORMAT, enhanceInput);

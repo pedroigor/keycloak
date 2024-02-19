@@ -54,7 +54,7 @@
 		<#nested "afterField" attribute>
 	</#list>
 
-		<script>
+		<script type="module">
 			const kcModules = [];
 
 			function renderAttributes() {

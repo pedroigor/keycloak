@@ -22,8 +22,6 @@ function createAddAction(element) {
         newNode.setAttribute("id", name + "-" + elements.length);
         newNode.value = "";
         lastNode.after(newNode);
-
-        renderAttributes();
     });
 
     element.after(action);
@@ -96,3 +94,5 @@ export function render() {
         });
     });
 }
+
+render();
