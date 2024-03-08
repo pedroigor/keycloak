@@ -493,7 +493,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
 
     private UPConfig getConfigFromComponentModel(ComponentModel model) {
         if (model == null)
-            return null;
+            return parsedDefaultRawConfig.clone();
 
         UPConfig cfg = model.getNote(PARSED_UP_CONFIG_COMPONENT_KEY);
         if (cfg != null) {
@@ -502,11 +502,11 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
 
         String rawConfig = model.get(UP_COMPONENT_CONFIG_KEY);
         if (rawConfig == null) {
-            return null;
+            return parsedDefaultRawConfig.clone();
         } else {
             cfg = getParsedConfig(rawConfig);
             model.setNote(PARSED_UP_CONFIG_COMPONENT_KEY, cfg);
-            return cfg;
+            return cfg == null ? parsedDefaultRawConfig.clone() : cfg;
         }
     }
 
