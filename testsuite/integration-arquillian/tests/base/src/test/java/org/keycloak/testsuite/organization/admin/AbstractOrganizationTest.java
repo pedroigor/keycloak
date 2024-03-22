@@ -19,10 +19,15 @@ package org.keycloak.testsuite.organization.admin;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.keycloak.representations.idm.CredentialRepresentation.PASSWORD;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import org.keycloak.admin.client.resource.OrganizationResource;
+import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.OrganizationRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.admin.AbstractAdminTest;
@@ -64,6 +69,14 @@ public abstract class AbstractOrganizationTest extends AbstractAdminTest  {
 
         expected.setEmail(email);
         expected.setUsername(expected.getEmail());
+        expected.setEnabled(true);
+        List<CredentialRepresentation> credentials = new ArrayList<>();
+        CredentialRepresentation pass = new CredentialRepresentation();
+        pass.setType(PASSWORD);
+        pass.setValue("password");
+        pass.setTemporary(false);
+        credentials.add(pass);
+        expected.setCredentials(credentials);
 
         try (Response response = organization.members().addMember(expected)) {
             assertEquals(Status.CREATED.getStatusCode(), response.getStatus());

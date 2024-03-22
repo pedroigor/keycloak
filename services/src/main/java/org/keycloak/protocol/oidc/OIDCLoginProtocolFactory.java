@@ -20,6 +20,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.Config;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.common.Profile;
+import org.keycloak.common.Profile.Feature;
 import org.keycloak.common.constants.KerberosConstants;
 import org.keycloak.common.util.UriUtils;
 import org.keycloak.events.EventBuilder;
@@ -39,6 +40,7 @@ import org.keycloak.protocol.oidc.mappers.AddressMapper;
 import org.keycloak.protocol.oidc.mappers.AllowedWebOriginsProtocolMapper;
 import org.keycloak.protocol.oidc.mappers.AudienceResolveProtocolMapper;
 import org.keycloak.protocol.oidc.mappers.FullNameMapper;
+import org.keycloak.protocol.oidc.mappers.OrganizationProtocolMapper;
 import org.keycloak.protocol.oidc.mappers.UserAttributeMapper;
 import org.keycloak.protocol.oidc.mappers.UserClientRoleMappingMapper;
 import org.keycloak.protocol.oidc.mappers.UserPropertyMapper;
@@ -81,6 +83,7 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
     public static final String LOCALE = "locale";
     public static final String ADDRESS = "address";
     public static final String PHONE_NUMBER = "phone number";
+    public static final String ORGANIZATION = "organization";
     public static final String PHONE_NUMBER_VERIFIED = "phone number verified";
     public static final String REALM_ROLES = "realm roles";
     public static final String CLIENT_ROLES = "client roles";
@@ -100,6 +103,7 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
     public static final String EMAIL_SCOPE_CONSENT_TEXT = "${emailScopeConsentText}";
     public static final String ADDRESS_SCOPE_CONSENT_TEXT = "${addressScopeConsentText}";
     public static final String PHONE_SCOPE_CONSENT_TEXT = "${phoneScopeConsentText}";
+    public static final String ORGANIZATION_SCOPE_CONSENT_TEXT = "${organizationScopeConsentText}";
     public static final String OFFLINE_ACCESS_SCOPE_CONSENT_TEXT = Constants.OFFLINE_ACCESS_SCOPE_CONSENT_TEXT;
     public static final String ROLES_SCOPE_CONSENT_TEXT = "${rolesScopeConsentText}";
 
@@ -217,6 +221,11 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
             model = AcrProtocolMapper.create(ACR, true, true, true);
             builtins.put(ACR, model);
         }
+
+        if (Profile.isFeatureEnabled(Feature.ORGANIZATION)) {
+            model = OrganizationProtocolMapper.create();
+            builtins.put(ORGANIZATION, model);
+        }
     }
 
     private void createUserAttributeMapper(String name, String attrName, String claimName, String type) {
@@ -276,6 +285,17 @@ public class OIDCLoginProtocolFactory extends AbstractLoginProtocolFactory {
         phoneScope.setProtocol(getId());
         phoneScope.addProtocolMapper(builtins.get(PHONE_NUMBER));
         phoneScope.addProtocolMapper(builtins.get(PHONE_NUMBER_VERIFIED));
+
+        if (Profile.isFeatureEnabled(Feature.ORGANIZATION)) {
+            ClientScopeModel organizationScope = newRealm.addClientScope(OAuth2Constants.ORGANIZATION);
+            organizationScope.setDescription("Additional claims about the organization a subject belongs to");
+            organizationScope.setDisplayOnConsentScreen(true);
+            organizationScope.setConsentScreenText(ORGANIZATION_SCOPE_CONSENT_TEXT);
+            organizationScope.setIncludeInTokenScope(true);
+            organizationScope.setProtocol(getId());
+            organizationScope.addProtocolMapper(builtins.get(ORGANIZATION));
+            newRealm.addDefaultClientScope(organizationScope, false);
+        }
 
         // 'profile' and 'email' will be default scopes for now. 'address' and 'phone' will be optional scopes
         newRealm.addDefaultClientScope(profileScope, true);
