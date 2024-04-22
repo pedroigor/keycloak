@@ -35,7 +35,11 @@ import org.keycloak.storage.ReadOnlyException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.keycloak.models.UserModel.DISABLED_REASON;
 
@@ -50,6 +54,15 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
 
     protected int maxDeltaTimeSeconds = 60 * 60 * 12; // 12 hours
     protected KeycloakSessionFactory factory;
+
+    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
+
+    private Map<String, String> asd = Collections.synchronizedMap(new LinkedHashMap<String, String>(16, DEFAULT_LOAD_FACTOR, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry eldest) {
+            return asd.size()  > 200;
+        }
+    });
 
     public DefaultBruteForceProtector(KeycloakSessionFactory factory) {
         this.factory = factory;
@@ -185,16 +198,23 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
         ExecutorsProvider provider = session.getProvider(ExecutorsProvider.class);
         ExecutorService executor = provider.getExecutor("bruteforce");
         executor.execute(() -> KeycloakModelUtils.runJobInTransaction(factory, s -> {
-            if (success) {
-                success(s, realm, user.getId());
-            } else {
-                failure(s, realm, user.getId(), clientConnection.getRemoteAddr(), Time.currentTimeMillis());
+            try {
+                if (success) {
+                    success(s, realm, user.getId());
+                } else {
+                    failure(s, realm, user.getId(), clientConnection.getRemoteAddr(), Time.currentTimeMillis());
+                }
+            } finally {
+                asd.remove(user.getId());
             }
         }));
     }
 
     @Override
     public boolean isTemporarilyDisabled(KeycloakSession session, RealmModel realm, UserModel user) {
+        while (asd.putIfAbsent(user.getId(), user.getId()) != null) {
+            LockSupport.parkNanos(1L);
+        }
         UserLoginFailureModel userLoginFailure = getUserFailureModel(session, realm, user.getId());
 
         if (userLoginFailure != null) {
