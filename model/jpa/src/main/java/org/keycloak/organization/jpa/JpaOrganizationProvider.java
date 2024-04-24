@@ -22,6 +22,7 @@ import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -330,18 +331,15 @@ public class JpaOrganizationProvider implements OrganizationProvider {
     private GroupModel createOrganizationGroup(String name) {
         throwExceptionIfObjectIsNull(name, "Name of the group");
 
-        String groupName = getCanonicalGroupName(name);
-        GroupModel group = groupProvider.getGroupByName(realm, null, name);
-
-        if (group != null) {
-            throw new ModelDuplicateException("A group with the same name already exist and it is bound to different organization");
+        if (groupProvider.searchGroupsByAttributes(realm, Map.of(ORGANIZATION_ATTRIBUTE, name), 0, 1).findAny().isPresent()) {
+            throw new ModelDuplicateException("A group with the same name (attribute) already exist and it is bound to different organization");
         }
 
-        return groupProvider.createGroup(realm, groupName);
-    }
+        String orgId = KeycloakModelUtils.generateId();
+        GroupModel group = groupProvider.createGroup(realm, orgId, orgId);
+        group.setSingleAttribute(ORGANIZATION_ATTRIBUTE, name);
 
-    private String getCanonicalGroupName(String name) {
-        return "kc.org." + name;
+        return group;
     }
 
     private GroupModel getOrganizationGroup(OrganizationModel organization) {
