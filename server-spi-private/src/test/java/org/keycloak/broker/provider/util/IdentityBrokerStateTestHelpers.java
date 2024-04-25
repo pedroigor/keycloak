@@ -1205,16 +1205,6 @@ public class IdentityBrokerStateTestHelpers {
         }
 
         @Override
-        public AuthenticationFlowModel getOrgRegistrationFlow() {
-            return null;
-        }
-
-        @Override
-        public void setOrgRegistrationFlow(AuthenticationFlowModel flow) {
-
-        }
-
-        @Override
         public AuthenticationFlowModel getDirectGrantFlow() {
             return null;
         }
