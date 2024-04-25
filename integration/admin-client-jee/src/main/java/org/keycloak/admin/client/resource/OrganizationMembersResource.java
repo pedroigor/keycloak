@@ -47,4 +47,9 @@ public interface OrganizationMembersResource {
 
     @Path("{id}")
     OrganizationMemberResource member(@PathParam("id") String id);
+
+    @POST
+    @Path("invite")
+    @Consumes(MediaType.APPLICATION_JSON)
+    Response inviteMember(UserRepresentation rep);
 }
