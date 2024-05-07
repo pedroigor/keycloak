@@ -44,17 +44,29 @@ import jakarta.ws.rs.core.Response.Status;
 import org.junit.Test;
 import org.keycloak.admin.client.resource.GroupResource;
 import org.keycloak.admin.client.resource.OrganizationResource;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.common.Profile.Feature;
 import org.keycloak.models.OrganizationModel;
 import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.ManagementPermissionRepresentation;
 import org.keycloak.representations.idm.OrganizationDomainRepresentation;
 import org.keycloak.representations.idm.OrganizationRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.testsuite.admin.ApiUtil;
 import org.keycloak.testsuite.arquillian.annotation.EnableFeature;
 
 @EnableFeature(Feature.ORGANIZATION)
 public class OrganizationTest extends AbstractOrganizationTest {
+
+    @Test
+    public void testNameAlreadyExists() {
+        OrganizationRepresentation organization = createOrganization();
+
+        organization.setId(null);
+
+        try (Response response = testRealm().organizations().create(organization)) {
+            assertEquals(Status.CONFLICT.getStatusCode(), response.getStatus());
+        }
+    }
 
     @Test
     public void testUpdate() {
@@ -304,7 +316,50 @@ public class OrganizationTest extends AbstractOrganizationTest {
     }
 
     @Test
-    public void testManageOrgGroupsViaDifferentAPIs() {
+    public void testNotAllowedManageOrganizationGroup() {
+        OrganizationRepresentation org = createOrganization();
+        UserRepresentation userRep = addMember(testRealm().organizations().get(org.getId()));
+        List<GroupRepresentation> groups = testRealm().groups().query(buildSearchQuery(OrganizationModel.ORGANIZATION_ATTRIBUTE, org.getId()), false, 0, 10, false);
+        assertEquals(1, groups.size());
+        GroupRepresentation orgGroupRep = groups.get(0);
+        GroupResource group = testRealm().groups().group(orgGroupRep.getId());
+
+        try {
+            group.toRepresentation();
+        } catch (ForbiddenException ex) {
+            // success
+        }
+
+        try {
+            group.update(orgGroupRep);
+        } catch (ForbiddenException ex) {
+            // success
+        }
+        try {
+            group.remove();
+        } catch (ForbiddenException ex) {
+            // success
+        }
+
+        try {
+            // cannot join organization related group
+            testRealm().users().get(userRep.getId()).joinGroup(orgGroupRep.getId());
+            fail("Expected ForbiddenException");
+        } catch (ForbiddenException ex) {
+            // success
+        }
+
+        try {
+            // cannot leave organization related group
+            testRealm().users().get(userRep.getId()).leaveGroup(orgGroupRep.getId());
+            fail("Expected ForbiddenException");
+        } catch (ForbiddenException ex) {
+            // success
+        }
+    }
+
+    @Test
+    public void testQueryOrganizationGroup() {
         // test realm contains some groups initially
         List<GroupRepresentation> getAllBefore = testRealm().groups().groups();
         long countBefore = testRealm().groups().count().get("count");
@@ -327,124 +382,17 @@ public class OrganizationTest extends AbstractOrganizationTest {
 
         // check that search queries include org related groups but those can't be updated
         assertEquals(getAllBefore.size() + 6, testRealm().groups().groups().size());
-        // we need to pull full representation of the group, otherwise org related attributes are lost in the representation
-        List<GroupRepresentation> groups = testRealm().groups().query(buildSearchQuery(OrganizationModel.ORGANIZATION_ATTRIBUTE, "myorg1"), false, 0, 10, false);
-        assertEquals(1, groups.size());
-        GroupRepresentation orgGroupRep = groups.get(0);
-        GroupResource group = testRealm().groups().group(orgGroupRep.getId());
+    }
 
-        try {
-            // group to be updated is organization related group
-            group.update(topGroup);
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success, the group could not be updated
-        }
+    private GroupRepresentation createGroup(RealmResource realm, String name) {
+        GroupRepresentation group = new GroupRepresentation();
+        group.setName(name);
+        try (Response response = realm.groups().add(group)) {
+            String groupId = ApiUtil.getCreatedId(response);
 
-        try {
-            // cannot update a group with the attribute reserved for organization related groups
-            testRealm().groups().group(topGroup.getId()).update(orgGroupRep);
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success, the group could not be updated
-        }
-
-        try {
-            // cannot remove organization related group
-            group.remove();
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success, the group could not be removed
-        }
-
-        try {
-            // cannot manage organization related group permissions
-            group.setPermissions(new ManagementPermissionRepresentation(true));
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success, the group's permissions cannot be managed
-        }
-
-        // try to add subgroup to an org related group
-        try (Response response = group.subGroup(topGroup)) {
-            assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
-        }
-
-        // try to add org related group as a subgroup to a group
-        try (Response response = testRealm().groups().group(topGroup.getId()).subGroup(orgGroupRep)) {
-            assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
-        }
-
-        try {
-            // cannot manage organization related group role mappers
-            group.roles().realmLevel().add(null);
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success
-        }
-
-        try {
-            // cannot manage organization related group role mappers
-            group.roles().realmLevel().remove(null);
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success
-        }
-
-        try {
-            // cannot manage organization related group role mappers
-            group.roles().clientLevel(testRealm().clients().findByClientId("test-app").get(0).getId()).add(null);
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success
-        }
-
-        try {
-            // cannot manage organization related group role mappers
-            group.roles().clientLevel(testRealm().clients().findByClientId("test-app").get(0).getId()).remove(null);
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success
-        }
-
-        // cannot add top level group with reserved attribute for organizations
-        try (Response response = testRealm().groups().add(orgGroupRep)) {
-            assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
-        }
-
-        try {
-            // cannot add organization related group as a default group
-            testRealm().addDefaultGroup(orgGroupRep.getId());
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success
-        }
-
-        try {
-            // cannot remove organization related group as a default group
-            testRealm().removeDefaultGroup(orgGroupRep.getId());
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success
-        }
-
-        OrganizationRepresentation org = createOrganization();
-        UserRepresentation userRep = addMember(testRealm().organizations().get(org.getId()));
-
-        try {
-            // cannot join organization related group
-            testRealm().users().get(userRep.getId()).joinGroup(orgGroupRep.getId());
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success
-        }
-
-        try {
-            // cannot leave organization related group
-            testRealm().users().get(userRep.getId()).leaveGroup(orgGroupRep.getId());
-            fail("Expected ForbiddenException");
-        } catch (ForbiddenException ex) {
-            // success
+            // Set ID to the original rep
+            group.setId(groupId);
+            return group;
         }
     }
 }

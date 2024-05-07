@@ -49,6 +49,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.ModelException;
 import org.keycloak.models.ModelIllegalStateException;
+import org.keycloak.models.OrganizationModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserConsentModel;
 import org.keycloak.models.UserCredentialModel;
@@ -128,7 +129,6 @@ import java.util.stream.Stream;
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_ID;
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_USERNAME;
 import static org.keycloak.userprofile.UserProfileContext.USER_API;
-import static org.keycloak.utils.OrganizationUtils.checkForOrgRelatedGroupModel;
 
 /**
  * Base resource for managing users
@@ -1017,9 +1017,7 @@ public class UserResource {
             throw new NotFoundException("Group not found");
         }
         auth.groups().requireManageMembership(group);
-
-        checkForOrgRelatedGroupModel(session, group);
-
+        checkIfOrganizationGroup(group);
         try {
             if (user.isMemberOf(group)){
                 user.leaveGroup(group);
@@ -1047,9 +1045,7 @@ public class UserResource {
             throw new NotFoundException("Group not found");
         }
         auth.groups().requireManageMembership(group);
-
-        checkForOrgRelatedGroupModel(session, group);
-
+        checkIfOrganizationGroup(group);
         if (!RoleUtils.isDirectMember(user.getGroupsStream(),group)){
             user.joinGroup(group);
             adminEvent.operation(OperationType.CREATE).resource(ResourceType.GROUP_MEMBERSHIP).representation(ModelToRepresentation.toRepresentation(group, true)).resourcePath(session.getContext().getUri()).success();
@@ -1125,6 +1121,12 @@ public class UserResource {
             this.redirectUri = redirectUri;
             this.clientId = clientId;
             this.lifespan = lifespan;
+        }
+    }
+
+    private void checkIfOrganizationGroup(GroupModel group) {
+        if (group.getFirstAttribute(OrganizationModel.ORGANIZATION_ATTRIBUTE) != null) {
+            throw new ForbiddenException();
         }
     }
 }

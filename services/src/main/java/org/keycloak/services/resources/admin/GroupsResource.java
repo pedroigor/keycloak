@@ -18,6 +18,7 @@ package org.keycloak.services.resources.admin;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -42,6 +43,7 @@ import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelDuplicateException;
+import org.keycloak.models.OrganizationModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
@@ -52,8 +54,6 @@ import org.keycloak.services.resources.admin.permissions.GroupPermissionEvaluato
 import org.keycloak.utils.GroupUtils;
 import org.keycloak.utils.SearchQueryUtils;
 
-import static org.keycloak.utils.OrganizationUtils.checkForOrgRelatedGroupModel;
-import static org.keycloak.utils.OrganizationUtils.checkForOrgRelatedGroupRep;
 
 
 /**
@@ -127,9 +127,7 @@ public class GroupsResource {
         if (group == null) {
             throw new NotFoundException("Could not find group by id");
         }
-
-        checkForOrgRelatedGroupModel(session, group);
-
+        checkIfOrganizationGroup(group);
         return new GroupResource(realm, group, session, this.auth, adminEvent);
     }
 
@@ -181,8 +179,6 @@ public class GroupsResource {
             throw ErrorResponse.error("Group name is missing", Response.Status.BAD_REQUEST);
         }
 
-        checkForOrgRelatedGroupRep(session, rep);
-
         try {
             if (rep.getId() != null) {
                 child = realm.getGroupById(rep.getId());
@@ -209,5 +205,11 @@ public class GroupsResource {
 
         adminEvent.representation(rep).success();
         return builder.build();
+    }
+
+    private void checkIfOrganizationGroup(GroupModel group) {
+        if (group.getFirstAttribute(OrganizationModel.ORGANIZATION_ATTRIBUTE) != null) {
+            throw new ForbiddenException();
+        }
     }
 }

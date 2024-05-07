@@ -61,7 +61,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.keycloak.utils.GroupUtils;
 
-import static org.keycloak.utils.OrganizationUtils.checkForOrgRelatedGroupRep;
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
 /**
@@ -121,8 +120,6 @@ public class GroupResource {
         if (ObjectUtil.isBlank(groupName)) {
             throw ErrorResponse.error("Group name is missing", Response.Status.BAD_REQUEST);
         }
-
-        checkForOrgRelatedGroupRep(session, rep);
 
         if (!Objects.equals(groupName, group.getName())) {
             boolean exists = siblings().filter(s -> !Objects.equals(s.getId(), group.getId()))
@@ -196,8 +193,6 @@ public class GroupResource {
         if (ObjectUtil.isBlank(groupName)) {
             throw ErrorResponse.error("Group name is missing", Response.Status.BAD_REQUEST);
         }
-
-        checkForOrgRelatedGroupRep(session, rep);
 
         try {
             Response.ResponseBuilder builder = Response.status(204);
@@ -372,7 +367,6 @@ public class GroupResource {
     @Operation( summary = "Return object stating whether client Authorization permissions have been initialized or not and a reference")
     public ManagementPermissionReference setManagementPermissionsEnabled(ManagementPermissionReference ref) {
         auth.groups().requireManage(group);
-
         AdminPermissionManagement permissions = AdminPermissions.management(session, realm);
         permissions.groups().setPermissionsEnabled(group, ref.isEnabled());
         if (ref.isEnabled()) {
@@ -381,5 +375,6 @@ public class GroupResource {
             return new ManagementPermissionReference();
         }
     }
+
 }
 
