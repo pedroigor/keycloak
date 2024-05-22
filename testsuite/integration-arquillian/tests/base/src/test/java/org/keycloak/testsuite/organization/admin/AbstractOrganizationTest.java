@@ -102,7 +102,7 @@ public abstract class AbstractOrganizationTest extends AbstractAdminTest  {
         return createOrganization(testRealm(), getCleanup(), name, brokerConfigFunction.apply(name).setUpIdentityProvider(), orgDomain);
     }
 
-    protected static OrganizationRepresentation createOrganization(RealmResource testRealm, TestCleanup testCleanup, String name, IdentityProviderRepresentation broker, String... orgDomain) {
+    protected OrganizationRepresentation createOrganization(RealmResource testRealm, TestCleanup testCleanup, String name, IdentityProviderRepresentation broker, String... orgDomain) {
         OrganizationRepresentation org = createRepresentation(name, orgDomain);
         String id;
 
@@ -120,7 +120,7 @@ public abstract class AbstractOrganizationTest extends AbstractAdminTest  {
         return org;
     }
 
-    protected static OrganizationRepresentation createRepresentation(String name, String... orgDomains) {
+    protected OrganizationRepresentation createRepresentation(String name, String... orgDomains) {
         OrganizationRepresentation org = new OrganizationRepresentation();
         org.setName(name);
 
