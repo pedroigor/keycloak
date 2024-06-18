@@ -1229,6 +1229,37 @@ public class RefreshTokenTest extends AbstractKeycloakTest {
     }
 
     @Test
+    public void testSessionLastRefreshTime() throws Exception {
+        getTestingClient().testing().setTestingInfinispanTimeService();
+        RealmResource realmResource = adminClient.realm("test");
+        RealmRepresentation realm = realmResource.toRepresentation();
+        realm.setSsoSessionIdleTimeout((int) TimeUnit.HOURS.toSeconds(1));
+        realm.setSsoSessionMaxLifespan((int) TimeUnit.HOURS.toSeconds(2));
+        realmResource.update(realm);
+        oauth.doLogin("test-user@localhost", "password");
+        EventRepresentation loginEvent = events.expectLogin().assertEvent();
+        String sessionId = loginEvent.getSessionId();
+        String code = oauth.getCurrentQuery().get(OAuth2Constants.CODE);
+        OAuthClient.AccessTokenResponse tokenResponse = oauth.doAccessTokenRequest(code, "password");
+        events.poll();
+        String refreshId = oauth.parseRefreshToken(tokenResponse.getRefreshToken()).getId();
+        int last = testingClient.testing().getLastSessionRefresh("test", sessionId, false);
+        int i = 0;
+
+        while (true) {
+            System.out.println("################ Iteration" + i++);
+            setTimeOffset(295 * i);
+            tokenResponse = oauth.doRefreshTokenRequest(tokenResponse.getRefreshToken(), "password");
+            String currentSessionId = tokenResponse.getSessionState();
+            assertEquals(200, tokenResponse.getStatusCode());
+            int next = testingClient.testing().getLastSessionRefresh("test", sessionId, false);
+            Assert.assertNotEquals(last, next);
+            Assert.assertEquals(sessionId, currentSessionId);
+            last = next;
+        }
+    }
+
+    @Test
     public void testUserSessionRefreshAndIdleRememberMe() throws Exception {
         RealmResource testRealm = adminClient.realm("test");
 
