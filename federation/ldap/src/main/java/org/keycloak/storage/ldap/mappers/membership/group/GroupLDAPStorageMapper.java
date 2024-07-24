@@ -67,9 +67,6 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     private final GroupMapperConfig config;
     private final GroupLDAPStorageMapperFactory factory;
 
-    // Flag to avoid syncing multiple times per transaction
-    private boolean syncFromLDAPPerformedInThisTransaction = false;
-
     public GroupLDAPStorageMapper(ComponentModel mapperModel, LDAPStorageProvider ldapProvider, GroupLDAPStorageMapperFactory factory) {
         super(mapperModel, ldapProvider);
         this.config = new GroupMapperConfig(mapperModel);
@@ -157,41 +154,42 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
     @Override
     public SynchronizationResult syncDataFromFederationProviderToKeycloak(RealmModel realm) {
-        SynchronizationResult syncResult = new SynchronizationResult() {
+        try {
+            SynchronizationResult syncResult = new SynchronizationResult() {
 
-            @Override
-            public String getStatus() {
-                return String.format("%d imported groups, %d updated groups, %d removed groups", getAdded(), getUpdated(), getRemoved());
+                @Override
+                public String getStatus() {
+                    return String.format("%d imported groups, %d updated groups, %d removed groups", getAdded(), getUpdated(), getRemoved());
+                }
+
+            };
+
+            logger.debugf("Syncing groups from LDAP into Keycloak DB. Mapper is [%s], LDAP provider is [%s]", mapperModel.getName(), ldapProvider.getModel().getName());
+
+            // Get all LDAP groups
+            List<LDAPObject> ldapGroups = getAllLDAPGroups(config.isPreserveGroupsInheritance());
+
+            // Convert to internal format
+            Map<String, LDAPObject> ldapGroupsMap = new HashMap<>();
+            List<GroupTreeResolver.Group> ldapGroupsRep = new LinkedList<>();
+            convertGroupsToInternalRep(ldapGroups, ldapGroupsMap, ldapGroupsRep);
+
+            // Now we have list of LDAP groups. Let's form the tree (if needed)
+            if (config.isPreserveGroupsInheritance()) {
+                try {
+                    List<GroupTreeResolver.GroupTreeEntry> groupTrees = new GroupTreeResolver().resolveGroupTree(ldapGroupsRep, config.isIgnoreMissingGroups());
+
+                    updateKeycloakGroupTree(realm, groupTrees, ldapGroupsMap, syncResult);
+                } catch (GroupTreeResolver.GroupTreeResolveException gre) {
+                    throw new ModelException("Couldn't resolve groups from LDAP. Fix LDAP or skip preserve inheritance. Details: " + gre.getMessage(), gre);
+                }
+            } else {
+                syncFlatGroupStructure(realm, syncResult, ldapGroupsMap);
             }
-
-        };
-
-        logger.debugf("Syncing groups from LDAP into Keycloak DB. Mapper is [%s], LDAP provider is [%s]", mapperModel.getName(), ldapProvider.getModel().getName());
-
-        // Get all LDAP groups
-        List<LDAPObject> ldapGroups = getAllLDAPGroups(config.isPreserveGroupsInheritance());
-
-        // Convert to internal format
-        Map<String, LDAPObject> ldapGroupsMap = new HashMap<>();
-        List<GroupTreeResolver.Group> ldapGroupsRep = new LinkedList<>();
-        convertGroupsToInternalRep(ldapGroups, ldapGroupsMap, ldapGroupsRep);
-
-        // Now we have list of LDAP groups. Let's form the tree (if needed)
-        if (config.isPreserveGroupsInheritance()) {
-            try {
-                List<GroupTreeResolver.GroupTreeEntry> groupTrees = new GroupTreeResolver().resolveGroupTree(ldapGroupsRep, config.isIgnoreMissingGroups());
-
-                updateKeycloakGroupTree(realm, groupTrees, ldapGroupsMap, syncResult);
-            } catch (GroupTreeResolver.GroupTreeResolveException gre) {
-                throw new ModelException("Couldn't resolve groups from LDAP. Fix LDAP or skip preserve inheritance. Details: " + gre.getMessage(), gre);
-            }
-        } else {
-            syncFlatGroupStructure(realm, syncResult, ldapGroupsMap);
+            return syncResult;
+        } finally {
+            factory.setSyncingDone();
         }
-
-        syncFromLDAPPerformedInThisTransaction = true;
-
-        return syncResult;
     }
 
     private void syncExistingGroup(RealmModel realm, GroupModel kcExistingGroup, Map.Entry<String, LDAPObject> groupEntry,
@@ -386,7 +384,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
             if (config.isPreserveGroupsInheritance()) {
 
                 // Better to sync all groups from LDAP with preserved inheritance
-                if (!syncFromLDAPPerformedInThisTransaction) {
+                if (!factory.isSyncing()) {
                     syncDataFromFederationProviderToKeycloak(realm);
                     kcGroup = findKcGroupByLDAPGroup(realm, parent, ldapGroup);
                 }

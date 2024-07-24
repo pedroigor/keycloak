@@ -44,6 +44,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -57,6 +58,8 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
     protected static final List<String> MEMBERSHIP_TYPES = new LinkedList<>();
     protected static final List<String> MODES = new LinkedList<>();
     protected static final List<String> NO_IMPORT_MODES = new LinkedList<>();
+
+    private final AtomicBoolean syncing = new AtomicBoolean();
 
     // TODO: Merge with RoleLDAPFederationMapperFactory as there are lot of similar properties
     static {
@@ -317,5 +320,13 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
 
     protected UserRolesRetrieveStrategy getUserGroupsRetrieveStrategy(String strategyKey) {
         return userGroupsStrategies.get(strategyKey);
+    }
+
+    public boolean isSyncing() {
+        return !syncing.compareAndSet(false, true);
+    }
+
+    public void setSyncingDone() {
+        syncing.lazySet(false);
     }
 }

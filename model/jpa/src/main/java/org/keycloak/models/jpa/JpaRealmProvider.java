@@ -696,6 +696,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         em.createNamedQuery("deleteGroupRoleMappingsByGroup").setParameter("group", groupEntity).executeUpdate();
 
         em.remove(groupEntity);
+        em.flush();
         return true;
 
 
