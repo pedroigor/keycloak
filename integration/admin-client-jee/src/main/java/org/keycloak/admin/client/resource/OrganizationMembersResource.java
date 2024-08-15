@@ -81,4 +81,9 @@ public interface OrganizationMembersResource {
     @Path("invite-existing-user")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     Response inviteExistingUser(@FormParam("id") String id);
+
+    @Path("{id}/organizations")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    List<OrganizationRepresentation> getOrganizations(@PathParam("id") String id);
 }
