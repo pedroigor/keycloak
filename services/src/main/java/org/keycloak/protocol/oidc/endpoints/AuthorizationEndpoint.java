@@ -205,9 +205,12 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         throw new RuntimeException("Unknown action " + action);
     }
 
-    public AuthorizationEndpoint register() {
+    public AuthorizationEndpoint register(String authSessionId, String key, String execution, String clientId, String clientData, String tabId) {
         event.event(EventType.REGISTER);
         action = Action.REGISTER;
+
+        new LoginActionsService(session, event)
+                .preExecuteActionToken(authSessionId, key, execution, clientId, clientData, tabId);
 
         if (!realm.isRegistrationAllowed()) {
             throw new ErrorPageException(session, authenticationSession, Response.Status.BAD_REQUEST, Messages.REGISTRATION_NOT_ALLOWED);

@@ -19,6 +19,7 @@ package org.keycloak.services.resources;
 import org.jboss.logging.Logger;
 import org.keycloak.common.Profile;
 import org.keycloak.common.Profile.Feature;
+import org.keycloak.common.util.TriFunction;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.forms.login.MessageType;
 import org.keycloak.forms.login.freemarker.DetachedInfoStateChecker;
@@ -110,6 +111,8 @@ import jakarta.ws.rs.core.UriBuilderException;
 import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.keycloak.authentication.actiontoken.DefaultActionToken.ACTION_TOKEN_BASIC_CHECKS;
 import static org.keycloak.models.utils.DefaultRequiredActions.getDefaultRequiredActionCaseInsensitively;
@@ -136,7 +139,7 @@ public class LoginActionsService {
 
     public static final String SESSION_CODE = "session_code";
     public static final String AUTH_SESSION_ID = "auth_session_id";
-    
+
     public static final String CANCEL_AIA = "cancel-aia";
 
     private final RealmModel realm;
@@ -415,7 +418,12 @@ public class LoginActionsService {
                                          @QueryParam(Constants.CLIENT_DATA) String clientData,
                                          @QueryParam(Constants.KEY) String key) {
         if (key != null) {
-            return handleActionToken(key, execution, clientId, tabId, clientData);
+            return handleActionToken(key, execution, clientId, tabId, clientData, new TriFunction<ActionTokenHandler, JsonWebToken, ActionTokenContext, Response>() {
+                @Override
+                public Response apply(ActionTokenHandler handler, JsonWebToken token, ActionTokenContext tokenContext) {
+                    return handler.handleToken(token, tokenContext);
+                }
+            });
         }
 
         event.event(EventType.RESET_PASSWORD);
@@ -534,6 +542,7 @@ public class LoginActionsService {
      *
      * @param key
      * @param execution
+     * @param consumer
      * @return
      */
     @Path("action-token")
@@ -543,11 +552,16 @@ public class LoginActionsService {
                                        @QueryParam(Constants.EXECUTION) String execution,
                                        @QueryParam(Constants.CLIENT_ID) String clientId,
                                        @QueryParam(Constants.CLIENT_DATA) String clientData,
-                                       @QueryParam(Constants.TAB_ID) String tabId) {
-        return handleActionToken(key, execution, clientId, tabId, clientData);
+                                       @QueryParam(Constants.TAB_ID) String tabId, Consumer<ActionTokenHandler> consumer) {
+        return handleActionToken(key, execution, clientId, tabId, clientData, new TriFunction<ActionTokenHandler, JsonWebToken, ActionTokenContext, Response>() {
+            @Override
+            public Response apply(ActionTokenHandler handler, JsonWebToken token, ActionTokenContext tokenContext) {
+                return handler.handleToken(token, tokenContext);
+            }
+        });
     }
 
-    protected <T extends JsonWebToken & SingleUseObjectKeyModel> Response handleActionToken(String tokenString, String execution, String clientId, String tabId, String clientData) {
+    protected <T extends JsonWebToken & SingleUseObjectKeyModel> Response handleActionToken(String tokenString, String execution, String clientId, String tabId, String clientData, TriFunction<ActionTokenHandler, JsonWebToken, ActionTokenContext, Response> handleToken) {
         T token;
         ActionTokenHandler<T> handler;
         ActionTokenContext<T> tokenContext;
@@ -661,7 +675,7 @@ public class LoginActionsService {
 
             LoginActionsServiceChecks.checkIsUserValid(token, tokenContext, event);
             LoginActionsServiceChecks.checkIsClientValid(token, tokenContext);
-            
+
             sessionContext.setClient(authSession.getClient());
 
             TokenVerifier.createWithoutSignature(token)
@@ -681,7 +695,7 @@ public class LoginActionsService {
 
             authSession.setAuthNote(Constants.KEY, tokenString);
 
-            return handler.handleToken(token, tokenContext);
+            return handleToken.apply(handler, token, tokenContext);
         } catch (ExplainedTokenVerificationException ex) {
             return handleActionTokenVerificationException(tokenContext, ex, ex.getErrorEvent(), ex.getMessage());
         } catch (LoginActionsServiceException ex) {
@@ -1147,7 +1161,7 @@ public class LoginActionsService {
 
 
         Response response;
-        
+
         if (isCancelAppInitiatedAction(factory.getId(), authSession, context)) {
             provider.initiatedActionCanceled(session, authSession);
             AuthenticationManager.setKcActionStatus(factory.getId(), RequiredActionContext.KcActionStatus.CANCELLED, authSession);
@@ -1180,7 +1194,7 @@ public class LoginActionsService {
 
         return BrowserHistoryHelper.getInstance().saveResponseAndRedirect(session, authSession, response, true, request);
     }
-    
+
     private Response interruptionResponse(RequiredActionContextResult context, AuthenticationSessionModel authSession, String action, Error error) {
         LoginProtocol protocol = context.getSession().getProvider(LoginProtocol.class, authSession.getProtocol());
         protocol.setRealm(context.getRealm())
@@ -1189,11 +1203,11 @@ public class LoginActionsService {
                 .setEventBuilder(event);
 
         event.detail(Details.CUSTOM_REQUIRED_ACTION, action);
-        
+
         event.error(Errors.REJECTED_BY_USER);
         return protocol.sendError(authSession, error);
     }
-    
+
     private boolean isCancelAppInitiatedAction(String providerId, AuthenticationSessionModel authSession, RequiredActionContextResult context) {
         if (providerId.equals(authSession.getClientNote(Constants.KC_ACTION_EXECUTING))
                 && !Boolean.TRUE.toString().equals(authSession.getClientNote(Constants.KC_ACTION_ENFORCED))) {
@@ -1204,4 +1218,12 @@ public class LoginActionsService {
         return false;
     }
 
+    public void preExecuteActionToken(String authSessionId, String key, String execution, String clientId, String clientData, String tabId) {
+        handleActionToken(authSessionId, key, execution, clientId, clientData, new TriFunction<ActionTokenHandler, JsonWebToken, ActionTokenContext, Response>() {
+            @Override
+            public Response apply(ActionTokenHandler handler, JsonWebToken token, ActionTokenContext tokenContext) {
+                return handler.preHandleToken(token, tokenContext);
+            }
+        });
+    }
 }

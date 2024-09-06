@@ -38,6 +38,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.organization.OrganizationProvider;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.utils.RedirectUtils;
+import org.keycloak.representations.JsonWebToken;
 import org.keycloak.services.Urls;
 import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.messages.Messages;
@@ -70,6 +71,11 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
             Errors.INVALID_EMAIL, getDefaultErrorMessage()
           )
         );
+    }
+
+    @Override
+    public Response preHandleToken(JsonWebToken token, ActionTokenContext tokenContext) {
+        return super.preHandleToken(token, tokenContext);
     }
 
     @Override

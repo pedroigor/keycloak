@@ -17,6 +17,8 @@
 
 package org.keycloak.protocol.oidc;
 
+import static org.keycloak.services.resources.LoginActionsService.AUTH_SESSION_ID;
+
 import org.jboss.resteasy.reactive.NoCache;
 import org.keycloak.http.HttpRequest;
 import org.keycloak.OAuthErrorException;
@@ -24,6 +26,7 @@ import org.keycloak.common.ClientConnection;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.jose.jwk.JSONWebKeySet;
+import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.protocol.oidc.endpoints.AuthorizationEndpoint;
@@ -153,9 +156,14 @@ public class OIDCLoginProtocolService {
      * Registration endpoint
      */
     @Path("registrations")
-    public Object registrations() {
+    public Object registrations(@QueryParam(AUTH_SESSION_ID) String authSessionId,
+                                @QueryParam(Constants.KEY) String key,
+                                @QueryParam(Constants.EXECUTION) String execution,
+                                @QueryParam(Constants.CLIENT_ID) String clientId,
+                                @QueryParam(Constants.CLIENT_DATA) String clientData,
+                                @QueryParam(Constants.TAB_ID) String tabId) {
         AuthorizationEndpoint endpoint = new AuthorizationEndpoint(session, event);
-        return endpoint.register();
+        return endpoint.register(authSessionId, key, execution, clientId, clientData, tabId);
     }
 
     /**
