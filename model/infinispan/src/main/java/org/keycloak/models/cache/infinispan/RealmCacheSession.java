@@ -74,7 +74,6 @@ import org.keycloak.models.cache.infinispan.events.GroupMovedEvent;
 import org.keycloak.models.cache.infinispan.events.GroupRemovedEvent;
 import org.keycloak.models.cache.infinispan.events.GroupUpdatedEvent;
 import org.keycloak.models.cache.infinispan.events.InvalidationEvent;
-import org.keycloak.models.cache.infinispan.events.CacheKeyInvalidatedEvent;
 import org.keycloak.models.cache.infinispan.events.RealmRemovedEvent;
 import org.keycloak.models.cache.infinispan.events.RealmUpdatedEvent;
 import org.keycloak.models.cache.infinispan.events.RoleAddedEvent;
@@ -235,7 +234,7 @@ public class RealmCacheSession implements CacheRealmProvider {
     @Override
     public void registerInvalidation(String id) {
         cache.invalidateCacheKey(id, invalidations);
-        invalidationEvents.add(new CacheKeyInvalidatedEvent(id));
+        invalidationEvents.add(new InvalidationEvent(id));
     }
 
     @Override

@@ -48,7 +48,6 @@ import org.keycloak.models.cache.infinispan.authorization.stream.InResourcePredi
 import org.keycloak.models.cache.infinispan.authorization.stream.InResourceServerPredicate;
 import org.keycloak.models.cache.infinispan.authorization.stream.InScopePredicate;
 import org.keycloak.models.cache.infinispan.events.AuthenticationSessionAuthNoteUpdateEvent;
-import org.keycloak.models.cache.infinispan.events.CacheKeyInvalidatedEvent;
 import org.keycloak.models.cache.infinispan.events.ClientAddedEvent;
 import org.keycloak.models.cache.infinispan.events.ClientRemovedEvent;
 import org.keycloak.models.cache.infinispan.events.ClientScopeAddedEvent;
@@ -175,7 +174,6 @@ import org.keycloak.storage.managers.UserStorageSyncManager;
 
                 // models.cache.infinispan.events package
                 AuthenticationSessionAuthNoteUpdateEvent.class,
-                CacheKeyInvalidatedEvent.class,
                 ClientAddedEvent.class,
                 ClientUpdatedEvent.class,
                 ClientRemovedEvent.class,

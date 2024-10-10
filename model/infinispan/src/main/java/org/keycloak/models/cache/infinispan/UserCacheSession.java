@@ -24,7 +24,6 @@ import org.keycloak.credential.CredentialInput;
 import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.CredentialValidationOutput;
 import org.keycloak.models.IdentityProviderModel;
-import org.keycloak.models.cache.infinispan.events.CacheKeyInvalidatedEvent;
 import org.keycloak.models.cache.infinispan.events.InvalidationEvent;
 import org.keycloak.common.constants.ServiceAccountConstants;
 import org.keycloak.component.ComponentModel;
@@ -1008,7 +1007,7 @@ public class UserCacheSession implements UserCache, OnCreateComponent, OnUpdateC
 
     public void registerInvalidation(String id) {
         cache.invalidateCacheKey(id, invalidations);
-        invalidationEvents.add(new CacheKeyInvalidatedEvent(id));
+        invalidationEvents.add(new InvalidationEvent(id));
     }
 
     public boolean isInvalid(String key) {
