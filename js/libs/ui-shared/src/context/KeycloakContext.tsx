@@ -59,6 +59,14 @@ export const KeycloakProvider = <T extends BaseEnvironment>({
     return keycloak;
   }, [environment]);
 
+  const searchParams = new URLSearchParams(window.location.search);
+
+  if (searchParams.get("error_description") != null) {
+    setError({
+      error: searchParams.get("error_description"),
+    });
+  }
+
   useEffect(() => {
     // only needed in dev mode
     if (calledOnce.current) {
