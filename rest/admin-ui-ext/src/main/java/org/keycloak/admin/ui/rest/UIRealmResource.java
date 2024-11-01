@@ -26,6 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.keycloak.admin.ui.rest.model.UIRealmRepresentation;
 import org.keycloak.admin.ui.rest.model.UIRealmInfo;
+import org.keycloak.component.ComponentValidationException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.StorageProviderRealmModel;
 import org.keycloak.representations.userprofile.config.UPConfig;
@@ -43,6 +44,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
+import org.keycloak.userprofile.UserProfileProvider;
 
 /**
  * This JAX-RS resource is decorating the Admin Realm API in order to support specific behaviors from the
@@ -102,15 +104,17 @@ public class UIRealmResource {
             return;
         }
 
-        UserProfileResource userProfileResource = new UserProfileResource(session, auth, adminEvent);
-        if (!upConfig.equals(userProfileResource.getConfiguration())) {
-            Response response = userProfileResource.update(upConfig);
+        UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
+        UPConfig current = provider.getConfiguration();
 
-            if (isSuccessful(response)) {
-                return;
+        if (!upConfig.equals(current)) {
+            try {
+                provider.setConfiguration(upConfig);
+            } catch (ComponentValidationException cve) {
+                throw new InternalServerErrorException("Failed to update user profile configuration", cve);
             }
 
-            throw new InternalServerErrorException("Failed to update user profile configuration");
+            provider.setConfiguration(upConfig);
         }
     }
 
