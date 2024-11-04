@@ -54,3 +54,8 @@ See the Javadoc for a detailed description.
 = Removal of robots.txt file
 
 The `robots.txt` file, previously included by default, is now removed. The default `robots.txt` file blocked all crawling, which prevented the `noindex`/`nofollow` directives from being followed. The desired default behaviour is for {project_name} pages to not show up in search engine results and this is accomplished by the existing `X-Robots-Tag` header, which is set to `none` by default. The value of this header can be overidden per-realm if a different behaviour is needed.
+
+= Admin events might include now additional details about the context when the event is fired
+
+In this release, admin events might hold additional details about the context when the event is fired. When upgrading you should
+expect the database schema being updated to add a new column `DETAILS_JSON` to the `ADMIN_EVENT_ENTITY` table.
