@@ -124,12 +124,12 @@ public class AdminEventTest extends AbstractEventTest {
         RealmRepresentation realmRep = testRealmResource().toRepresentation();
         realmRep.setOrganizationsEnabled(true);
         testRealmResource().update(realmRep);
-        OrganizationRepresentation organization = new OrganizationRepresentation();
-        organization.setName("test-org");
-        organization.setAlias(organization.getName());
-        organization.addDomain(new OrganizationDomainRepresentation(organization.getName()));
-        testRealmResource().organizations().create(organization).close();
-        OrganizationRepresentation orgRep = testRealmResource().organizations().getAll().get(0);
+        OrganizationRepresentation orgRep = new OrganizationRepresentation();
+        orgRep.setName("test-org");
+        orgRep.setAlias(orgRep.getName());
+        orgRep.addDomain(new OrganizationDomainRepresentation(orgRep.getName()));
+        testRealmResource().organizations().create(orgRep).close();
+        orgRep = testRealmResource().organizations().getAll().get(0);
         testRealmResource().organizations().get(orgRep.getId()).members().addMember(userId).close();
         List<AdminEventRepresentation> events = events();
         assertThat(events().size(), is(equalTo(4)));
