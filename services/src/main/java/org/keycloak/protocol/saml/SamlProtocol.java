@@ -558,7 +558,13 @@ public class SamlProtocol implements LoginProtocol {
         JaxrsSAML2BindingBuilder bindingBuilder = new JaxrsSAML2BindingBuilder(session);
         bindingBuilder.relayState(relayState);
 
-        if ("true".equals(clientSession.getNote(JBossSAMLURIConstants.SAML_HTTP_ARTIFACT_BINDING.get()))) {
+        String forceSamlArtifact = client.getAttribute(SamlConfigAttributes.SAML_ARTIFACT_BINDING);
+
+        if (forceSamlArtifact == null) {
+            forceSamlArtifact = clientSession.getNote(JBossSAMLURIConstants.SAML_HTTP_ARTIFACT_BINDING.get());
+        }
+
+        if ("true".equals(forceSamlArtifact)) {
             try {
                 return buildArtifactAuthenticatedResponse(clientSession, redirectUri, samlModel, bindingBuilder);
             } catch (Exception e) {

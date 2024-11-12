@@ -222,9 +222,10 @@ public class SAMLEndpoint {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response postBindingIdpInitiated(@FormParam(GeneralConstants.SAML_REQUEST_KEY) String samlRequest,
                                             @FormParam(GeneralConstants.SAML_RESPONSE_KEY) String samlResponse,
+                                            @FormParam(GeneralConstants.SAML_ARTIFACT_KEY) String samlArt,
                                             @FormParam(GeneralConstants.RELAY_STATE) String relayState,
                                             @PathParam("client_id") String clientId) {
-        return new PostBinding().execute(samlRequest, samlResponse, null, relayState, clientId);
+        return new PostBinding().execute(samlRequest, samlResponse, samlArt, relayState, clientId);
     }
 
     protected abstract class Binding {
