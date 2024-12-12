@@ -114,6 +114,10 @@ public class ResourceSetService {
             return Response.status(Status.BAD_REQUEST).build();
         }
 
+        if (isAdminPermissionClient()) {
+            throw new BadRequestException();
+        }
+
         ResourceRepresentation newResource = create(resource);
 
         audit(resource, resource.getId(), OperationType.CREATE);

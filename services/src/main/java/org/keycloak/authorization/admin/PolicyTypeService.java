@@ -82,6 +82,23 @@ public class PolicyTypeService extends PolicyService {
             representation.setType(type);
         }
 
+        if (isAdminPermissionClient()) {
+            ScopePermissionRepresentation permission = (ScopePermissionRepresentation) representation;
+
+            for (String resource : permission.getResources()) {
+                ResourceRepresentation resourceRep = new ResourceRepresentation();
+
+                if (permission.getResourceType().equals(Users)) {
+                    UserModel user = getUser(resource);
+                    resource.setName(user.getUsername());
+                    resource.addScopes(permission.getScopes());
+                    new ResourceSetService().create(resourceRep);
+                }
+
+                new ResourceSetService().create();
+            }
+        }
+
         return representation;
     }
 

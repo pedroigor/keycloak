@@ -1,0 +1,56 @@
+UI sends the representation to create a permission of a set of users
+
+{
+  "name": "My Users Permission",
+  "type": "scope",
+  "resourceType": "Users",
+  "resources": [
+      "vlasta",
+      "pedro",
+      "martin",
+      "stefan"
+    ],
+    "scopes": [
+      "manage",
+      "map-roles"
+    ],
+    "policies": [
+      "mypolicy1",
+      "mypolicy2"
+    ]
+}
+
+UI sends the representation to create a permission of a all users
+
+{
+  "name": "My Users Permission",
+  "type": "scope",
+  "resourceType": "Users",
+  "scopes": [
+    "manage",
+    "map-roles"
+  ],
+  "policies": [
+    "mypolicy1",
+    "mypolicy2"
+  ]
+}
+
+
+The backend does the following whenever updating the admin-permission client:
+
+* Run validations based on the schema
+* For each resource in the payload, it will create a resource object and associated with this objects the scopes in the payload
+** For each resource object we will be adding an attribute to reference a "searchable" attribute like the ID, username, and firstname
+* Create a single scope-based permission with the resources previously created, the scopes in the payload, and the policies in the payload
+
+The user wants to find a permission for a specific resource:
+
+* select * from policy p where p.type = 'scope' and p.resources in (select r.id from resource r where r.type = 'Users' and r.attributes.key == 'vlasta')
+* select * from policy p where p.type = 'scope' and p.resources in (select r.id from resource r where r.type = 'Users' and r.searcheableField == 'vlasta')
+* select * from policy p where p.type = 'scope' and p.resources in (select r.id from resource r where r.type = 'Cliemt' and r.searcheableField == 'myclientid')
+
+
+
+
+
