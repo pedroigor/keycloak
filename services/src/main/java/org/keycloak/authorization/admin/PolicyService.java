@@ -24,10 +24,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -44,7 +42,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.resteasy.reactive.NoCache;
-import org.keycloak.authorization.AdminPermissionsAuthorizationSchema;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.Resource;
@@ -56,7 +53,6 @@ import org.keycloak.authorization.store.PolicyStore;
 import org.keycloak.authorization.store.ResourceStore;
 import org.keycloak.authorization.store.ScopeStore;
 import org.keycloak.authorization.store.StoreFactory;
-import org.keycloak.common.Profile.Feature;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.Constants;
@@ -94,15 +90,10 @@ public class PolicyService {
         PolicyProviderFactory providerFactory = getPolicyProviderFactory(type);
 
         if (providerFactory != null) {
-            checkIfSupportedPolicyType(type);
             return doCreatePolicyTypeResource(type);
         }
 
         Policy policy = authorization.getStoreFactory().getPolicyStore().findById(resourceServer, type);
-
-        if (policy != null) {
-            checkIfSupportedPolicyType(policy.getType());
-        }
 
         return doCreatePolicyResource(policy);
     }
@@ -143,8 +134,6 @@ public class PolicyService {
         } catch (IOException cause) {
             throw new RuntimeException("Failed to deserialize representation", cause);
         }
-
-        checkIfSupportedPolicyType(representation.getType());
 
         return representation;
     }
@@ -292,7 +281,6 @@ public class PolicyService {
     }
 
     protected AbstractPolicyRepresentation toRepresentation(Policy model, String fields, AuthorizationProvider authorization) {
-        checkIfSupportedPolicyType(model.getType());
         return ModelToRepresentation.toRepresentation(model, authorization, true, false, fields != null && fields.equals("*"));
     }
 
@@ -355,13 +343,5 @@ public class PolicyService {
         } else {
             adminEvent.operation(operation).resourcePath(session.getContext().getUri()).representation(resource).success();
         }
-    }
-
-    private void checkIfSupportedPolicyType(String type) throws BadRequestException {
-        if (AdminPermissionsAuthorizationSchema.INSTANCE.isSupportedPolicyType(authorization.getKeycloakSession(), resourceServer, type)) {
-            return;
-        }
-
-        throw new BadRequestException("Policy type not supported by feature " + Feature.ADMIN_FINE_GRAINED_AUTHZ_V2.getVersionedKey());
     }
 }

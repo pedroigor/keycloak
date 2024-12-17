@@ -23,9 +23,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.ws.rs.BadRequestException;
 import org.keycloak.authorization.model.PermissionTicket;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.Resource;
@@ -41,7 +43,9 @@ import org.keycloak.authorization.store.ResourceServerStore;
 import org.keycloak.authorization.store.ResourceStore;
 import org.keycloak.authorization.store.ScopeStore;
 import org.keycloak.authorization.store.StoreFactory;
+import org.keycloak.common.Profile.Feature;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.ModelValidationException;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.cache.authorization.CachedStoreFactoryProvider;
 import org.keycloak.models.utils.RepresentationToModel;
@@ -354,12 +358,12 @@ public final class AuthorizationProvider implements Provider {
                     }).collect(Collectors.toSet()));
                 }
 
-                return RepresentationToModel.toModel(representation, AuthorizationProvider.this, policyStore.create(resourceServer, representation));
+                return createSchemaAwarePolicy(RepresentationToModel.toModel(representation, AuthorizationProvider.this, policyStore.create(resourceServer, representation)));
             }
 
             @Override
             public void delete(String id) {
-                Policy policy = findById(null, id);
+                Policy policy = createSchemaAwarePolicy(findById(null, id));
 
                 if (policy != null) {
                     ResourceServer resourceServer = policy.getResourceServer();
@@ -388,67 +392,71 @@ public final class AuthorizationProvider implements Provider {
 
             @Override
             public Policy findById(ResourceServer resourceServer, String id) {
-                return policyStore.findById(resourceServer, id);
+                return createSchemaAwarePolicy(policyStore.findById(resourceServer, id));
             }
 
             @Override
             public Policy findByName(ResourceServer resourceServer, String name) {
-                return policyStore.findByName(resourceServer, name);
+                return createSchemaAwarePolicy(policyStore.findByName(resourceServer, name));
             }
 
             @Override
             public List<Policy> findByResourceServer(ResourceServer resourceServer) {
-                return policyStore.findByResourceServer(resourceServer);
+                return policyStore.findByResourceServer(resourceServer).stream().map(this::createSchemaAwarePolicy).collect(Collectors.toList());
             }
 
             @Override
             public List<Policy> find(ResourceServer resourceServer, Map<Policy.FilterOption, String[]> attributes, Integer firstResult, Integer maxResults) {
-                return policyStore.find(resourceServer, attributes, firstResult, maxResults);
+                return policyStore.find(resourceServer, attributes, firstResult, maxResults).stream().map(this::createSchemaAwarePolicy).collect(Collectors.toList());
             }
 
             @Override
             public List<Policy> findByResource(ResourceServer resourceServer, Resource resource) {
-                return policyStore.findByResource(resourceServer, resource);
+                return policyStore.findByResource(resourceServer, resource).stream().map(this::createSchemaAwarePolicy).collect(Collectors.toList());
             }
 
             @Override
             public void findByResource(ResourceServer resourceServer, Resource resource, Consumer<Policy> consumer) {
-                policyStore.findByResource(resourceServer, resource, consumer);
+                policyStore.findByResource(resourceServer, resource, policy -> consumer.accept(createSchemaAwarePolicy(policy)));
             }
 
             @Override
             public List<Policy> findByResourceType(ResourceServer resourceServer, String resourceType) {
-                return policyStore.findByResourceType(resourceServer, resourceType);
+                return policyStore.findByResourceType(resourceServer, resourceType).stream().map(this::createSchemaAwarePolicy).collect(Collectors.toList());
             }
 
             @Override
             public List<Policy> findByScopes(ResourceServer resourceServer, List<Scope> scopes) {
-                return policyStore.findByScopes(resourceServer, scopes);
+                return policyStore.findByScopes(resourceServer, scopes).stream().map(this::createSchemaAwarePolicy).collect(Collectors.toList());
             }
 
             @Override
             public List<Policy> findByScopes(ResourceServer resourceServer, Resource resource, List<Scope> scopes) {
-                return policyStore.findByScopes(resourceServer, resource, scopes);
+                return policyStore.findByScopes(resourceServer, resource, scopes).stream().map(this::createSchemaAwarePolicy).collect(Collectors.toList());
             }
 
             @Override
             public void findByScopes(ResourceServer resourceServer, Resource resource, List<Scope> scopes, Consumer<Policy> consumer) {
-                policyStore.findByScopes(resourceServer, resource, scopes, consumer);
+                policyStore.findByScopes(resourceServer, resource, scopes, policy -> consumer.accept(createSchemaAwarePolicy(policy)));
             }
 
             @Override
             public List<Policy> findByType(ResourceServer resourceServer, String type) {
-                return policyStore.findByType(resourceServer, type);
+                return policyStore.findByType(resourceServer, type).stream().map(this::createSchemaAwarePolicy).collect(Collectors.toList());
             }
 
             @Override
             public List<Policy> findDependentPolicies(ResourceServer resourceServer, String id) {
-                return policyStore.findDependentPolicies(resourceServer, id);
+                return policyStore.findDependentPolicies(resourceServer, id).stream().map(this::createSchemaAwarePolicy).collect(Collectors.toList());
             }
 
             @Override
             public void findByResourceType(ResourceServer resourceServer, String type, Consumer<Policy> policyConsumer) {
-                policyStore.findByResourceType(resourceServer, type, policyConsumer);
+                policyStore.findByResourceType(resourceServer, type, policy -> policyConsumer.accept(createSchemaAwarePolicy(policy)));
+            }
+
+            private Policy createSchemaAwarePolicy(Policy byId) {
+                return Optional.ofNullable(byId).map((Function<Policy, Policy>) p -> new SchemaAwarePolicy(p, keycloakSession)).orElse(null);
             }
         };
     }

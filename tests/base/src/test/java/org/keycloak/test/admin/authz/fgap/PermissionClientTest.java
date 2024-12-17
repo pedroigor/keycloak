@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import org.junit.jupiter.api.Test;
+import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.idm.authorization.AggregatePolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ClientPolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ClientScopePolicyRepresentation;
@@ -44,7 +45,7 @@ public class PermissionClientTest extends AbstractPermissionTest {
 
     @Test
     public void testUnsupportedPolicyTypes() {
-        assertSupportForPolicyType("resource", () -> getPermissionsResource().resource().create(new ResourcePermissionRepresentation()), false);
+        assertSupportForPolicyType("resource", () -> getPermissionsResource().resource().create(new ResourcePermissionRepresentation(KeycloakModelUtils.generateId())), false);
     }
 
     @Test
@@ -68,6 +69,7 @@ public class PermissionClientTest extends AbstractPermissionTest {
 
         PolicyRepresentation representation = new PolicyRepresentation();
 
+        representation.setName(KeycloakModelUtils.generateId());
         representation.setType(type);
 
         try (Response response = getPolicies().create(representation)) {
@@ -77,6 +79,5 @@ public class PermissionClientTest extends AbstractPermissionTest {
 
     private void assertPolicyEndpointResponse(String type, boolean supported, Response response) {
         assertThat("Policy type [" + type + "] should be " + (supported ? "supported" : "unsupported"), Status.BAD_REQUEST.equals(Status.fromStatusCode(response.getStatus())), not(supported));
-        assertThat("Policy type [" + type + "] should be " + (supported ? "supported" : "unsupported"), response.readEntity(String.class).contains("Policy type not supported by feature"), not(supported));
     }
 }

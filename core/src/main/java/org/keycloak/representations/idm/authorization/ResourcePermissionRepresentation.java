@@ -23,6 +23,14 @@ public class ResourcePermissionRepresentation extends AbstractPolicyRepresentati
 
     private String resourceType;
 
+    public ResourcePermissionRepresentation() {
+        this(null);
+    }
+
+    public ResourcePermissionRepresentation(String name) {
+        setName(name);
+    }
+
     @Override
     public String getType() {
         return "resource";
