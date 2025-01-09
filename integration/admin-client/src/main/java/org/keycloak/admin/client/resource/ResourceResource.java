@@ -28,7 +28,6 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -41,10 +40,10 @@ public interface ResourceResource {
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    Response update(ResourceRepresentation resource);
+    void update(ResourceRepresentation resource);
 
     @DELETE
-    Response remove();
+    void remove();
 
     @Path("permissions")
     @GET
