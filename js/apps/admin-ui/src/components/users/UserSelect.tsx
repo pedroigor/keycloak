@@ -70,12 +70,19 @@ export const UserSelect = ({
         params.username = search;
       }
 
-      if (values?.length && !search) {
-        return Promise.all(
-          values.map((id: string) => adminClient.users.findOne({ id })),
-        );
+      console.log("values", values);
+
+      let tmp = [];
+
+      if (search) {
+        tmp.push(adminClient.users.find({...params, username: search}));
       }
-      return adminClient.users.find(params);
+
+      if (values?.length && !search) {
+        values.forEach((id: string) => tmp.push(adminClient.users.findOne({ id })));
+      }
+
+      return Promise.all(tmp);
     },
     setUsers,
     [search],
@@ -83,16 +90,17 @@ export const UserSelect = ({
 
   const convert = (clients: (UserRepresentation | undefined)[]) =>
     clients
-      .filter((c) => c !== undefined)
-      .map((option) => (
-        <SelectOption
-          key={option!.id}
-          value={option!.id}
-          selected={values?.includes(option!.id!)}
+      .filter((c) => c !== undefined && c !== null)
+      .map((option) => {
+        console.log("option", option);
+        return <SelectOption
+            key={option!.id}
+            value={option!.id}
+            selected={values?.includes(option!.id!)}
         >
           {option!.username}
         </SelectOption>
-      ));
+      });
 
   return (
     <FormGroup

@@ -32,6 +32,7 @@ import { ScopePicker } from "../../clients/authorization/ScopePicker";
 import { Users } from "./permission-type/Users";
 import { sortBy } from "lodash-es";
 import { NameDescription } from "../../clients/authorization/policy/NameDescription";
+import ResourceRepresentation from "@keycloak/keycloak-admin-client/lib/defs/resourceRepresentation";
 
 const COMPONENTS: {
   [index: string]: () => JSX.Element;
@@ -139,13 +140,13 @@ export default function PermissionConfigurationDetails() {
       };
     },
     ({ permission, resources, policies, scopes }) => {
-      const resourceIds = resources?.map((resource) => resource._id!) || [];
+      const resourceIds = resources?.map((resource) => resource.name!) || [];
       const policyIds = policies?.map((policy) => policy.id!) || [];
       const scopeNames = scopes?.map((scope) => scope.name) || [];
 
       reset({
         ...permission,
-        resources,
+        resources: resourceIds!,
         policies,
         scopes,
       });
@@ -221,7 +222,7 @@ export default function PermissionConfigurationDetails() {
     },
   });
 
-  if (!permissionId && !permission) {
+  if (!permission) {
     return <KeycloakSpinner />;
   }
 
@@ -232,6 +233,8 @@ export default function PermissionConfigurationDetails() {
   }
 
   const ComponentType = getComponentType();
+
+  console.log("permission", permission);
 
   return (
     <>

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { FormGroup, Radio } from "@patternfly/react-core";
 import { HelpItem, useFetch } from "@keycloak/keycloak-ui-shared";
 import { useFormContext } from "react-hook-form";
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { UserSelect } from "../../../components/users/UserSelect";
 import { useAdminClient } from "../../../admin-client";
 import { useParams } from "react-router-dom";
@@ -10,22 +10,10 @@ import { PermissionConfigurationDetailsParams } from "../../routes/PermissionCon
 
 export const Users = () => {
   const { t } = useTranslation();
-  const { adminClient } = useAdminClient();
-  const { realm } = useParams<PermissionConfigurationDetailsParams>();
   const form = useFormContext();
-  const [isSpecificUsers, setIsSpecificUsers] = useState(false);
+  const [isSpecificUsers, setIsSpecificUsers] = useState(form.getValues("resources").length > 0);
 
-  useFetch(
-    () =>
-      adminClient.users.find({
-        realm,
-      }),
-    (users) => {
-      const usersIds = users.map((user: any) => user.id);
-      if (isSpecificUsers) form.setValue("resources", usersIds);
-    },
-    [realm],
-  );
+  console.log("resources", form.getValues("resources"));
 
   return (
     <>
