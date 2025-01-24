@@ -1,5 +1,4 @@
 import type UserRepresentation from "@keycloak/keycloak-admin-client/lib/defs/userRepresentation";
-import type { UserQuery } from "@keycloak/keycloak-admin-client/lib/resources/users";
 import {
   FormErrorText,
   HelpItem,
@@ -20,7 +19,7 @@ import {
 } from "@patternfly/react-core";
 import { TimesIcon } from "@patternfly/react-icons";
 import { debounce } from "lodash-es";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useAdminClient } from "../../admin-client";
@@ -53,7 +52,8 @@ export const UserSelect = ({
   const values: string[] | undefined = getValues(name!);
 
   const [open, toggleOpen, setOpen] = useToggle();
-  const [users, setUsers] = useState<(UserRepresentation | undefined)[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<UserRepresentation[]>([]);
+  const [searchedUsers, setSearchedUsers] = useState<UserRepresentation[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [search, setSearch] = useState("");
   const textInputRef = useRef<HTMLInputElement>();
@@ -61,46 +61,51 @@ export const UserSelect = ({
   const debounceFn = useCallback(debounce(setSearch, 1000), []);
 
   useFetch(
-    () => {
-      const params: UserQuery = {
-        max: 20,
-      };
-
-      if (search) {
-        params.username = search;
+    async () => {
+      if (!values) {
+        return [];
       }
 
-      console.log("values", values);
+      const foundUsers = await Promise.all(
+        values.map((id) => adminClient.users.findOne({ id })),
+      );
 
-      let tmp = [];
-
-      if (search) {
-        tmp.push(adminClient.users.find({...params, username: search}));
-      }
-
-      if (values?.length && !search) {
-        values.forEach((id: string) => tmp.push(adminClient.users.findOne({ id })));
-      }
-
-      return Promise.all(tmp);
+      return foundUsers.filter((user) => user !== undefined);
     },
-    setUsers,
+    setSelectedUsers,
+    [values],
+  );
+
+  useFetch(
+    async () => {
+      if (!search) {
+        return [];
+      }
+
+      return await adminClient.users.find({
+        username: search,
+        max: 20,
+      });
+    },
+    setSearchedUsers,
     [search],
   );
 
-  const convert = (clients: (UserRepresentation | undefined)[]) =>
-    clients
-      .filter((c) => c !== undefined && c !== null)
-      .map((option) => {
-        console.log("option", option);
-        return <SelectOption
-            key={option!.id}
-            value={option!.id}
-            selected={values?.includes(option!.id!)}
-        >
-          {option!.username}
-        </SelectOption>
-      });
+  const users = useMemo(
+    () => [...selectedUsers, ...searchedUsers],
+    [selectedUsers, searchedUsers],
+  );
+
+  const convert = (users: UserRepresentation[]) =>
+    users.map((option) => (
+      <SelectOption
+        key={option.id}
+        value={option.id}
+        selected={values?.includes(option.id!)}
+      >
+        {option.username}
+      </SelectOption>
+    ));
 
   return (
     <FormGroup
