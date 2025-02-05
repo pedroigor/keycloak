@@ -50,6 +50,8 @@ import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 
 public class AdminPermissionsSchema extends AuthorizationSchema {
 
+    private static final String SCOPE_PERMISSION_TYPE = "scope";
+
     public static final String USERS_RESOURCE_TYPE = "Users";
 
     //scopes
@@ -67,8 +69,12 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         super(Map.of(USERS_RESOURCE_TYPE, USERS));
     }
 
-    public Resource getOrCreateResource(KeycloakSession session, ResourceServer resourceServer, String type, String id) {
+    public Resource getOrCreateResource(KeycloakSession session, ResourceServer resourceServer, String policyType, String resourceType, String id) {
         if (!supportsAuthorizationSchema(session, resourceServer)) {
+            return null;
+        }
+
+        if (!SCOPE_PERMISSION_TYPE.equals(policyType)) {
             return null;
         }
 
@@ -76,7 +82,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         ResourceStore resourceStore = storeFactory.getResourceStore();
         String name = null;
 
-        if (USERS.getType().equals(type)) {
+        if (USERS.getType().equals(resourceType)) {
             name = resolveUser(session, id);
             if (name == null) {
                 Resource resource = resourceStore.findById(resourceServer, id);
@@ -88,7 +94,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         }
 
         if (name == null) {
-            throw new IllegalStateException("Could not map resource object with type [" + type + "] and id [" + id + "]");
+            throw new IllegalStateException("Could not map resource object with type [" + resourceType + "] and id [" + id + "]");
         }
 
         Resource resource = resourceStore.findByName(resourceServer, name);
@@ -96,7 +102,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         if (resource == null) {
             resource = resourceStore.create(resourceServer, name, resourceServer.getClientId());
             ScopeStore scopeStore = storeFactory.getScopeStore();
-            resource.updateScopes(getResourceTypes().get(type).getScopes().stream().map(scopeName -> {
+            resource.updateScopes(getResourceTypes().get(resourceType).getScopes().stream().map(scopeName -> {
                 Scope findByName = scopeStore.findByName(resourceServer, scopeName);
                 if (findByName == null) throw new ModelException("No scopes found.");
                 return findByName;
