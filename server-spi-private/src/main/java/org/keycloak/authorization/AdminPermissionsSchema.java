@@ -107,6 +107,22 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         return resource;
     }
 
+    public Resource getResourceTypeResource(KeycloakSession session, ResourceServer resourceServer, String resourceType) {
+        if (!supportsAuthorizationSchema(session, resourceServer)) {
+            return null;
+        }
+
+        ResourceType type = getResourceTypes().get(resourceType);
+
+        if (type == null) {
+            return null;
+        }
+
+        ResourceStore resourceStore = getStoreFactory(session).getResourceStore();
+
+        return resourceStore.findByName(resourceServer, type.getType());
+    }
+
     public boolean isSupportedPolicyType(KeycloakSession session, ResourceServer resourceServer, String type) {
         if (!supportsAuthorizationSchema(session, resourceServer)) {
             return true;
