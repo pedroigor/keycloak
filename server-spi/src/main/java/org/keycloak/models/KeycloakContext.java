@@ -113,4 +113,6 @@ public interface KeycloakContext {
     Token getBearerToken();
 
     void setBearerToken(Token token);
+
+    UserModel getUser();
 }

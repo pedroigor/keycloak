@@ -35,6 +35,7 @@ import org.keycloak.models.Constants;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ClientPolicyRepresentation;
+import org.keycloak.representations.idm.authorization.GroupPolicyRepresentation;
 import org.keycloak.representations.idm.authorization.Logic;
 import org.keycloak.representations.idm.authorization.ScopePermissionRepresentation;
 import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
@@ -128,6 +129,21 @@ public abstract class AbstractPermissionTest {
                 if (userPolicy != null) {
                     r.clients().get(client.getId()).authorization().policies().user().findById(userPolicy.getId()).remove();
                 }
+            });
+        }
+        return policy;
+    }
+
+    protected static GroupPolicyRepresentation createGroupPolicy(ManagedRealm realm, ManagedClient client, String name, String groupId, Logic logic) {
+        GroupPolicyRepresentation policy = new GroupPolicyRepresentation();
+        policy.setName(name);
+        policy.addGroup(groupId);
+        policy.setLogic(logic);
+        try (Response response = client.admin().authorization().policies().group().create(policy)) {
+            assertThat(response.getStatus(), equalTo(Response.Status.CREATED.getStatusCode()));
+            realm.cleanup().add(r -> {
+                String policyId = r.clients().get(client.getId()).authorization().policies().group().findByName(name).getId();
+                r.clients().get(client.getId()).authorization().policies().group().findById(policyId).remove();
             });
         }
         return policy;

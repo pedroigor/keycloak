@@ -32,6 +32,7 @@ import org.keycloak.models.OrganizationModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
+import org.keycloak.representations.JsonWebToken;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.theme.Theme;
 import org.keycloak.tracing.TracingAttributes;
@@ -286,5 +287,13 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
     @Override
     public Token getBearerToken() {
         return bearerToken;
+    }
+
+    @Override
+    public UserModel getUser() {
+        if (bearerToken instanceof JsonWebToken jwt) {
+            return session.users().getUserById(realm, jwt.getSubject());
+        }
+        return null;
     }
 }

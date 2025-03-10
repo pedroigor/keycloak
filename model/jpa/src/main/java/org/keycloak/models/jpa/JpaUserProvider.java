@@ -17,7 +17,9 @@
 
 package org.keycloak.models.jpa;
 
+import org.keycloak.authorization.AdminPermissionsSchema;
 import org.keycloak.authorization.jpa.entities.ResourceEntity;
+import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.keycloak.common.util.Time;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.credential.CredentialModel;
@@ -28,6 +30,7 @@ import org.keycloak.models.FederatedIdentityModel;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.ModelException;
 import org.keycloak.models.ProtocolMapperModel;
@@ -763,6 +766,12 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
 
         if (userGroups != null) {
             groupsWithPermissionsSubquery(queryBuilder, userGroups, root, predicates);
+        }
+
+        if (AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
+            for (PolicyProvider policyProvider : session.getAllProviders(PolicyProvider.class)) {
+                policyProvider.filter(session, AdminPermissionsSchema.USERS, em, builder, root, predicates);
+            }
         }
 
         queryBuilder.where(predicates.toArray(Predicate[]::new)).orderBy(builder.asc(root.get(UserModel.USERNAME)));

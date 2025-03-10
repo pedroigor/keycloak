@@ -53,7 +53,7 @@ public class ScopePolicyProviderFactory implements PolicyProviderFactory<ScopePe
 
     @Override
     public PolicyProvider create(KeycloakSession session) {
-        return null;
+        return provider;
     }
 
     @Override

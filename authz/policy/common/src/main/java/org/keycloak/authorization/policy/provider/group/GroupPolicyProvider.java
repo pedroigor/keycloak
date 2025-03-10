@@ -18,19 +18,36 @@ package org.keycloak.authorization.policy.provider.group;
 
 import static org.keycloak.models.utils.ModelToRepresentation.buildGroupPath;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.jboss.logging.Logger;
+import org.keycloak.authorization.AdminPermissionsSchema;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.attribute.Attributes;
 import org.keycloak.authorization.attribute.Attributes.Entry;
 import org.keycloak.authorization.model.Policy;
+import org.keycloak.authorization.model.Resource;
+import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.keycloak.authorization.policy.provider.PolicyProvider;
+import org.keycloak.authorization.store.PolicyStore;
+import org.keycloak.authorization.store.StoreFactory;
+import org.keycloak.models.ClientModel;
 import org.keycloak.models.GroupModel;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.authorization.GroupPolicyRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceType;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -82,6 +99,46 @@ public class GroupPolicyProvider implements PolicyProvider {
             }
         }
         logger.debugf("Groups policy %s evaluated to %s with identity groups %s", policy.getName(), evaluation.getEffect(), groupsClaim);
+    }
+
+    @Override
+    public void filter(KeycloakSession session, ResourceType resourceType, EntityManager em, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates) {
+        AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
+        RealmModel realm = session.getContext().getRealm();
+        ClientModel adminPermissionsClient = realm.getAdminPermissionsClient();
+        StoreFactory storeFactory = provider.getStoreFactory();
+        ResourceServer resourceServer = storeFactory.getResourceServerStore().findByClient(adminPermissionsClient);
+        UserModel adminUser = session.getContext().getUser();
+        PolicyStore policyStore = storeFactory.getPolicyStore();
+
+        List<GroupPolicyRepresentation> policies = policyStore.findByType(resourceServer, GroupPolicyProviderFactory.ID).stream()
+                .map((p) -> {
+                    GroupPolicyRepresentation r = representationFunction.apply(p, provider);
+                    r.setId(p.getId());
+                    return r;
+                })
+                .filter(r -> r.getGroups().stream().anyMatch((definition) -> {
+                    GroupModel group = realm.getGroupById(definition.getId());
+                    return adminUser.isMemberOf(group);
+                })).toList();
+
+        if (policies.isEmpty()) {
+            return;
+        }
+
+        Set<String> resourceIds = new HashSet<>();
+
+        for (GroupPolicyRepresentation policy : policies) {
+            resourceIds.addAll(policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
+                    .filter((p) -> resourceType.getType().equals(p.getResourceType()))
+                    .flatMap((Function<Policy, Stream<Resource>>) policy1 -> policy1.getResources().stream()).map(Resource::getName).toList());
+        }
+
+        if (resourceIds.isEmpty()) {
+            return;
+        }
+
+        predicates.add(root.get("id").in(resourceIds));
     }
 
     @Override
