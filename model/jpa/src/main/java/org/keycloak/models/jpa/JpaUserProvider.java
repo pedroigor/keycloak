@@ -32,6 +32,7 @@ import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.FederatedIdentityModel;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.IdentityProviderModel;
+import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.ModelException;
@@ -768,14 +769,30 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
 
         predicates.add(builder.equal(root.get("realmId"), realm.getId()));
 
-        List<Predicate> groupFilterPredicate = new ArrayList<>();
+        predicates.addAll(applyAuthorizationFilters(realm, builder, queryBuilder, root));
+
+        queryBuilder.where(predicates.toArray(Predicate[]::new)).orderBy(builder.asc(root.get(UserModel.USERNAME)));
+
+        TypedQuery<UserEntity> query = em.createQuery(queryBuilder);
+
+        UserProvider users = session.users();
+        return closing(paginateQuery(query, firstResult, maxResults).getResultStream())
+                // following check verifies that there are no collisions with hashes
+                .filter(predicateForFilteringUsersByAttributes(customLongValueSearchAttributes, JpaHashUtils::compareSourceValueLowerCase))
+                .map(userEntity -> users.getUserById(realm, userEntity.getId()))
+                .filter(Objects::nonNull);
+    }
+
+    private List<Predicate> applyAuthorizationFilters(RealmModel realm, CriteriaBuilder builder, CriteriaQuery<UserEntity> queryBuilder, Root<UserEntity> root) {
         Set<String> userGroups = (Set<String>) session.getAttribute(UserModel.GROUPS);
+        Predicate groupFilterPredicate = null;
 
         if (userGroups != null) {
-            groupFilterPredicate.addAll(groupsWithPermissionsSubquery(queryBuilder, userGroups, root));
+            groupFilterPredicate = groupsWithPermissionsSubquery(queryBuilder, userGroups, root);
         }
 
-        UserModel adminUser = session.getContext().getUser();
+        KeycloakContext context = session.getContext();
+        UserModel adminUser = context.getUser();
 
         if (AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm) && adminUser != null &&
                 hasOneAdminRole(session, realm, AdminRoles.QUERY_USERS)) {
@@ -799,36 +816,44 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
                 }
             }
 
-            List<Predicate> authzPredicates = new ArrayList<>();
+            List<Predicate> predicates = new ArrayList<>();
 
-            if (!allowedIds.isEmpty() && allowedIds.stream().noneMatch(AdminPermissionsSchema.USERS.getType()::equals)) {
-                authzPredicates.add(root.get("id").in(allowedIds));
-            } else if (authzPredicates.isEmpty() && deniedIds.stream().anyMatch(AdminPermissionsSchema.USERS.getType()::equals)) {
-                return Stream.empty();
+            if (allowedIds.isEmpty() && deniedIds.size() == 1 && deniedIds.stream()
+                    .anyMatch(AdminPermissionsSchema.USERS.getType()::equals)) {
+                return List.of(builder.equal(root.get("id"), "none"));
+            } else if (deniedIds.size() > 1) {
+                deniedIds = deniedIds.stream()
+                        .filter(java.util.function.Predicate.not(AdminPermissionsSchema.USERS.getType()::equals))
+                        .collect(Collectors.toSet());
+
+                predicates.add(builder.and(builder.not(root.get("id").in(deniedIds))));
             }
 
-            if (!deniedIds.isEmpty()) {
-                authzPredicates.add(builder.not(root.get("id").in(deniedIds)));
-            }
-
-            if (!groupFilterPredicate.isEmpty()) {
-                groupFilterPredicate.add(builder.and(authzPredicates.toArray(new Predicate[0])));
-                predicates.add(builder.and(builder.or(groupFilterPredicate.toArray(new Predicate[0]))));
+            if (allowedIds.isEmpty() || (allowedIds.size() == 1 && allowedIds.stream()
+                    .anyMatch(AdminPermissionsSchema.USERS.getType()::equals))) {
+                if (groupFilterPredicate != null) {
+                    predicates.add(groupFilterPredicate);
+                }
             } else {
-                predicates.add(builder.and(authzPredicates.toArray(new Predicate[0])));
+                allowedIds = allowedIds.stream()
+                        .filter(java.util.function.Predicate.not(AdminPermissionsSchema.USERS.getType()::equals))
+                        .collect(Collectors.toSet());
+
+                if (groupFilterPredicate == null) {
+                    predicates.add(builder.and(root.get("id").in(allowedIds)));
+                } else {
+                    predicates.add(builder.and(builder.or(groupFilterPredicate, builder.and(root.get("id").in(allowedIds)))));
+                }
             }
+
+            return predicates;
         }
 
-        queryBuilder.where(predicates.toArray(Predicate[]::new)).orderBy(builder.asc(root.get(UserModel.USERNAME)));
+        if (groupFilterPredicate != null) {
+            return List.of(groupFilterPredicate);
+        }
 
-        TypedQuery<UserEntity> query = em.createQuery(queryBuilder);
-
-        UserProvider users = session.users();
-        return closing(paginateQuery(query, firstResult, maxResults).getResultStream())
-                // following check verifies that there are no collisions with hashes
-                .filter(predicateForFilteringUsersByAttributes(customLongValueSearchAttributes, JpaHashUtils::compareSourceValueLowerCase))
-                .map(userEntity -> users.getUserById(realm, userEntity.getId()))
-                .filter(Objects::nonNull);
+        return List.of();
     }
 
     public boolean hasOneAdminRole(KeycloakSession session, RealmModel realm, String... adminRoles) {
@@ -1134,7 +1159,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Predicate> groupsWithPermissionsSubquery(CriteriaQuery<?> query, Set<String> groupIds, Root<UserEntity> root) {
+    private Predicate groupsWithPermissionsSubquery(CriteriaQuery<?> query, Set<String> groupIds, Root<UserEntity> root) {
         CriteriaBuilder cb = em.getCriteriaBuilder();
 
         Subquery subquery = query.subquery(String.class);
@@ -1171,6 +1196,6 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
 
         subquery.where(subPredicates.toArray(Predicate[]::new));
 
-        return List.of(cb.exists(subquery));
+        return cb.exists(subquery);
     }
 }
