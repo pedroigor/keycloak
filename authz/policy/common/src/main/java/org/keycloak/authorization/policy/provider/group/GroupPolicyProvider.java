@@ -18,24 +18,21 @@ package org.keycloak.authorization.policy.provider.group;
 
 import static org.keycloak.models.utils.ModelToRepresentation.buildGroupPath;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.jboss.logging.Logger;
-import org.keycloak.authorization.AdminPermissionsSchema;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.attribute.Attributes;
 import org.keycloak.authorization.attribute.Attributes.Entry;
 import org.keycloak.authorization.model.Policy;
-import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.keycloak.authorization.policy.provider.PolicyProvider;
@@ -102,7 +99,7 @@ public class GroupPolicyProvider implements PolicyProvider {
     }
 
     @Override
-    public void filter(KeycloakSession session, ResourceType resourceType, EntityManager em, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates) {
+    public List<Policy> filter(KeycloakSession session, ResourceType resourceType) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
         RealmModel realm = session.getContext().getRealm();
         ClientModel adminPermissionsClient = realm.getAdminPermissionsClient();
@@ -110,10 +107,10 @@ public class GroupPolicyProvider implements PolicyProvider {
         ResourceServer resourceServer = storeFactory.getResourceServerStore().findByClient(adminPermissionsClient);
         UserModel adminUser = session.getContext().getUser();
         PolicyStore policyStore = storeFactory.getPolicyStore();
-
         List<GroupPolicyRepresentation> policies = policyStore.findByType(resourceServer, GroupPolicyProviderFactory.ID).stream()
                 .map((p) -> {
                     GroupPolicyRepresentation r = representationFunction.apply(p, provider);
+                    r.setLogic(p.getLogic());
                     r.setId(p.getId());
                     return r;
                 })
@@ -123,22 +120,11 @@ public class GroupPolicyProvider implements PolicyProvider {
                 })).toList();
 
         if (policies.isEmpty()) {
-            return;
+            return List.of();
         }
 
-        Set<String> resourceIds = new HashSet<>();
-
-        for (GroupPolicyRepresentation policy : policies) {
-            resourceIds.addAll(policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
-                    .filter((p) -> resourceType.getType().equals(p.getResourceType()))
-                    .flatMap((Function<Policy, Stream<Resource>>) policy1 -> policy1.getResources().stream()).map(Resource::getName).toList());
-        }
-
-        if (resourceIds.isEmpty()) {
-            return;
-        }
-
-        predicates.add(root.get("id").in(resourceIds));
+        return policies.stream().flatMap((Function<GroupPolicyRepresentation, Stream<Policy>>) policy -> policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
+                .filter((permission) -> resourceType.getType().equals(permission.getResourceType()))).toList();
     }
 
     @Override

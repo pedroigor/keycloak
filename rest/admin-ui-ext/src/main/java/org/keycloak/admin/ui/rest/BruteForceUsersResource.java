@@ -157,7 +157,7 @@ public class BruteForceUsersResource {
         boolean briefRepresentationB = briefRepresentation != null && briefRepresentation;
 
         usersEvaluator.grantIfNoPermission(session.getAttribute(UserModel.GROUPS) != null);
-        return userModels.filter(usersEvaluator::canView).map(user -> {
+        return userModels.map(user -> {
             UserRepresentation userRep = briefRepresentationB ?
                     ModelToRepresentation.toBriefRepresentation(user) :
                     ModelToRepresentation.toRepresentation(session, realm, user);

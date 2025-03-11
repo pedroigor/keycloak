@@ -17,21 +17,14 @@
  */
 package org.keycloak.authorization.policy.provider.user;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import org.jboss.logging.Logger;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.Policy;
-import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.keycloak.authorization.policy.evaluation.EvaluationContext;
@@ -42,7 +35,6 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
-import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.ResourceType;
 import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
 
@@ -74,7 +66,7 @@ public class UserPolicyProvider implements PolicyProvider {
     }
 
     @Override
-    public void filter(KeycloakSession session, ResourceType resourceType, EntityManager em, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates) {
+    public List<Policy> filter(KeycloakSession session, ResourceType resourceType) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
         RealmModel realm = session.getContext().getRealm();
         ClientModel adminPermissionsClient = realm.getAdminPermissionsClient();
@@ -82,34 +74,21 @@ public class UserPolicyProvider implements PolicyProvider {
         ResourceServer resourceServer = storeFactory.getResourceServerStore().findByClient(adminPermissionsClient);
         UserModel adminUser = session.getContext().getUser();
         PolicyStore policyStore = storeFactory.getPolicyStore();
-
         List<UserPolicyRepresentation> policies = policyStore.findByType(resourceServer, UserPolicyProviderFactory.ID).stream()
                 .map((p) -> {
                     UserPolicyRepresentation r = representationFunction.apply(p, provider);
+                    r.setLogic(p.getLogic());
                     r.setId(p.getId());
                     return r;
                 })
                 .filter(r -> r.getUsers().contains(adminUser.getId())).toList();
 
         if (policies.isEmpty()) {
-            return;
+            return List.of();
         }
 
-        Set<String> resourceIds = new HashSet<>();
-
-        for (UserPolicyRepresentation policy : policies) {
-            resourceIds.addAll(policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
-                    .filter((permission) -> {
-                        return resourceType.getType().equals(permission.getResourceType());
-                    })
-                    .flatMap((Function<Policy, Stream<Resource>>) policy1 -> policy1.getResources().stream()).map(Resource::getName).toList());
-        }
-
-        if (resourceIds.isEmpty()) {
-            return;
-        }
-
-        predicates.add(root.get("id").in(resourceIds));
+        return policies.stream().flatMap((Function<UserPolicyRepresentation, Stream<Policy>>) policy -> policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
+                .filter((permission) -> resourceType.getType().equals(permission.getResourceType()))).toList();
     }
 
     @Override

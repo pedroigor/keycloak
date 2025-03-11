@@ -21,8 +21,10 @@ import java.util.List;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.Provider;
@@ -35,8 +37,8 @@ public interface PolicyProvider extends Provider {
 
     void evaluate(Evaluation evaluation);
 
-    default void filter(KeycloakSession session, ResourceType resourceType, EntityManager em, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates) {
-
+    default List<Policy> filter(KeycloakSession session, ResourceType resourceType) {
+        return List.of();
     }
 
 }
