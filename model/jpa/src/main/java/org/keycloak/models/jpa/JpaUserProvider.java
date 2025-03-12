@@ -94,7 +94,7 @@ import static org.keycloak.utils.StreamsUtil.closing;
  * @version $Revision: 1 $
  */
 @SuppressWarnings("JpaQueryApiInspection")
-public class JpaUserProvider implements UserProvider, UserCredentialStore {
+public class JpaUserProvider implements UserProvider, UserCredentialStore, FilterAuthzProvider {
 
     private static final String EMAIL = "email";
     private static final String EMAIL_VERIFIED = "emailVerified";
@@ -703,7 +703,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
         restrictions.add(cb.equal(root.get("realmId"), realm.getId()));
 
         //TODO: same logic as search
-        groupsWithPermissionsSubquery(countQuery, groupIds, root);
+        restrictions.addAll(AdminPermissionsSchema.SCHEMA.applyAuthorizationFilters(session, em, realm, cb, countQuery, root));
 
         countQuery.where(restrictions.toArray(Predicate[]::new));
         TypedQuery<Long> query = em.createQuery(countQuery);
@@ -769,7 +769,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
 
         predicates.add(builder.equal(root.get("realmId"), realm.getId()));
 
-        predicates.addAll(applyAuthorizationFilters(realm, builder, queryBuilder, root));
+        predicates.addAll(AdminPermissionsSchema.SCHEMA.applyAuthorizationFilters(session, em, realm, builder, queryBuilder, root));
 
         queryBuilder.where(predicates.toArray(Predicate[]::new)).orderBy(builder.asc(root.get(UserModel.USERNAME)));
 
@@ -781,103 +781,6 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
                 .filter(predicateForFilteringUsersByAttributes(customLongValueSearchAttributes, JpaHashUtils::compareSourceValueLowerCase))
                 .map(userEntity -> users.getUserById(realm, userEntity.getId()))
                 .filter(Objects::nonNull);
-    }
-
-    private List<Predicate> applyAuthorizationFilters(RealmModel realm, CriteriaBuilder builder, CriteriaQuery<UserEntity> queryBuilder, Root<UserEntity> root) {
-        Set<String> userGroups = (Set<String>) session.getAttribute(UserModel.GROUPS);
-        Predicate groupFilterPredicate = null;
-
-        if (userGroups != null) {
-            groupFilterPredicate = groupsWithPermissionsSubquery(queryBuilder, userGroups, root);
-        }
-
-        KeycloakContext context = session.getContext();
-        UserModel adminUser = context.getUser();
-
-        if (AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm) && adminUser != null &&
-                hasOneAdminRole(session, realm, AdminRoles.QUERY_USERS)) {
-            List<Policy> permissions = new ArrayList<>();
-
-            for (PolicyProvider policyProvider : session.getAllProviders(PolicyProvider.class)) {
-                permissions.addAll(policyProvider.filter(session, AdminPermissionsSchema.USERS));
-            }
-
-            Set<String> allowedIds = new HashSet<>();
-            Set<String> deniedIds = new HashSet<>();
-
-            for (Policy permission : permissions) {
-                Set<String> ids = permission.getResources().stream().map(Resource::getName).collect(Collectors.toSet());
-                Set<Policy> policies = permission.getAssociatedPolicies();
-
-                if (policies.stream().map(Policy::getLogic).anyMatch(Logic.POSITIVE::equals)) {
-                    allowedIds.addAll(ids);
-                } else {
-                    deniedIds.addAll(ids);
-                }
-            }
-
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (allowedIds.isEmpty() && deniedIds.size() == 1 && deniedIds.stream()
-                    .anyMatch(AdminPermissionsSchema.USERS.getType()::equals)) {
-                return List.of(builder.equal(root.get("id"), "none"));
-            } else if (deniedIds.size() > 1) {
-                deniedIds = deniedIds.stream()
-                        .filter(java.util.function.Predicate.not(AdminPermissionsSchema.USERS.getType()::equals))
-                        .collect(Collectors.toSet());
-
-                predicates.add(builder.and(builder.not(root.get("id").in(deniedIds))));
-            }
-
-            if (allowedIds.isEmpty() || (allowedIds.size() == 1 && allowedIds.stream()
-                    .anyMatch(AdminPermissionsSchema.USERS.getType()::equals))) {
-                if (groupFilterPredicate != null) {
-                    predicates.add(groupFilterPredicate);
-                }
-            } else {
-                allowedIds = allowedIds.stream()
-                        .filter(java.util.function.Predicate.not(AdminPermissionsSchema.USERS.getType()::equals))
-                        .collect(Collectors.toSet());
-
-                if (groupFilterPredicate == null) {
-                    predicates.add(builder.and(root.get("id").in(allowedIds)));
-                } else {
-                    predicates.add(builder.and(builder.or(groupFilterPredicate, builder.and(root.get("id").in(allowedIds)))));
-                }
-            }
-
-            return predicates;
-        }
-
-        if (groupFilterPredicate != null) {
-            return List.of(groupFilterPredicate);
-        }
-
-        return List.of();
-    }
-
-    public boolean hasOneAdminRole(KeycloakSession session, RealmModel realm, String... adminRoles) {
-        String clientId;
-        RealmManager realmManager = new RealmManager(session);
-        if (RealmManager.isAdministrationRealm(realm)) {
-            clientId = realm.getMasterAdminClient().getClientId();
-        } else {
-            clientId = realm.getClientByClientId(realmManager.getRealmAdminClientId(realm)).getClientId();
-        }
-        ClientModel client = session.clients().getClientByClientId(realm, clientId);
-
-        if (client == null) {
-            return true;
-        }
-
-        UserModel user = session.getContext().getUser();
-        for (String adminRole : adminRoles) {
-            RoleModel role = client.getRole(adminRole);
-            if (user != null && user.hasRole(role)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
@@ -1158,44 +1061,8 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
         return predicates;
     }
 
-    @SuppressWarnings("unchecked")
-    private Predicate groupsWithPermissionsSubquery(CriteriaQuery<?> query, Set<String> groupIds, Root<UserEntity> root) {
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-
-        Subquery subquery = query.subquery(String.class);
-
-        Root<UserGroupMembershipEntity> from = subquery.from(UserGroupMembershipEntity.class);
-
-        subquery.select(cb.literal(1));
-
-        List<Predicate> subPredicates = new ArrayList<>();
-
-        subPredicates.add(from.get("groupId").in(groupIds));
-        subPredicates.add(cb.equal(from.get("user").get("id"), root.get("id")));
-
-        Subquery subquery1 = query.subquery(String.class);
-
-        subquery1.select(cb.literal(1));
-        Root from1 = subquery1.from(ResourceEntity.class);
-
-        List<Predicate> subs = new ArrayList<>();
-
-        Expression<String> groupId = from.get("groupId");
-
-        RealmModel realm = session.getContext().getRealm();
-
-        if (AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
-            subs.add(cb.like(from1.get("name"), groupId));
-        } else {
-            subs.add(cb.like(from1.get("name"), cb.concat("group.resource.", groupId)));
-        }
-
-        subquery1.where(subs.toArray(Predicate[]::new));
-
-        subPredicates.add(cb.exists(subquery1));
-
-        subquery.where(subPredicates.toArray(Predicate[]::new));
-
-        return cb.exists(subquery);
+    @Override
+    public List<Predicate> filter() {
+        return List.of();
     }
 }
