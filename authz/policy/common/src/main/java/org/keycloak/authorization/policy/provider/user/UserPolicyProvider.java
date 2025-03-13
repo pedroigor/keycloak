@@ -28,6 +28,7 @@ import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.keycloak.authorization.policy.evaluation.EvaluationContext;
+import org.keycloak.authorization.policy.provider.PartialEvaluationPolicyProvider;
 import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.keycloak.authorization.store.PolicyStore;
 import org.keycloak.authorization.store.StoreFactory;
@@ -41,7 +42,7 @@ import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class UserPolicyProvider implements PolicyProvider {
+public class UserPolicyProvider implements PolicyProvider, PartialEvaluationPolicyProvider {
 
     private static final Logger logger = Logger.getLogger(UserPolicyProvider.class);
 
@@ -66,7 +67,7 @@ public class UserPolicyProvider implements PolicyProvider {
     }
 
     @Override
-    public List<Policy> filter(KeycloakSession session, ResourceType resourceType) {
+    public List<Policy> getPermissions(KeycloakSession session, ResourceType resourceType) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
         RealmModel realm = session.getContext().getRealm();
         ClientModel adminPermissionsClient = realm.getAdminPermissionsClient();
@@ -82,10 +83,6 @@ public class UserPolicyProvider implements PolicyProvider {
                     return r;
                 })
                 .filter(r -> r.getUsers().contains(adminUser.getId())).toList();
-
-        if (policies.isEmpty()) {
-            return List.of();
-        }
 
         return policies.stream().flatMap((Function<UserPolicyRepresentation, Stream<Policy>>) policy -> policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
                 .filter((permission) -> resourceType.getType().equals(permission.getResourceType()))).toList();

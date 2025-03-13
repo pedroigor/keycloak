@@ -35,6 +35,7 @@ import org.keycloak.authorization.attribute.Attributes.Entry;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
+import org.keycloak.authorization.policy.provider.PartialEvaluationPolicyProvider;
 import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.keycloak.authorization.store.PolicyStore;
 import org.keycloak.authorization.store.StoreFactory;
@@ -49,7 +50,7 @@ import org.keycloak.representations.idm.authorization.ResourceType;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class GroupPolicyProvider implements PolicyProvider {
+public class GroupPolicyProvider implements PolicyProvider, PartialEvaluationPolicyProvider {
 
     private static final Logger logger = Logger.getLogger(GroupPolicyProvider.class);
     private final BiFunction<Policy, AuthorizationProvider, GroupPolicyRepresentation> representationFunction;
@@ -99,7 +100,7 @@ public class GroupPolicyProvider implements PolicyProvider {
     }
 
     @Override
-    public List<Policy> filter(KeycloakSession session, ResourceType resourceType) {
+    public List<Policy> getPermissions(KeycloakSession session, ResourceType resourceType) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
         RealmModel realm = session.getContext().getRealm();
         ClientModel adminPermissionsClient = realm.getAdminPermissionsClient();
@@ -119,11 +120,8 @@ public class GroupPolicyProvider implements PolicyProvider {
                     return adminUser.isMemberOf(group);
                 })).toList();
 
-        if (policies.isEmpty()) {
-            return List.of();
-        }
-
-        return policies.stream().flatMap((Function<GroupPolicyRepresentation, Stream<Policy>>) policy -> policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
+        return policies.stream()
+                .flatMap((Function<GroupPolicyRepresentation, Stream<Policy>>) policy -> policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
                 .filter((permission) -> resourceType.getType().equals(permission.getResourceType()))).toList();
     }
 

@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source.
- * Copyright 2016 Red Hat, Inc., and individual contributors
+ * Copyright 2025 Red Hat, Inc., and individual contributors
  * as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.keycloak.authorization.policy.provider;
 
-import org.keycloak.authorization.policy.evaluation.Evaluation;
-import org.keycloak.provider.Provider;
+import java.util.List;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
-public interface PolicyProvider extends Provider {
+import org.keycloak.authorization.model.Policy;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.representations.idm.authorization.ResourceType;
 
-    void evaluate(Evaluation evaluation);
+public interface PartialEvaluationPolicyProvider {
+
+    List<Policy> getPermissions(KeycloakSession session, ResourceType resourceType);
 }

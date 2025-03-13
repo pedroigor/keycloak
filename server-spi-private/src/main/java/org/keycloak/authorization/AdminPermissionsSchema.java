@@ -16,9 +16,9 @@
  */
 package org.keycloak.authorization;
 
-import java.io.IOException;
+import static java.util.function.Predicate.not;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,15 +29,16 @@ import java.util.stream.Collectors;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
 import org.keycloak.Config;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
+import org.keycloak.authorization.policy.provider.PartialEvaluationPolicyProvider;
+import org.keycloak.authorization.policy.provider.PartialEvaluationStorageProvider;
+import org.keycloak.authorization.policy.provider.PartialEvaluationStorageProvider.EvaluationContext;
 import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.keycloak.authorization.store.ResourceStore;
 import org.keycloak.authorization.store.ScopeStore;
@@ -445,153 +446,102 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         }
     }
 
-    public List<Predicate> applyAuthorizationFilters(KeycloakSession session, EntityManager em, RealmModel realm, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder, Root<?> root) {
-        Set<String> userGroups = (Set<String>) session.getAttribute(UserModel.GROUPS);
+    public List<Predicate> applyAuthorizationFilters(KeycloakSession session, PartialEvaluationStorageProvider evaluator, ResourceType resourceType, EntityManager em, RealmModel realm, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder, Root<?> root) {
+        if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
+            return evaluator.getPredicates(new EvaluationContext());
+        }
+
         KeycloakContext context = session.getContext();
         UserModel adminUser = context.getUser();
 
-        if (adminUser != null && hasOneAdminRole(session, realm, AdminRoles.QUERY_USERS)) {
-            List<Policy> permissions = new ArrayList<>();
-            Set<String> allowedIds = new HashSet<>();
-            Set<String> deniedIds = new HashSet<>();
+        if (!hasOneAdminRole(session, adminUser, realm, AdminRoles.QUERY_USERS)) {
+            return List.of();
+        }
 
-            if (AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
-                for (PolicyProvider policyProvider : session.getAllProviders(PolicyProvider.class)) {
-                    permissions.addAll(policyProvider.filter(session, AdminPermissionsSchema.USERS));
-                }
+        List<Policy> permissions = new ArrayList<>();
+        Set<String> allowedIds = new HashSet<>();
+        Set<String> deniedIds = new HashSet<>();
 
-                for (Policy permission : permissions) {
-                    Set<String> ids = permission.getResources().stream().map(Resource::getName).collect(Collectors.toSet());
-                    Set<Policy> policies = permission.getAssociatedPolicies();
-
-                    if (policies.stream().map(Policy::getLogic).anyMatch(Logic.POSITIVE::equals)) {
-                        allowedIds.addAll(ids);
-                    } else {
-                        deniedIds.addAll(ids);
-                    }
-                }
+        for (PolicyProvider policyProvider : session.getAllProviders(PolicyProvider.class)) {
+            if (policyProvider instanceof PartialEvaluationPolicyProvider) {
+                permissions.addAll(((PartialEvaluationPolicyProvider) evaluator).getPermissions(session, resourceType));
             }
+        }
 
-            Predicate groupFilterPredicate = null;
+        for (Policy permission : permissions) {
+            Set<String> ids = permission.getResources().stream().map(Resource::getName).collect(Collectors.toSet());
+            Set<Policy> policies = permission.getAssociatedPolicies();
 
-            if (userGroups != null) {
-                groupFilterPredicate = groupsWithPermissionsSubquery(session, em, queryBuilder, userGroups, root);
-            }
-
-            if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
-                return groupFilterPredicate != null ? List.of(groupFilterPredicate) : List.of();
-            }
-
-            if (groupFilterPredicate == null && permissions.isEmpty()) {
-                return List.of(builder.equal(root.get("id"), "none"));
-            }
-
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (allowedIds.isEmpty() && deniedIds.size() == 1 && deniedIds.stream()
-                    .anyMatch(AdminPermissionsSchema.USERS.getType()::equals)) {
-                return List.of(builder.equal(root.get("id"), "none"));
-            } else if (!deniedIds.stream().filter(java.util.function.Predicate.not(AdminPermissionsSchema.USERS.getType()::equals)).toList().isEmpty()) {
-                deniedIds = deniedIds.stream()
-                        .filter(java.util.function.Predicate.not(AdminPermissionsSchema.USERS.getType()::equals))
-                        .collect(Collectors.toSet());
-
-                predicates.add(builder.and(builder.not(root.get("id").in(deniedIds))));
-            }
-
-            if (allowedIds.isEmpty() || (allowedIds.size() == 1 && allowedIds.stream()
-                    .anyMatch(AdminPermissionsSchema.USERS.getType()::equals))) {
-                if (groupFilterPredicate != null) {
-                    predicates.add(groupFilterPredicate);
-                }
+            if (policies.stream().map(Policy::getLogic).anyMatch(Logic.NEGATIVE::equals)) {
+                deniedIds.addAll(ids);
             } else {
-                allowedIds = allowedIds.stream()
-                        .filter(java.util.function.Predicate.not(AdminPermissionsSchema.USERS.getType()::equals))
-                        .collect(Collectors.toSet());
-
-                if (groupFilterPredicate == null) {
-                    predicates.add(builder.and(root.get("id").in(allowedIds)));
-                } else {
-                    predicates.add(builder.and(builder.or(groupFilterPredicate, builder.and(root.get("id").in(allowedIds)))));
-                }
+                allowedIds.addAll(ids);
             }
+        }
 
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (!deniedIds.stream().filter(not(resourceType.getType()::equals)).toList().isEmpty()) {
+            deniedIds = deniedIds.stream()
+                    .filter(not(resourceType.getType()::equals))
+                    .collect(Collectors.toSet());
+
+            predicates.add(builder.and(builder.not(root.get("id").in(deniedIds))));
+        }
+
+        List<Predicate> evaluate = evaluator.getPredicates(new EvaluationContext(queryBuilder, root));
+
+        if (evaluate.isEmpty() && allowedIds.isEmpty() && deniedIds.size() == 1 && deniedIds.stream()
+                .anyMatch(resourceType.getType()::equals)) {
+            return List.of(builder.equal(root.get("id"), "none"));
+        }
+
+        if (evaluate.isEmpty() && (allowedIds.isEmpty() || (allowedIds.size() == 1 && allowedIds.stream()
+                .anyMatch(resourceType.getType()::equals)))) {
             return predicates;
         }
 
-        return List.of();
-    }
+        allowedIds = allowedIds.stream()
+                .filter(java.util.function.Predicate.not(resourceType.getType()::equals))
+                .collect(Collectors.toSet());
 
-    private Predicate groupsWithPermissionsSubquery(KeycloakSession session, EntityManager em, CriteriaQuery<?> query, Set<String> groupIds, Root<?> root) {
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-
-        Subquery subquery = query.subquery(String.class);
-
-        Root<?> from = null;
-        try {
-            from = subquery.from(getClass().getClassLoader().loadClass("org.keycloak.models.jpa.entities.UserGroupMembershipEntity"));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        subquery.select(cb.literal(1));
-
-        List<Predicate> subPredicates = new ArrayList<>();
-
-        subPredicates.add(from.get("groupId").in(groupIds));
-        subPredicates.add(cb.equal(from.get("user").get("id"), root.get("id")));
-
-        Subquery subquery1 = query.subquery(String.class);
-
-        subquery1.select(cb.literal(1));
-        Root from1 = null;
-        try {
-            from1 = subquery1.from(getClass().getClassLoader().loadClass("org.keycloak.authorization.jpa.entities.ResourceEntity"));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        List<Predicate> subs = new ArrayList<>();
-
-        Expression<String> groupId = from.get("groupId");
-
-        RealmModel realm = session.getContext().getRealm();
-
-        if (AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
-            subs.add(cb.like(from1.get("name"), groupId));
+        if (evaluate.isEmpty()) {
+            predicates.add(builder.and(root.get("id").in(allowedIds)));
         } else {
-            subs.add(cb.like(from1.get("name"), cb.concat("group.resource.", groupId)));
+            List<Predicate> orPredicates = new ArrayList<>(evaluate);
+            orPredicates.add(root.get("id").in(allowedIds));
+            predicates.add(builder.or(orPredicates.toArray(new Predicate[0])));
         }
 
-        subquery1.where(subs.toArray(Predicate[]::new));
-
-        subPredicates.add(cb.exists(subquery1));
-
-        subquery.where(subPredicates.toArray(Predicate[]::new));
-
-        return cb.exists(subquery);
+        return predicates;
     }
 
-    private boolean hasOneAdminRole(KeycloakSession session, RealmModel realm, String... adminRoles) {
+    private boolean hasOneAdminRole(KeycloakSession session, UserModel user, RealmModel realm, String... adminRoles) {
+        if (user == null) {
+            return false;
+        }
+
         String clientId;
+
         if (realm.getName().equals(Config.getAdminRealm())) {
             clientId = realm.getMasterAdminClient().getClientId();
         } else {
             clientId = realm.getClientByClientId(Constants.REALM_MANAGEMENT_CLIENT_ID).getClientId();
         }
+
         ClientModel client = session.clients().getClientByClientId(realm, clientId);
 
         if (client == null) {
             return true;
         }
 
-        UserModel user = session.getContext().getUser();
         for (String adminRole : adminRoles) {
             RoleModel role = client.getRole(adminRole);
             if (user != null && user.hasRole(role)) {
                 return true;
             }
         }
+
         return false;
     }
 }
