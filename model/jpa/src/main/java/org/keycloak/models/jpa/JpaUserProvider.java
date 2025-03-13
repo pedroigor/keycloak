@@ -19,21 +19,16 @@ package org.keycloak.models.jpa;
 
 import org.keycloak.authorization.AdminPermissionsSchema;
 import org.keycloak.authorization.jpa.entities.ResourceEntity;
-import org.keycloak.authorization.model.Policy;
-import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.policy.provider.PartialEvaluationStorageProvider;
-import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.keycloak.common.util.Time;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.UserCredentialStore;
-import org.keycloak.models.AdminRoles;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.FederatedIdentityModel;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.IdentityProviderModel;
-import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.ModelException;
@@ -52,9 +47,6 @@ import org.keycloak.models.jpa.entities.UserConsentEntity;
 import org.keycloak.models.jpa.entities.UserEntity;
 import org.keycloak.models.jpa.entities.UserGroupMembershipEntity;
 import org.keycloak.models.utils.KeycloakModelUtils;
-import org.keycloak.representations.idm.authorization.Logic;
-import org.keycloak.representations.idm.authorization.ResourceType;
-import org.keycloak.services.managers.RealmManager;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.client.ClientStorageProvider;
@@ -83,7 +75,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
@@ -704,7 +695,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, Parti
         List<Predicate> restrictions = predicates(params, root, Map.of());
         restrictions.add(cb.equal(root.get("realmId"), realm.getId()));
 
-        restrictions.addAll(AdminPermissionsSchema.SCHEMA.applyAuthorizationFilters(session, this, AdminPermissionsSchema.USERS, em, realm, cb, countQuery, root));
+        restrictions.addAll(AdminPermissionsSchema.SCHEMA.applyAuthorizationFilters(session, AdminPermissionsSchema.USERS, this, realm, cb, countQuery));
 
         countQuery.where(restrictions.toArray(Predicate[]::new));
         TypedQuery<Long> query = em.createQuery(countQuery);
@@ -770,7 +761,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, Parti
 
         predicates.add(builder.equal(root.get("realmId"), realm.getId()));
 
-        predicates.addAll(AdminPermissionsSchema.SCHEMA.applyAuthorizationFilters(session, this, AdminPermissionsSchema.USERS, em, realm, builder, queryBuilder, root));
+        predicates.addAll(AdminPermissionsSchema.SCHEMA.applyAuthorizationFilters(session, AdminPermissionsSchema.USERS, this, realm, builder, queryBuilder));
 
         queryBuilder.where(predicates.toArray(Predicate[]::new)).orderBy(builder.asc(root.get(UserModel.USERNAME)));
 
@@ -1063,49 +1054,39 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, Parti
     }
 
     @Override
-    public List<Predicate> getPredicates(EvaluationContext evaluationContext) {
-        CriteriaQuery<?> queryBuilder = evaluationContext.getCriteriaQuery();
-        Root<?> root = evaluationContext.getRoot();
-
+    public List<Predicate> getFilters(EvaluationContext evaluationContext) {
         @SuppressWarnings("unchecked")
         Set<String> userGroups = (Set<String>) session.getAttribute(UserModel.GROUPS);
         Predicate groupFilterPredicate = null;
 
         if (userGroups != null) {
-            groupFilterPredicate = groupsWithPermissionsSubquery(session, em, queryBuilder, userGroups, root);
+            groupFilterPredicate = groupsWithPermissionsSubquery(session, evaluationContext, userGroups);
         }
 
         return groupFilterPredicate == null ? List.of() : List.of(groupFilterPredicate);
     }
 
-    private Predicate groupsWithPermissionsSubquery(KeycloakSession session, EntityManager em, CriteriaQuery<?> query, Set<String> groupIds, Root<?> root) {
+    private Predicate groupsWithPermissionsSubquery(KeycloakSession session, EvaluationContext evaluationContext, Set<String> groupIds) {
         CriteriaBuilder cb = em.getCriteriaBuilder();
-
+        CriteriaQuery<?> query = evaluationContext.getCriteriaQuery();
         Subquery subquery = query.subquery(String.class);
-
-        Root<?> from = null;
-        try {
-            from = subquery.from(getClass().getClassLoader().loadClass("org.keycloak.models.jpa.entities.UserGroupMembershipEntity"));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        Root<?> from = subquery.from(UserGroupMembershipEntity.class);
 
         subquery.select(cb.literal(1));
 
         List<Predicate> subPredicates = new ArrayList<>();
 
         subPredicates.add(from.get("groupId").in(groupIds));
+
+        Root<?> root = evaluationContext.getRootEntity();
+
         subPredicates.add(cb.equal(from.get("user").get("id"), root.get("id")));
 
         Subquery subquery1 = query.subquery(String.class);
 
         subquery1.select(cb.literal(1));
-        Root from1 = null;
-        try {
-            from1 = subquery1.from(getClass().getClassLoader().loadClass("org.keycloak.authorization.jpa.entities.ResourceEntity"));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+
+        Root from1 = subquery1.from(ResourceEntity.class);
 
         List<Predicate> subs = new ArrayList<>();
 

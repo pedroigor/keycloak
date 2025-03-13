@@ -19,35 +19,48 @@
 package org.keycloak.authorization.policy.provider;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import org.keycloak.models.ModelIllegalStateException;
+import org.keycloak.representations.idm.authorization.ResourceType;
 
 public interface PartialEvaluationStorageProvider {
 
-    List<Predicate> getPredicates(EvaluationContext evaluationContext);
+    List<Predicate> getFilters(EvaluationContext evaluationContext);
 
     class EvaluationContext {
 
+        private final ResourceType resourceType;
         private final CriteriaQuery<?> criteriaQuery;
-        private final Root<?> root;
 
-        public EvaluationContext(CriteriaQuery<?> criteriaQuery, Root<?> root) {
+        public EvaluationContext(ResourceType resourceType, CriteriaQuery<?> criteriaQuery) {
+            this.resourceType = resourceType;
             this.criteriaQuery = criteriaQuery;
-            this.root = root;
         }
 
         public EvaluationContext() {
             this(null, null);
         }
 
+        public ResourceType getResourceType() {
+            return resourceType;
+        }
+
         public CriteriaQuery<?> getCriteriaQuery() {
             return criteriaQuery;
         }
 
-        public Root<?> getRoot() {
-            return root;
+        public Root<?> getRootEntity() {
+            Set<Root<?>> roots = criteriaQuery.getRoots();
+
+            if (roots.size() != 1) {
+                throw new ModelIllegalStateException("Could not find any root entity from query");
+            }
+
+            return roots.iterator().next();
         }
     }
 }

@@ -1102,7 +1102,8 @@ public class RealmCacheSession implements CacheRealmProvider {
             return getGroupDelegate().getTopLevelGroupsStream(realm, search, exact, first, max);
         }
 
-        GroupListQuery query = cache.get(cacheKey, GroupListQuery.class);
+        // TODO: we cannot cache queries when filtering based on permissions
+        GroupListQuery query = null;
         String searchKey = Optional.ofNullable(search).orElse("") + "." + Optional.ofNullable(first).orElse(-1) + "." + Optional.ofNullable(max).orElse(-1);
         Set<String> cached;
 

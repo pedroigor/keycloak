@@ -16,42 +16,30 @@
  */
 package org.keycloak.authorization;
 
-import static java.util.function.Predicate.not;
-
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import org.keycloak.Config;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
-import org.keycloak.authorization.policy.provider.PartialEvaluationPolicyProvider;
 import org.keycloak.authorization.policy.provider.PartialEvaluationStorageProvider;
-import org.keycloak.authorization.policy.provider.PartialEvaluationStorageProvider.EvaluationContext;
-import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.keycloak.authorization.store.ResourceStore;
 import org.keycloak.authorization.store.ScopeStore;
 import org.keycloak.authorization.store.StoreFactory;
 import org.keycloak.common.Profile;
-import org.keycloak.models.AdminRoles;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.ClientModel.ClientRemovedEvent;
 import org.keycloak.models.ClientProvider;
 import org.keycloak.models.Constants;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.GroupModel.GroupRemovedEvent;
-import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelException;
 import org.keycloak.models.ModelValidationException;
@@ -65,7 +53,6 @@ import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.provider.ProviderEvent;
 import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
 import org.keycloak.representations.idm.authorization.AuthorizationSchema;
-import org.keycloak.representations.idm.authorization.Logic;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceType;
@@ -110,6 +97,8 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
     public static final ResourceType USERS = new ResourceType(USERS_RESOURCE_TYPE, Set.of(MANAGE, VIEW, IMPERSONATE, MAP_ROLES, MANAGE_GROUP_MEMBERSHIP));
 
     public static final AdminPermissionsSchema SCHEMA = new AdminPermissionsSchema();
+
+    private final PartialEvaluator partialEvaluator = new PartialEvaluator();
 
     private AdminPermissionsSchema() {
         super(Map.of(
@@ -446,102 +435,11 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         }
     }
 
-    public List<Predicate> applyAuthorizationFilters(KeycloakSession session, PartialEvaluationStorageProvider evaluator, ResourceType resourceType, EntityManager em, RealmModel realm, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder, Root<?> root) {
-        if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
-            return evaluator.getPredicates(new EvaluationContext());
-        }
-
-        KeycloakContext context = session.getContext();
-        UserModel adminUser = context.getUser();
-
-        if (!hasOneAdminRole(session, adminUser, realm, AdminRoles.QUERY_USERS)) {
-            return List.of();
-        }
-
-        List<Policy> permissions = new ArrayList<>();
-        Set<String> allowedIds = new HashSet<>();
-        Set<String> deniedIds = new HashSet<>();
-
-        for (PolicyProvider policyProvider : session.getAllProviders(PolicyProvider.class)) {
-            if (policyProvider instanceof PartialEvaluationPolicyProvider) {
-                permissions.addAll(((PartialEvaluationPolicyProvider) evaluator).getPermissions(session, resourceType));
-            }
-        }
-
-        for (Policy permission : permissions) {
-            Set<String> ids = permission.getResources().stream().map(Resource::getName).collect(Collectors.toSet());
-            Set<Policy> policies = permission.getAssociatedPolicies();
-
-            if (policies.stream().map(Policy::getLogic).anyMatch(Logic.NEGATIVE::equals)) {
-                deniedIds.addAll(ids);
-            } else {
-                allowedIds.addAll(ids);
-            }
-        }
-
-        List<Predicate> predicates = new ArrayList<>();
-
-        if (!deniedIds.stream().filter(not(resourceType.getType()::equals)).toList().isEmpty()) {
-            deniedIds = deniedIds.stream()
-                    .filter(not(resourceType.getType()::equals))
-                    .collect(Collectors.toSet());
-
-            predicates.add(builder.and(builder.not(root.get("id").in(deniedIds))));
-        }
-
-        List<Predicate> evaluate = evaluator.getPredicates(new EvaluationContext(queryBuilder, root));
-
-        if (evaluate.isEmpty() && allowedIds.isEmpty() && deniedIds.size() == 1 && deniedIds.stream()
-                .anyMatch(resourceType.getType()::equals)) {
-            return List.of(builder.equal(root.get("id"), "none"));
-        }
-
-        if (evaluate.isEmpty() && (allowedIds.isEmpty() || (allowedIds.size() == 1 && allowedIds.stream()
-                .anyMatch(resourceType.getType()::equals)))) {
-            return predicates;
-        }
-
-        allowedIds = allowedIds.stream()
-                .filter(java.util.function.Predicate.not(resourceType.getType()::equals))
-                .collect(Collectors.toSet());
-
-        if (evaluate.isEmpty()) {
-            predicates.add(builder.and(root.get("id").in(allowedIds)));
-        } else {
-            List<Predicate> orPredicates = new ArrayList<>(evaluate);
-            orPredicates.add(root.get("id").in(allowedIds));
-            predicates.add(builder.or(orPredicates.toArray(new Predicate[0])));
-        }
-
-        return predicates;
+    public List<Predicate> applyAuthorizationFilters(KeycloakSession session, ResourceType resourceType, RealmModel realm, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder) {
+        return applyAuthorizationFilters(session, resourceType, null, realm, builder, queryBuilder);
     }
 
-    private boolean hasOneAdminRole(KeycloakSession session, UserModel user, RealmModel realm, String... adminRoles) {
-        if (user == null) {
-            return false;
-        }
-
-        String clientId;
-
-        if (realm.getName().equals(Config.getAdminRealm())) {
-            clientId = realm.getMasterAdminClient().getClientId();
-        } else {
-            clientId = realm.getClientByClientId(Constants.REALM_MANAGEMENT_CLIENT_ID).getClientId();
-        }
-
-        ClientModel client = session.clients().getClientByClientId(realm, clientId);
-
-        if (client == null) {
-            return true;
-        }
-
-        for (String adminRole : adminRoles) {
-            RoleModel role = client.getRole(adminRole);
-            if (user != null && user.hasRole(role)) {
-                return true;
-            }
-        }
-
-        return false;
+    public List<Predicate> applyAuthorizationFilters(KeycloakSession session, ResourceType resourceType, PartialEvaluationStorageProvider evaluator, RealmModel realm, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder) {
+        return partialEvaluator.applyAuthorizationFilters(session, resourceType, evaluator, realm, builder, queryBuilder);
     }
 }

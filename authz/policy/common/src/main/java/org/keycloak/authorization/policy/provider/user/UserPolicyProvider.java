@@ -67,13 +67,12 @@ public class UserPolicyProvider implements PolicyProvider, PartialEvaluationPoli
     }
 
     @Override
-    public List<Policy> getPermissions(KeycloakSession session, ResourceType resourceType) {
+    public List<Policy> getPermissions(KeycloakSession session, UserModel user, ResourceType resourceType) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
         RealmModel realm = session.getContext().getRealm();
         ClientModel adminPermissionsClient = realm.getAdminPermissionsClient();
         StoreFactory storeFactory = provider.getStoreFactory();
         ResourceServer resourceServer = storeFactory.getResourceServerStore().findByClient(adminPermissionsClient);
-        UserModel adminUser = session.getContext().getUser();
         PolicyStore policyStore = storeFactory.getPolicyStore();
         List<UserPolicyRepresentation> policies = policyStore.findByType(resourceServer, UserPolicyProviderFactory.ID).stream()
                 .map((p) -> {
@@ -82,7 +81,7 @@ public class UserPolicyProvider implements PolicyProvider, PartialEvaluationPoli
                     r.setId(p.getId());
                     return r;
                 })
-                .filter(r -> r.getUsers().contains(adminUser.getId())).toList();
+                .filter(r -> r.getUsers().contains(user.getId())).toList();
 
         return policies.stream().flatMap((Function<UserPolicyRepresentation, Stream<Policy>>) policy -> policyStore.findDependentPolicies(resourceServer, policy.getId()).stream()
                 .filter((permission) -> resourceType.getType().equals(permission.getResourceType()))).toList();

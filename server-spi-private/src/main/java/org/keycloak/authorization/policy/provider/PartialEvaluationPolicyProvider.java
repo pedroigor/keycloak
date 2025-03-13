@@ -22,9 +22,10 @@ import java.util.List;
 
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.authorization.ResourceType;
 
 public interface PartialEvaluationPolicyProvider {
 
-    List<Policy> getPermissions(KeycloakSession session, ResourceType resourceType);
+    List<Policy> getPermissions(KeycloakSession session, UserModel user, ResourceType resourceType);
 }

@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.hibernate.Session;
 import org.jboss.logging.Logger;
+import org.keycloak.authorization.AdminPermissionsSchema;
 import org.keycloak.client.clienttype.ClientTypeManager;
 import org.keycloak.common.Profile;
 import org.keycloak.common.util.Time;
@@ -665,18 +666,30 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
 
     @Override
     public Stream<GroupModel> getTopLevelGroupsStream(RealmModel realm, String search, Boolean exact, Integer firstResult, Integer maxResults) {
-        TypedQuery<String> groupsQuery;
-        if(Boolean.TRUE.equals(exact)) {
-            groupsQuery = em.createNamedQuery("getGroupIdsByParentAndName", String.class);
+        CriteriaBuilder builder = em.getCriteriaBuilder();
+        CriteriaQuery<String> queryBuilder = builder.createQuery(String.class);
+        Root<GroupEntity> root = queryBuilder.from(GroupEntity.class);
+
+        queryBuilder.select(root.get("id"));
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        predicates.add(builder.equal(root.get("realm"), realm.getId()));
+        predicates.add(builder.equal(root.get("type"), Type.REALM.intValue()));
+        predicates.add(builder.equal(root.get("parentId"), GroupEntity.TOP_PARENT_ID));
+
+        if (Boolean.TRUE.equals(exact)) {
+            predicates.add(builder.like(root.get("name"), search));
         } else {
-            groupsQuery = em.createNamedQuery("getGroupIdsByParentAndNameContaining", String.class);
+            predicates.add(builder.like(builder.lower(root.get("name")), builder.lower(builder.literal("%" + search + "%"))));
         }
 
-        groupsQuery.setParameter("realm", realm.getId())
-            .setParameter("parent", GroupEntity.TOP_PARENT_ID)
-            .setParameter("search", search);
+        predicates.addAll(AdminPermissionsSchema.SCHEMA.applyAuthorizationFilters(session, AdminPermissionsSchema.GROUPS, realm, builder, queryBuilder));
 
-        return closing(paginateQuery(groupsQuery, firstResult, maxResults).getResultStream()
+        queryBuilder.where(predicates.toArray(new Predicate[0]));
+        queryBuilder.orderBy(builder.asc(root.get("name")));
+
+        return closing(paginateQuery(em.createQuery(queryBuilder), firstResult, maxResults).getResultStream()
             .map(realm::getGroupById)
             // In concurrent tests, the group might be deleted in another thread, therefore, skip those null values.
             .filter(Objects::nonNull)
