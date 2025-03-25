@@ -66,7 +66,9 @@ public class Keycloak {
     }
 
     public static void main(String[] args) {
-        Keycloak.builder().start(args);
+        Keycloak.builder()
+                .addDependency("org.keycloak", "keycloak-benchmark-dataset", "999.0.0-SNAPSHOT")
+                .start(args);
     }
 
     public static class Builder {
