@@ -423,7 +423,7 @@ public class UserAdapter implements CachedUserModel {
             result = updated.getGroupsStream();
         } else {
             Set<GroupModel> groups = null;
-            for (String id : cached.getGroups(modelSupplier)) {
+            for (String id : cached.getGroups(keycloakSession, modelSupplier)) {
                 GroupModel groupModel = keycloakSession.groups().getGroupById(realm, id);
                 if (groupModel == null) {
                     // chance that role was removed, so just delegate to persistence and get user invalidated
@@ -468,7 +468,7 @@ public class UserAdapter implements CachedUserModel {
     @Override
     public boolean isMemberOf(GroupModel group) {
         if (updated != null) return updated.isMemberOf(group);
-        return cached.getGroups(modelSupplier).contains(group.getId()) || RoleUtils.isMember(getGroupsStream(), group);
+        return cached.getGroups(keycloakSession, modelSupplier).contains(group.getId()) || RoleUtils.isMember(getGroupsStream(), group);
     }
 
     @Override

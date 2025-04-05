@@ -18,6 +18,8 @@ package org.keycloak.models.cache.infinispan;
 
 import java.util.function.Supplier;
 
+import org.keycloak.models.KeycloakSession;
+
 /**
  * <p>A functional interface that can be used to return data {@code D} from a source {@code S} where implementations are free to define how and when
  * data is fetched from source as well how it is internally cached.
@@ -36,5 +38,9 @@ public interface LazyLoader<S, D> {
      * @param source the source from where data will be fetched.
      * @return the data from source
      */
-    D get(Supplier<S> source);
+    D get(KeycloakSession session, Supplier<S> source);
+
+    default D get(Supplier<S> source) {
+        return get(null, source);
+    }
 }

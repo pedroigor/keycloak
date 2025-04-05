@@ -225,7 +225,7 @@ public class GroupAdapter implements GroupModel {
     public Stream<GroupModel> getSubGroupsStream() {
         if (isUpdated()) return updated.getSubGroupsStream();
         Set<GroupModel> subGroups = new HashSet<>();
-        for (String id : cached.getSubGroups(modelSupplier)) {
+        for (String id : cached.getSubGroups(keycloakSession, modelSupplier)) {
             GroupModel subGroup = keycloakSession.groups().getGroupById(realm, id);
             if (subGroup == null) {
                 // chance that role was removed, so just delegate to persistence and get user invalidated
@@ -259,7 +259,7 @@ public class GroupAdapter implements GroupModel {
     @Override
     public Long getSubGroupsCount() {
         if (isUpdated()) return updated.getSubGroupsCount();
-        return cached.getSubGroupsCount(modelSupplier);
+        return getGroupModel().getSubGroupsCount();
     }
 
     @Override

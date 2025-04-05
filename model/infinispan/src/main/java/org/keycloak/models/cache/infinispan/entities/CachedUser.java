@@ -20,6 +20,7 @@ package org.keycloak.models.cache.infinispan.entities;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.models.GroupModel;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
@@ -126,8 +127,8 @@ public class CachedUser extends AbstractExtendableRevisioned implements InRealm 
         return serviceAccountClientLink;
     }
 
-    public Set<String> getGroups(Supplier<UserModel> userModel) {
-        return groups.get(userModel);
+    public Set<String> getGroups(KeycloakSession session, Supplier<UserModel> userModel) {
+        return groups.get(session, userModel);
     }
 
     public int getNotBefore() {
