@@ -20,6 +20,7 @@ package org.keycloak.models.cache.infinispan;
 import static org.keycloak.organization.utils.Organizations.isReadOnlyOrganizationMember;
 
 import org.jboss.logging.Logger;
+import org.keycloak.authorization.AdminPermissionsSchema;
 import org.keycloak.cluster.ClusterProvider;
 import org.keycloak.credential.CredentialInput;
 import org.keycloak.models.ClientScopeModel;
@@ -343,6 +344,10 @@ public class UserCacheSession implements UserCache, OnCreateComponent, OnUpdateC
 
         if (isReadOnlyOrganizationMember(session, delegate)) {
             return new ReadOnlyUserModelDelegate(delegate, false);
+        }
+
+        if (AdminPermissionsSchema.SCHEMA.isExecutingPartialEvaluation(session)) {
+            return delegate;
         }
 
         CachedUser cached;

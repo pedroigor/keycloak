@@ -53,20 +53,25 @@ public class PartialEvaluator {
     public List<Predicate> getPredicates(KeycloakSession session, ResourceType resourceType, PartialEvaluationStorageProvider storage, RealmModel realm, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder, Path<?> path) {
         if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
             // feature not enabled, if a storage evaluator is provided try to resolve any filter from there
-            return storage == null ? List.of() : storage.getFilters(new PartialEvaluationContext(storage, builder, queryBuilder, path));
+            return storage == null ? List.of() : storage.getFilters(new PartialEvaluationContext(session, storage, builder, queryBuilder, path));
         }
 
         UserModel adminUser = session.getContext().getUser();
 
-        if (shouldSkipPartialEvaluation(session, adminUser, realm, resourceType)) {
+        if (shouldSkipPartialEvaluation(session, adminUser, resourceType)) {
             // only run partial evaluation if the admin user does not have view-* or manage-* role for specified resourceType or has any query-* role
             return List.of();
         }
 
-        // collect the result from the partial evaluation so that the filters can be applied
-        PartialEvaluationContext context = runEvaluation(session, adminUser, resourceType, storage, builder, queryBuilder, path);
+        try {
+            AdminPermissionsSchema.SCHEMA.setExecutingPartialEvaluation(session);
+            // collect the result from the partial evaluation so that the filters can be applied
+            PartialEvaluationContext context = runEvaluation(session, adminUser, resourceType, storage, builder, queryBuilder, path);
 
-        return buildPredicates(context);
+            return buildPredicates(context);
+        } finally {
+            AdminPermissionsSchema.SCHEMA.unsetExecutingPartialEvaluation(session);
+        }
     }
 
     private PartialEvaluationContext runEvaluation(KeycloakSession session, UserModel adminUser, ResourceType resourceType, PartialEvaluationStorageProvider storage, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder, Path<?> path) {
@@ -168,7 +173,7 @@ public class PartialEvaluator {
     }
 
     private PartialEvaluationContext createEvaluationContext(KeycloakSession session, ResourceType resourceType, Set<String> allowedResources, Set<String> deniedResources, PartialEvaluationStorageProvider storage, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder, Path<?> path, UserModel adminUser) {
-        PartialEvaluationContext context = new PartialEvaluationContext(resourceType, allowedResources, deniedResources, storage, builder, queryBuilder, path);
+        PartialEvaluationContext context = new PartialEvaluationContext(session, resourceType, allowedResources, deniedResources, storage, builder, queryBuilder, path);
         String groupType = resourceType.getGroupType();
 
         if (groupType != null) {
@@ -219,7 +224,11 @@ public class PartialEvaluator {
         return permission.getScopes().stream().map(Scope::getName).anyMatch(name -> name.startsWith(AdminPermissionsSchema.VIEW));
     }
 
-    private boolean shouldSkipPartialEvaluation(KeycloakSession session, UserModel user, RealmModel realm, ResourceType resourceType) {
+    private boolean shouldSkipPartialEvaluation(KeycloakSession session, UserModel user, ResourceType resourceType) {
+        if (session.getAttribute("skipPartialEvaluation") != null) {
+            return true;
+        }
+
         if (user == null) {
             return false;
         }

@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Path;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.representations.idm.authorization.ResourceType;
 
 /**
@@ -42,12 +43,14 @@ public class PartialEvaluationContext {
     private final Set<String> deniedResources;
     private Set<String> allowedGroups = Set.of();
     private Set<String> deniedGroups = Set.of();
+    private final KeycloakSession session;
 
-    public PartialEvaluationContext(PartialEvaluationStorageProvider storage, CriteriaBuilder criteriaBuilder, CriteriaQuery<?> criteriaQuery, Path<?> path) {
-        this(null, Set.of(), Set.of(), storage, criteriaBuilder, criteriaQuery, path);
+    public PartialEvaluationContext(KeycloakSession session, PartialEvaluationStorageProvider storage, CriteriaBuilder criteriaBuilder, CriteriaQuery<?> criteriaQuery, Path<?> path) {
+        this(session, null, Set.of(), Set.of(), storage, criteriaBuilder, criteriaQuery, path);
     }
 
-    public PartialEvaluationContext(ResourceType resourceType, Set<String> allowedResources, Set<String> deniedResources, PartialEvaluationStorageProvider storage, CriteriaBuilder criteriaBuilder, CriteriaQuery<?> criteriaQuery, Path<?> path) {
+    public PartialEvaluationContext(KeycloakSession session, ResourceType resourceType, Set<String> allowedResources, Set<String> deniedResources, PartialEvaluationStorageProvider storage, CriteriaBuilder criteriaBuilder, CriteriaQuery<?> criteriaQuery, Path<?> path) {
+        this.session = session;
         this.allowedResources = allowedResources;
         this.deniedResources = deniedResources;
         this.storage = storage;
@@ -115,5 +118,9 @@ public class PartialEvaluationContext {
 
     public Set<String> getDeniedResources() {
         return deniedResources;
+    }
+
+    public KeycloakSession getSession() {
+        return session;
     }
 }

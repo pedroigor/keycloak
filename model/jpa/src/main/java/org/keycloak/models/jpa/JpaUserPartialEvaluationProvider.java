@@ -38,6 +38,7 @@ import org.keycloak.authorization.AdminPermissionsSchema;
 import org.keycloak.authorization.jpa.entities.ResourceEntity;
 import org.keycloak.authorization.policy.provider.PartialEvaluationContext;
 import org.keycloak.authorization.policy.provider.PartialEvaluationStorageProvider;
+import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
@@ -97,6 +98,10 @@ public interface JpaUserPartialEvaluationProvider extends PartialEvaluationStora
             return cb.exists(createUserMembershipSubquery(context));
         }
 
+        for (String id : allowedGroups) {
+            evaluateGroupPermissions(context.getSession(), id, allowedGroups);
+        }
+
         return cb.exists(createUserMembershipSubquery(context, root -> root.get("groupId").in(allowedGroups)));
     }
 
@@ -121,15 +126,29 @@ public interface JpaUserPartialEvaluationProvider extends PartialEvaluationStora
                     return notMembers;
                 }
 
+                for (String id : allowedGroups) {
+                    evaluateGroupPermissions(context.getSession(), id, allowedGroups);
+                }
+
                 Predicate onlySpecificGroups = cb.exists(createUserMembershipSubquery(context, root -> root.get("groupId").in(allowedGroups)));
                 return cb.and(cb.or(notMembers, onlySpecificGroups));
             }
 
-            return cb.not(cb.exists(createUserMembershipSubquery(context, root -> root.get("groupId").in(context.getDeniedGroupIds()))));
+            Set<String> deniedGroupIds = context.getDeniedGroupIds();
+
+            for (String id : deniedGroupIds) {
+                evaluateGroupPermissions(context.getSession(), id, deniedGroupIds);
+            }
+
+            return cb.not(cb.exists(createUserMembershipSubquery(context, root -> root.get("groupId").in(deniedGroupIds))));
         }
 
         if (context.getAllowedResources().isEmpty() && (allowedGroups.isEmpty() || context.deniedResources().contains(USERS_RESOURCE_TYPE))) {
             return null;
+        }
+
+        for (String id : deniedGroups) {
+            evaluateGroupPermissions(context.getSession(), id, deniedGroups);
         }
 
         return cb.not(cb.exists(createUserMembershipSubquery(context, root -> root.get("groupId").in(deniedGroups))));
@@ -208,5 +227,17 @@ public interface JpaUserPartialEvaluationProvider extends PartialEvaluationStora
         subquery.where(subPredicates.toArray(Predicate[]::new));
 
         return cb.exists(subquery);
+    }
+
+    private void evaluateGroupPermissions(KeycloakSession session, String id, Set<String> ids) {
+        GroupModel group = session.groups().getGroupById(session.getContext().getRealm(), id);
+
+        if (group != null) {
+            List<String> subIds = group.getSubGroupsStream().map(GroupModel::getId).toList();
+            for (String subId : subIds) {
+                ids.addAll(subIds);
+                evaluateGroupPermissions(session, subId, ids);
+            }
+        }
     }
 }

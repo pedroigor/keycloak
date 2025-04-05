@@ -476,4 +476,16 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
 
         return aliases;
     }
+
+    public boolean isExecutingPartialEvaluation(KeycloakSession session) {
+        return session.getAttribute("skipPartialEvaluation") != null;
+    }
+
+    public void setExecutingPartialEvaluation(KeycloakSession session) {
+        session.setAttribute("skipPartialEvaluation", "true");
+    }
+
+    public void unsetExecutingPartialEvaluation(KeycloakSession session) {
+        session.removeAttribute("skipPartialEvaluation");
+    }
 }

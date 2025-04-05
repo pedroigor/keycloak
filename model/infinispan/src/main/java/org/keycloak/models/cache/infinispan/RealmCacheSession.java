@@ -22,14 +22,12 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
+import org.keycloak.authorization.AdminPermissionsSchema;
 import org.keycloak.client.clienttype.ClientTypeManager;
 import org.keycloak.cluster.ClusterProvider;
 import org.keycloak.common.Profile;
@@ -971,8 +969,11 @@ public class RealmCacheSession implements CacheRealmProvider {
         }
 
         if (cached == null) {
-            Long loaded = cache.getCurrentRevision(id);
             GroupModel model = getGroupDelegate().getGroupById(realm, id);
+            if (AdminPermissionsSchema.SCHEMA.isExecutingPartialEvaluation(session)) {
+                return model;
+            }
+            Long loaded = cache.getCurrentRevision(id);
             if (model == null) return null;
             if (invalidations.contains(id)) return model;
             cached = new CachedGroup(loaded, realm, model);
@@ -1216,6 +1217,10 @@ public class RealmCacheSession implements CacheRealmProvider {
     }
 
     protected ClientModel cacheClient(RealmModel realm, ClientModel delegate, Long revision) {
+        if (AdminPermissionsSchema.SCHEMA.isExecutingPartialEvaluation(session)) {
+            return delegate;
+        }
+
         if (invalidations.contains(delegate.getId())) return delegate;
         StorageId storageId = new StorageId(delegate.getId());
         CachedClient cached = null;
