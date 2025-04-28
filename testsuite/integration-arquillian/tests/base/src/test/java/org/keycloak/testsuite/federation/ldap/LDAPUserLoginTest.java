@@ -44,6 +44,7 @@ import org.keycloak.testsuite.util.LDAPRule.LDAPConnectionParameters;
 import org.keycloak.testsuite.util.LDAPTestConfiguration;
 import org.keycloak.testsuite.util.LDAPTestUtils;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -338,6 +339,7 @@ public class LDAPUserLoginTest extends AbstractLDAPTest {
                             "Doe", "janedoe@keycloak.org", "2nd Avenue", "09283");
             LDAPTestUtils.updateLDAPPassword(ctx.getLdapProvider(), jane, DEFAULT_TEST_USERS.get("VALID_USER_PASSWORD"));
         });
+        driver.manage().timeouts().pageLoadTimeout(Duration.ofDays(1));
         // login with the new user, then logout - user is now cached in Keycloak.
         this.verifyLoginSucceededAndLogout("janedoe", DEFAULT_TEST_USERS.get("VALID_USER_PASSWORD"));
 

@@ -27,16 +27,14 @@ import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.LDAPConstants;
-import org.keycloak.models.ModelValidationException;
 import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.TestLdapConnectionRepresentation;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.storage.ldap.LDAPConfig;
 import org.keycloak.representations.idm.LDAPCapabilityRepresentation;
-import org.keycloak.storage.ldap.idm.model.LDAPDn;
-import org.keycloak.storage.ldap.idm.store.ldap.LDAPContextManager;
 import org.keycloak.storage.ldap.idm.store.ldap.LDAPIdentityStore;
+import org.keycloak.storage.ldap.idm.store.ldap.SessionBoundInitialLdapContext;
 import org.keycloak.storage.ldap.mappers.membership.group.GroupTreeResolver;
 import org.keycloak.utils.StringUtil;
 
@@ -198,8 +196,7 @@ public class LDAPServerCapabilitiesManager {
 
         // Create ldapContextManager in try-with-resource so that ldapContext/tlsResponse/VaultSecret is closed/removed when it
         // is not needed anymore
-        try (LDAPContextManager ldapContextManager = LDAPContextManager.create(session, ldapConfig)) {
-            LdapContext ldapContext = ldapContextManager.getLdapContext();
+        try (SessionBoundInitialLdapContext ldapContext = new SessionBoundInitialLdapContext(session, ldapConfig)) {
             if (TEST_AUTHENTICATION.equals(config.getAction()) && LDAPConstants.AUTH_TYPE_NONE.equals(config.getAuthType())) {
                 // reconnect to force an anonymous bind operation
                 ldapContext.reconnect(null);

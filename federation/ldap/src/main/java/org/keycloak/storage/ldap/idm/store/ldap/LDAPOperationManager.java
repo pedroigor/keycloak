@@ -486,38 +486,12 @@ public class LDAPOperationManager {
         }
 
         LdapContext authCtx = null;
-        StartTlsResponse tlsResponse = null;
 
         var tracing = session.getProvider(TracingProvider.class);
         tracing.startSpan(LDAPOperationManager.class, "authenticate");
 
         try {
-            Hashtable<Object, Object> env = LDAPContextManager.getNonAuthConnectionProperties(config);
-
-            // Never use connection pool to prevent password caching
-            env.put("com.sun.jndi.ldap.connect.pool", "false");
-
-            if(!this.config.isStartTls()) {
-                env.put(Context.SECURITY_AUTHENTICATION, "simple");
-                env.put(Context.SECURITY_PRINCIPAL, dn.toString());
-                env.put(Context.SECURITY_CREDENTIALS, password);
-            }
-
-            authCtx = new InitialLdapContext(env, null);
-            if (config.isStartTls()) {
-                SSLSocketFactory sslSocketFactory = null;
-                if (LDAPUtil.shouldUseTruststoreSpi(config)) {
-                    TruststoreProvider provider = session.getProvider(TruststoreProvider.class);
-                    sslSocketFactory = provider.getSSLSocketFactory();
-                }
-
-                tlsResponse = LDAPContextManager.startTLS(authCtx, "simple", dn.toString(), password, sslSocketFactory);
-
-                // Exception should be already thrown by LDAPContextManager.startTLS if "startTLS" could not be established, but rather do some additional check
-                if (tlsResponse == null) {
-                    throw new AuthenticationException("Null TLS Response returned from the authentication");
-                }
-            }
+            authCtx = new SessionBoundInitialLdapContext(session, config, dn, password);
         } catch (AuthenticationException ae) {
             if (logger.isDebugEnabled()) {
                 logger.debugf(ae, "Authentication failed for DN [%s]", dn);
@@ -535,14 +509,6 @@ public class LDAPOperationManager {
             tracing.error(e);
             throw new AuthenticationException("Unexpected exception when validating password of user");
         } finally {
-            if (tlsResponse != null) {
-                try {
-                    tlsResponse.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
             if (authCtx != null) {
                 try {
                     authCtx.close();
@@ -710,8 +676,8 @@ public class LDAPOperationManager {
     }
 
     private <R> R execute(LdapOperation<R> operation, LDAPOperationDecorator decorator) throws NamingException {
-        try (LDAPContextManager ldapContextManager = LDAPContextManager.create(session, config)) {
-            return execute(operation, ldapContextManager.getLdapContext(), decorator);
+        try (SessionBoundInitialLdapContext context = new SessionBoundInitialLdapContext(session, config)) {
+            return execute(operation, context, decorator);
         }
     }
 

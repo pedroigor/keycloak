@@ -17,22 +17,46 @@
 
 package org.keycloak.storage.ldap;
 
+import org.jboss.logging.Logger;
 import org.keycloak.common.util.MultivaluedHashMap;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.LDAPConstants;
 import org.keycloak.storage.UserStorageProvider;
+import org.keycloak.storage.ldap.idm.store.ldap.LDAPUtil;
+import org.keycloak.vault.VaultStringSecret;
 
+import javax.naming.Context;
 import javax.naming.directory.SearchControls;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+
+import static javax.naming.Context.SECURITY_CREDENTIALS;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  *
  */
 public class LDAPConfig {
+
+    private static final Logger logger = Logger.getLogger(LDAPConfig.class);
+    private static final VaultStringSecret EMPTY_SECRET = new VaultStringSecret() {
+        @Override
+        public Optional<String> get() {
+            return Optional.empty();
+        }
+
+        @Override
+        public void close() {
+
+        }
+    };
 
     private final MultivaluedHashMap<String, String> config;
     private final Set<String> binaryAttributeNames = new HashSet<>();
@@ -279,6 +303,129 @@ public class LDAPConfig {
 
     public boolean isEdirectory() {
         return LDAPConstants.VENDOR_NOVELL_EDIRECTORY.equalsIgnoreCase(getVendor());
+    }
+
+    // Get connection properties of admin connection
+    public Hashtable<Object, Object> getConnectionProperties(KeycloakSession session, String authType, String bindDN, String bindCredential, boolean disablePool) {
+        Hashtable<Object, Object> env = getNonAuthConnectionProperties(disablePool);
+
+        if(!isStartTls()) {
+            if (authType != null) env.put(Context.SECURITY_AUTHENTICATION, authType);
+
+            if (!LDAPConstants.AUTH_TYPE_NONE.equals(authType)) {
+                if (bindDN != null) env.put(Context.SECURITY_PRINCIPAL, bindDN);
+                if (bindCredential != null) env.put(SECURITY_CREDENTIALS, bindCredential);
+            }
+        }
+
+        if (logger.isDebugEnabled()) {
+            Map<Object, Object> copyEnv = new Hashtable<>(env);
+            if (copyEnv.containsKey(SECURITY_CREDENTIALS)) {
+                copyEnv.put(SECURITY_CREDENTIALS, "**************************************");
+            }
+            logger.debugf("Creating LdapContext using properties: [%s]", copyEnv);
+        }
+
+        if (!LDAPConstants.AUTH_TYPE_NONE.equals(getAuthType())) {
+            try (VaultStringSecret vaultStringSecret = getVaultSecret(authType, bindCredential, session)) {
+                if (!isStartTls() && bindCredential != null) {
+                    env.put(SECURITY_CREDENTIALS, vaultStringSecret.get().orElse(bindCredential).toCharArray());
+                }
+            }
+        }
+
+        if (isConnectionTrace()) {
+            env.put(LDAPConstants.CONNECTION_TRACE_BER, System.err);
+        }
+
+        return env;
+    }
+
+    /**
+     * This method is used for admin connection and user authentication. Hence it returns just connection properties NOT related to
+     * authentication (properties like bindType, bindDn, bindPassword). Caller of this method needs to fill auth-related connection properties
+     * based on the fact whether he does admin connection or user authentication
+     *
+     * @return
+     */
+    private Hashtable<Object, Object> getNonAuthConnectionProperties(boolean disablePool) {
+        HashMap<String, Object> env = new HashMap<>();
+
+        env.put(Context.INITIAL_CONTEXT_FACTORY, getFactoryName());
+
+        String url = getConnectionUrl();
+
+        if (url != null) {
+            env.put(Context.PROVIDER_URL, url);
+        } else {
+            logger.warn("LDAP URL is null. LDAPOperationManager won't work correctly");
+        }
+
+        // when using Start TLS, use default socket factory for LDAP client but pass the TrustStore SSL socket factory later
+        // when calling StartTlsResponse.negotiate(trustStoreSSLSocketFactory)
+        if (!isStartTls() && LDAPUtil.shouldUseTruststoreSpi(this)) {
+            env.put("java.naming.ldap.factory.socket", "org.keycloak.truststore.SSLSocketFactory");
+        }
+
+        if (disablePool) {
+            env.put("com.sun.jndi.ldap.connect.pool", "false");
+        } else {
+            String connectionPooling = getConnectionPooling();
+            if (connectionPooling != null) {
+                env.put("com.sun.jndi.ldap.connect.pool", connectionPooling);
+            }
+        }
+
+        String connectionTimeout = getConnectionTimeout();
+        if (connectionTimeout != null && !connectionTimeout.isEmpty()) {
+            env.put("com.sun.jndi.ldap.connect.timeout", connectionTimeout);
+        }
+
+        String readTimeout = getReadTimeout();
+        if (readTimeout != null && !readTimeout.isEmpty()) {
+            env.put("com.sun.jndi.ldap.read.timeout", readTimeout);
+        }
+
+        // Just dump the additional properties
+        Properties additionalProperties = getAdditionalConnectionProperties();
+        if (additionalProperties != null) {
+            for (Object key : additionalProperties.keySet()) {
+                env.put(key.toString(), additionalProperties.getProperty(key.toString()));
+            }
+        }
+
+        StringBuilder binaryAttrsBuilder = new StringBuilder();
+        if (isObjectGUID()) {
+            binaryAttrsBuilder.append(LDAPConstants.OBJECT_GUID).append(" ");
+        }
+        if (isEdirectory()) {
+            binaryAttrsBuilder.append(LDAPConstants.NOVELL_EDIRECTORY_GUID).append(" ");
+        }
+        for (String attrName : getBinaryAttributeNames()) {
+            binaryAttrsBuilder.append(attrName).append(" ");
+        }
+
+        String binaryAttrs = binaryAttrsBuilder.toString().trim();
+        if (!binaryAttrs.isEmpty()) {
+            env.put("java.naming.ldap.attributes.binary", binaryAttrs);
+        }
+
+        String referral = getReferral();
+        if (referral != null) {
+            env.put(Context.REFERRAL, referral);
+        }
+
+        return new Hashtable<>(env);
+    }
+
+    public VaultStringSecret getVaultSecret(KeycloakSession session) {
+        return getVaultSecret(getAuthType(), getBindCredential(), session);
+    }
+
+    public VaultStringSecret getVaultSecret(String authType, String bindCredential, KeycloakSession session) {
+        return LDAPConstants.AUTH_TYPE_NONE.equals(authType)
+                ? EMPTY_SECRET
+                : Optional.ofNullable(session.vault().getStringSecret(bindCredential)).orElse(EMPTY_SECRET);
     }
 
     @Override

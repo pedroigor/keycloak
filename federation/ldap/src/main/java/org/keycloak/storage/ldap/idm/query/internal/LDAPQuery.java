@@ -26,12 +26,13 @@ import org.keycloak.storage.ldap.idm.model.LDAPDn;
 import org.keycloak.storage.ldap.idm.model.LDAPObject;
 import org.keycloak.storage.ldap.idm.query.Condition;
 import org.keycloak.storage.ldap.idm.query.Sort;
-import org.keycloak.storage.ldap.idm.store.ldap.LDAPContextManager;
+import org.keycloak.storage.ldap.idm.store.ldap.SessionBoundInitialLdapContext;
 import org.keycloak.storage.ldap.mappers.LDAPMappersComparator;
 import org.keycloak.storage.ldap.mappers.LDAPStorageMapper;
 
 import javax.naming.NamingException;
 import javax.naming.directory.SearchControls;
+import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.LdapName;
 
@@ -55,7 +56,7 @@ public class LDAPQuery implements AutoCloseable {
 
     private int limit;
     private PaginationContext paginationContext;
-    private LDAPContextManager ldapContextManager;
+    private InitialLdapContext ldapContextManager;
     private LdapName searchDn;
     private final Set<Condition> conditions = new LinkedHashSet<>();
     private final Set<Sort> ordering = new LinkedHashSet<>();
@@ -203,9 +204,9 @@ public class LDAPQuery implements AutoCloseable {
     }
 
     public LDAPQuery initPagination() throws NamingException {
-        this.ldapContextManager = LDAPContextManager.create(ldapFedProvider.getSession(),
+        this.ldapContextManager = new SessionBoundInitialLdapContext(ldapFedProvider.getSession(),
                 ldapFedProvider.getLdapIdentityStore().getConfig());
-        this.paginationContext = new PaginationContext(ldapContextManager.getLdapContext());
+        this.paginationContext = new PaginationContext(ldapContextManager);
         return this;
     }
 
@@ -221,7 +222,11 @@ public class LDAPQuery implements AutoCloseable {
     @Override
     public void close() {
         if (ldapContextManager != null) {
-            ldapContextManager.close();
+            try {
+                ldapContextManager.close();
+            } catch (NamingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
