@@ -1,34 +1,20 @@
 package org.keycloak.models.policy;
 
+import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.policy.ResourceAction;
-import org.keycloak.models.policy.ResourceActionProvider;
 
 public class DisableUserActionProvider implements ResourceActionProvider {
 
     final KeycloakSession session;
+    private final ComponentModel model;
 
-    public DisableUserActionProvider(KeycloakSession session) {
+    public DisableUserActionProvider(KeycloakSession session, ComponentModel model) {
         this.session = session;
+        this.model = model;
     }
 
     @Override
-    public ResourceAction create() {
-        return null;
-    }
+    public void close() {
 
-    @Override
-    public void update(ResourceAction action) {
-
-    }
-
-    @Override
-    public boolean delete(ResourceAction action) {
-        return false;
-    }
-
-    @Override
-    public ResourceAction findById(String id) {
-        return null;
     }
 }

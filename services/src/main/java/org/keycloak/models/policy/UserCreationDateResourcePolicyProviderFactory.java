@@ -1,11 +1,16 @@
 package org.keycloak.models.policy;
 
+import java.util.List;
+
 import org.keycloak.Config;
+import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.provider.ProviderConfigProperty;
 
-public class UserCreationDateResourcePolicyProviderFactory implements ResourcePolicyProviderFactory {
+public class UserCreationDateResourcePolicyProviderFactory implements ResourcePolicyProviderFactory<UserCreationDateResourcePolicyProvider> {
 
+    public static final String ID = "user-creation-date-resource-policy";
 
     @Override
     public ResourceType getType() {
@@ -13,8 +18,8 @@ public class UserCreationDateResourcePolicyProviderFactory implements ResourcePo
     }
 
     @Override
-    public ResourcePolicyProvider create(KeycloakSession session) {
-        return new UserCreationDateResourcePolicyProvider(session);
+    public UserCreationDateResourcePolicyProvider create(KeycloakSession session, ComponentModel model) {
+        return new UserCreationDateResourcePolicyProvider(session, model);
     }
 
     @Override
@@ -34,6 +39,16 @@ public class UserCreationDateResourcePolicyProviderFactory implements ResourcePo
 
     @Override
     public String getId() {
-        return "user-creation-date-resource-policy";
+        return ID;
+    }
+
+    @Override
+    public String getHelpText() {
+        return "";
+    }
+
+    @Override
+    public List<ProviderConfigProperty> getConfigProperties() {
+        return List.of();
     }
 }
