@@ -1,5 +1,9 @@
 package org.keycloak.models.policy;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 
@@ -16,5 +20,10 @@ public class UserCreationDateResourcePolicyProvider implements ResourcePolicyPro
     @Override
     public void close() {
         // no-op
+    }
+
+    @Override
+    public List<Object> getResources() {
+        return List.of();
     }
 }

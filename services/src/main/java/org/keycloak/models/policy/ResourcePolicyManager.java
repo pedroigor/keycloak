@@ -60,8 +60,12 @@ public class ResourcePolicyManager {
     private void runPolicy(ResourcePolicy policy) {
         ResourcePolicyProvider policyProvider = session.getComponentProvider(ResourcePolicyProvider.class, policy.getId());
 
+        List<Object> resources = policyProvider.getResources();
+
         for (ResourceAction action : getActions(policy)) {
             ResourceActionProvider actionProvider = session.getComponentProvider(ResourceActionProvider.class, policy.getId());
+
+            actionProvider.run(resources);
         }
     }
 
