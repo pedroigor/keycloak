@@ -17,8 +17,11 @@
 
 package org.keycloak.models.policy;
 
+import java.time.Duration;
+
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.keycloak.common.util.Time;
@@ -34,9 +37,9 @@ public class UserLastAuthTimeResourcePolicyProvider extends AbstractUserResource
 
     @Override
     public Predicate timePredicate(long time, CriteriaBuilder cb, Root<UserEntity> userRoot) {
-        long currentTimeMillis = Time.currentTimeMillis();
-        // todo handle null values (those who do not login at all)
-        Expression<Long> timeMoment = cb.sum(userRoot.get("lastAuthenticationTime"), cb.literal(time));
-        return cb.lessThan(timeMoment, cb.literal(currentTimeMillis));
+        long currentTimeSeconds = Time.currentTime();
+        Path<Long> lastSessionRefreshTime = userRoot.get("lastSessionRefreshTime");
+        Expression<Long> lastSessionRefreshTimeExpiration = cb.sum(lastSessionRefreshTime, cb.literal(Duration.ofMillis(time).toSeconds()));
+        return cb.and(cb.isNotNull(lastSessionRefreshTime), cb.lessThan(lastSessionRefreshTimeExpiration, cb.literal(currentTimeSeconds)));
     }
 }

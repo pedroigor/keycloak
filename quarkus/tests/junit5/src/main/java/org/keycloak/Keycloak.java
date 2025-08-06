@@ -122,6 +122,8 @@ public class Keycloak {
             addOptionIfNotSet(args, HttpOptions.HTTP_PORT);
             addOptionIfNotSet(args, HttpOptions.HTTPS_PORT);
 
+            addDependency("org.keycloak.testframework", "keycloak-test-framework-remote-providers", "999.0.0-SNAPSHOT");
+
             boolean isFipsEnabled = ofNullable(getOptionValue(args, SecurityOptions.FIPS_MODE)).map(FipsMode::valueOf).orElse(FipsMode.DISABLED).isFipsEnabled();
 
             if (isFipsEnabled) {

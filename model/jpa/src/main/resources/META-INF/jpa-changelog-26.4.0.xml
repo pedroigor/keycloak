@@ -67,14 +67,14 @@
         />
     </changeSet>
 
-    <changeSet id="RLM-add-last-auth-time-to-user-entity" author="keycloak">
+    <changeSet id="RLM-add-last-session-refresh-time-to-user-entity" author="keycloak">
         <addColumn tableName="USER_ENTITY">
-            <column name="LAST_AUTHENTICATION_TIME" type="BIGINT" />
+            <column name="LAST_SESSION_REFRESH_TIME" type="BIGINT" />
         </addColumn>
 
-        <createIndex indexName="IDX_USER_LAST_AUTH_TIME"
+        <createIndex indexName="IDX_USER_LAST_SESSION_REFRESH_TIME"
                      tableName="USER_ENTITY">
-            <column name="LAST_AUTHENTICATION_TIME" />
+            <column name="LAST_SESSION_REFRESH_TIME" />
         </createIndex>
     </changeSet>
 

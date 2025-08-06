@@ -576,6 +576,10 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
         return new UserCredentialManager(session, realm, this);
     }
 
+    @Override
+    public void setLastSessionRefreshTime(int lastSessionRefreshTime) {
+        user.setLastSessionRefreshTime(lastSessionRefreshTime);
+    }
 
     @Override
     public boolean equals(Object o) {

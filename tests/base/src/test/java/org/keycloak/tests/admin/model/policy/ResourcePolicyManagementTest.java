@@ -24,12 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import jakarta.persistence.EntityManager;
-import jakarta.ws.rs.BadRequestException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.EntityManager;
+import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.Test;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.jpa.JpaConnectionProvider;

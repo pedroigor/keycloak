@@ -265,4 +265,12 @@ public class ResourcePolicyManager {
             return String.format("%d hour(s)", hours);
         }
     }
+
+    public void removePolicies() {
+        RealmModel realm = getRealm();
+        realm.getComponentsStream(realm.getId(), ResourcePolicyProvider.class.getName()).forEach(policy -> {
+            realm.getComponentsStream(policy.getId(), ResourceActionProvider.class.getName()).forEach(realm::removeComponent);
+            realm.removeComponent(policy);
+        });
+    }
 }
