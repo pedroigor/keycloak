@@ -17,7 +17,16 @@
 
 package org.keycloak.models.policy;
 
+import org.keycloak.Config;
+import org.keycloak.common.Profile;
+import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
-public interface ResourcePolicyStateProviderFactory extends ProviderFactory<ResourcePolicyStateProvider> {
+public interface ResourcePolicyStateProviderFactory extends ProviderFactory<ResourcePolicyStateProvider>, EnvironmentDependentProviderFactory {
+
+    @Override
+    default boolean isSupported(Config.Scope config) {
+        return Profile.isFeatureEnabled(Profile.Feature.RESOURCE_LIFECYCLE);
+    }
+
 }
