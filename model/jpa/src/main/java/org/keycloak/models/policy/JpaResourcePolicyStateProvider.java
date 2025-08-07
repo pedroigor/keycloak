@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.UserModel;
 
 public class JpaResourcePolicyStateProvider implements ResourcePolicyStateProvider {
 
@@ -96,6 +97,18 @@ public class JpaResourcePolicyStateProvider implements ResourcePolicyStateProvid
         int deletedCount = em.createQuery(delete).executeUpdate();
         if (deletedCount > 0) {
             log.tracev("Deleted {0} orphaned state records for policy {1}", deletedCount, policyId);
+        }
+    }
+
+    @Override
+    public void removeByUser(UserModel user) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaDelete<ResourcePolicyStateEntity> delete = cb.createCriteriaDelete(ResourcePolicyStateEntity.class);
+        Root<ResourcePolicyStateEntity> root = delete.from(ResourcePolicyStateEntity.class);
+        delete.where(cb.equal(root.get("resourceId"), user.getId()));
+        int deletedCount = em.createQuery(delete).executeUpdate();
+        if (deletedCount > 0) {
+            log.tracev("Deleted {0} orphaned state records for user {1}", deletedCount, user.getId());
         }
     }
 

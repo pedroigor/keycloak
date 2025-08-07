@@ -17,6 +17,7 @@
 
 package org.keycloak.models.policy;
 
+import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
 import java.util.List;
 import java.util.Set;
@@ -41,4 +42,6 @@ public interface ResourcePolicyStateProvider extends Provider {
      * Deletes the orphaned state records.
      */
     void deleteStatesByCompletedActions(String policyId, Set<String> deletedActionIds);
+
+    void removeByUser(UserModel user);
 }

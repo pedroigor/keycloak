@@ -238,7 +238,7 @@ public class ResourcePolicyManagementTest {
 
             UserModel user = session.users().getUserByUsername(realm, "myuser");
             assertTrue(user.isEnabled());
-            assertTrue(user.getAttributes().get("notification_sent") == null);
+            assertNull(user.getAttributes().get("notification_sent"));
 
             ResourcePolicyManager manager = new ResourcePolicyManager(session);
 
@@ -248,14 +248,14 @@ public class ResourcePolicyManagementTest {
 
                 user = session.users().getUserByUsername(realm, "myuser");
                 assertTrue(user.isEnabled());
-                assertTrue(user.getAttributes().get("notification_sent") != null);
+                assertNotNull(user.getAttributes().get("notification_sent"));
 
                 Time.setOffset(Math.toIntExact(Duration.ofDays(12).toSeconds()));
                 manager.runPolicies();
 
                 user = session.users().getUserByUsername(realm, "myuser");
                 assertFalse(user.isEnabled());
-                assertTrue(user.getAttributes().get("notification_sent") != null);
+                assertNotNull(user.getAttributes().get("notification_sent"));
             } finally {
                 Time.setOffset(0);
             }

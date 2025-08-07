@@ -18,14 +18,16 @@
 package org.keycloak.tests.admin.model.policy;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
-import java.util.List;
 
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
@@ -35,11 +37,10 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.jpa.entities.UserEntity;
 import org.keycloak.models.policy.DisableUserActionProviderFactory;
 import org.keycloak.models.policy.NotifyUserActionProviderFactory;
-import org.keycloak.models.policy.ResourceAction;
-import org.keycloak.models.policy.ResourcePolicy;
 import org.keycloak.models.policy.ResourcePolicyManager;
 import org.keycloak.models.policy.UserActionBuilder;
 import org.keycloak.models.policy.UserLastAuthTimeResourcePolicyProviderFactory;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testframework.annotations.InjectRealm;
 import org.keycloak.testframework.annotations.InjectUser;
 import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
@@ -49,6 +50,7 @@ import org.keycloak.testframework.realm.ManagedRealm;
 import org.keycloak.testframework.realm.ManagedUser;
 import org.keycloak.testframework.realm.UserConfig;
 import org.keycloak.testframework.realm.UserConfigBuilder;
+import org.keycloak.testframework.remote.providers.runonserver.FetchOnServer;
 import org.keycloak.testframework.remote.runonserver.InjectRunOnServer;
 import org.keycloak.testframework.remote.runonserver.RunOnServerClient;
 import org.keycloak.testframework.ui.annotations.InjectPage;
@@ -67,6 +69,9 @@ public class UserSessionRefreshTimePolicyTest {
     @InjectUser(ref = "alice", config = DefaultUserConfig.class)
     private ManagedUser userAlice;
 
+    @InjectRealm
+    ManagedRealm managedRealm;
+
     @InjectWebDriver
     WebDriver driver;
 
@@ -76,88 +81,37 @@ public class UserSessionRefreshTimePolicyTest {
     @InjectOAuthClient
     OAuthClient oauth;
 
-    @Test
-    public void testDeleteUsersBasedOnSessionRefreshTime() {
-        // setup
-        runOnServer.run(session -> {
-            RealmModel realm = configureSessionContext(session);
-            ResourcePolicyManager manager = new ResourcePolicyManager(session);
-            ResourcePolicy policy = manager.addPolicy(UserLastAuthTimeResourcePolicyProviderFactory.ID);
-            ResourceAction notifyAction = UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
-                    .after(Duration.ofDays(5))
-                    .build();
-            ResourceAction disableAction = UserActionBuilder.builder(DisableUserActionProviderFactory.ID)
-                    .after(Duration.ofDays(10))
-                    .build();
-            manager.updateActions(policy, List.of(notifyAction, disableAction));
-            UserModel user = session.users().getUserByUsername(realm, "alice");
-            session.sessions().removeUserSessions(realm, user);
-        });
-
+    @BeforeEach
+    public void onBefore() {
         oauth.realm("default");
-        oauth.openLoginForm();
-        loginPage.fillLogin("alice", "alice");
-        loginPage.submit();
-        assertTrue(driver.getPageSource().contains("Happy days"));
+    }
 
-        // test run policy
-        runOnServer.run(session -> {
-            RealmModel realm = configureSessionContext(session);
-
-            UserModel user = session.users().getUserByUsername(realm, "alice");
-            EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
-            UserEntity entity = em.find(UserEntity.class, user.getId());
-            assertNotNull(entity.getLastSessionRefreshTime());
-            assertTrue(user.isEnabled());
-            assertNull(user.getAttributes().get("notification_sent"));
-
-            ResourcePolicyManager manager = new ResourcePolicyManager(session);
-
-            try {
-                Time.setOffset(Math.toIntExact(Duration.ofDays(7).toSeconds()));
-
-                // running runPolicy multiple times within the same date should not disable the user
-                manager.runPolicies();
-                user = session.users().getUserByUsername(realm, "alice");
-                assertTrue(user.isEnabled());
-                assertNotNull(user.getAttributes().get("notification_sent"));
-
-                Time.setOffset(Math.toIntExact(Duration.ofDays(11).toSeconds()));
-                manager.runPolicies();
-                user = session.users().getUserByUsername(realm, "alice");
-                assertFalse(user.isEnabled());
-            } finally {
-                Time.setOffset(0);
-            }
-        });
+    @AfterEach
+    public void onAfter() {
+        UserRepresentation user = managedRealm.admin().users().search("alice").get(0);
+        managedRealm.admin().users().get(user.getId()).logout();
     }
 
     @Test
-    public void testDeleteUsersBasedOnSessionRefreshTimeReAuth() {
-        // setup
-        runOnServer.run(session -> {
-            configureSessionContext(session);
-            ResourcePolicyManager manager = new ResourcePolicyManager(session);
-            ResourcePolicy policy = manager.addPolicy(UserLastAuthTimeResourcePolicyProviderFactory.ID);
-            ResourceAction notifyAction = UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
-                    .after(Duration.ofDays(5))
-                    .build();
-            ResourceAction disableAction = UserActionBuilder.builder(DisableUserActionProviderFactory.ID)
-                    .after(Duration.ofDays(10))
-                    .build();
-
-            manager.updateActions(policy, List.of(notifyAction, disableAction));
-        });
-
-        oauth.realm("default");
+    public void testDisabledUserAfterInactivityPeriod() {
         oauth.openLoginForm();
         loginPage.fillLogin("alice", "alice");
         loginPage.submit();
         assertTrue(driver.getPageSource().contains("Happy days"));
 
         // test run policy
-        runOnServer.run(session -> {
+        runOnServer.run((session -> {
             RealmModel realm = configureSessionContext(session);
+            ResourcePolicyManager manager = PolicyBuilder
+                    .of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
+                        .withActions(
+                            UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
+                                    .after(Duration.ofDays(5))
+                                    .build(),
+                            UserActionBuilder.builder(DisableUserActionProviderFactory.ID)
+                                    .after(Duration.ofDays(10))
+                                    .build()
+                    ).build(session);
 
             UserModel user = session.users().getUserByUsername(realm, "alice");
             EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
@@ -165,45 +119,90 @@ public class UserSessionRefreshTimePolicyTest {
             assertNotNull(entity.getLastSessionRefreshTime());
             assertTrue(user.isEnabled());
             assertNull(user.getAttributes().get("notification_sent"));
-
-            ResourcePolicyManager manager = new ResourcePolicyManager(session);
-
-            Time.setOffset(Math.toIntExact(Duration.ofDays(7).toSeconds()));
 
             manager.runPolicies();
             user = session.users().getUserByUsername(realm, "alice");
             assertTrue(user.isEnabled());
-            assertNotNull(user.getAttributes().get("notification_sent"));
-
-            Time.setOffset(0);
-        });
-
-        oauth.openLoginForm();
-
-        runOnServer.run(session -> {
-            RealmModel realm = configureSessionContext(session);
-            ResourcePolicyManager manager = new ResourcePolicyManager(session);
-
-            Time.setOffset(Math.toIntExact(Duration.ofDays(11).toSeconds()));
-
-            manager.runPolicies();
-            UserModel user = session.users().getUserByUsername(realm, "alice");
-            assertTrue(user.isEnabled());
-        });
-
-        runOnServer.run(session -> {
-            RealmModel realm = configureSessionContext(session);
-            UserModel user = session.users().getUserByUsername(realm, "alice");
-            ResourcePolicyManager manager = new ResourcePolicyManager(session);
+            assertNull(user.getAttributes().get("notification_sent"));
 
             try {
-                Time.setOffset(Math.toIntExact(Duration.ofDays(20).toSeconds()));
+                manager = new ResourcePolicyManager(session);
+                Time.setOffset(Math.toIntExact(Duration.ofDays(7).toSeconds()));
+                manager.runPolicies();
+                user = session.users().getUserByUsername(realm, "alice");
+                assertTrue(user.isEnabled());
+                assertNotNull(user.getAttributes().get("notification_sent"));
+            } finally {
+                Time.setOffset(0);
+            }
+
+            try {
+                entity.setLastSessionRefreshTime(Math.toIntExact(Time.currentTime() + Duration.ofDays(11).toSeconds()));
+                Time.setOffset(Math.toIntExact(Duration.ofDays(11).toSeconds()));
+                manager.runPolicies();
+                user = session.users().getUserByUsername(realm, "alice");
+                assertTrue(user.isEnabled());
+            } finally {
+                Time.setOffset(0);
+            }
+
+            try {
+                entity = em.find(UserEntity.class, user.getId());
+                entity.setLastSessionRefreshTime(Math.toIntExact(Time.currentTime() - Duration.ofDays(10).toSeconds()));
+                manager.runPolicies();
+                user = session.users().getUserByUsername(realm, "alice");
+                assertTrue(user.isEnabled());
+            } finally {
+                Time.setOffset(0);
+            }
+
+            try {
+                entity = em.find(UserEntity.class, user.getId());
+                entity.setLastSessionRefreshTime(Math.toIntExact(Time.currentTime() - Duration.ofDays(11).toSeconds()));
                 manager.runPolicies();
                 user = session.users().getUserByUsername(realm, "alice");
                 assertFalse(user.isEnabled());
             } finally {
                 Time.setOffset(0);
             }
+        }));
+    }
+
+    @Test
+    public void testUpdateUserLastRefreshTimeOnReAuthentication() {
+        oauth.openLoginForm();
+        loginPage.fillLogin("alice", "alice");
+        loginPage.submit();
+        assertTrue(driver.getPageSource().contains("Happy days"));
+
+        Integer lastSessionRefreshTime = runOnServer.fetch((FetchOnServer) session -> {
+            RealmModel realm = configureSessionContext(session);
+            UserModel user = session.users().getUserByUsername(realm, "alice");
+            EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+            UserEntity entity = em.find(UserEntity.class, user.getId());
+            assertNotNull(entity.getLastSessionRefreshTime());
+            return entity.getLastSessionRefreshTime();
+        }, Integer.class);
+
+        try {
+            runOnServer.run((session) -> {
+                Time.setOffset(Math.toIntExact(Duration.ofMinutes(10).toSeconds()));
+            });
+
+            oauth.openLoginForm();
+            assertTrue(driver.getPageSource().contains("Happy days"));
+        } finally {
+            runOnServer.run((session) -> {
+                Time.setOffset(0);
+            });
+        }
+
+        runOnServer.run((session) -> {
+            RealmModel realm = configureSessionContext(session);
+            UserModel user = session.users().getUserByUsername(realm, "alice");
+            EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+            UserEntity entity = em.find(UserEntity.class, user.getId());
+            assertNotEquals(lastSessionRefreshTime, entity.getLastSessionRefreshTime());
         });
     }
 
