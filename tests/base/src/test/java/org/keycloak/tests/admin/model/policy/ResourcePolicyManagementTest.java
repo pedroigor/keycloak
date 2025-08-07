@@ -50,7 +50,7 @@ import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
 import org.keycloak.testframework.remote.runonserver.InjectRunOnServer;
 import org.keycloak.testframework.remote.runonserver.RunOnServerClient;
 
-@KeycloakIntegrationTest
+@KeycloakIntegrationTest(config = RLMServerConfig.class)
 public class ResourcePolicyManagementTest {
 
     private static final String REALM_NAME = "default";

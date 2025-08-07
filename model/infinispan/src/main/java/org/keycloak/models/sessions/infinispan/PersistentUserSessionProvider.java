@@ -63,6 +63,7 @@ import org.keycloak.models.UserProvider;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.UserSessionProvider;
 import org.keycloak.models.light.LightweightUserAdapter;
+import org.keycloak.models.policy.ResourcePolicyManager;
 import org.keycloak.models.session.UserSessionPersisterProvider;
 import org.keycloak.models.sessions.infinispan.changes.ClientSessionPersistentChangelogBasedTransaction;
 import org.keycloak.models.sessions.infinispan.changes.JpaChangesPerformer;
@@ -252,7 +253,10 @@ public class PersistentUserSessionProvider implements UserSessionProvider, Sessi
 
         entity.setStarted(currentTime);
         entity.setLastSessionRefresh(currentTime);
-        user.setLastSessionRefreshTime(entity.getLastSessionRefresh());
+
+        if (ResourcePolicyManager.isFeatureEnabled()) {
+            user.setLastSessionRefreshTime(entity.getLastSessionRefresh());
+        }
     }
 
     @Override

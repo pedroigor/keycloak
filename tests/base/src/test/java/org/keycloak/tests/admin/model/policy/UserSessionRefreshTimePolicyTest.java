@@ -23,12 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.time.Duration;
 
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.keycloak.common.VerificationException;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
@@ -44,6 +46,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testframework.annotations.InjectRealm;
 import org.keycloak.testframework.annotations.InjectUser;
 import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
+import org.keycloak.testframework.injection.LifeCycle;
 import org.keycloak.testframework.oauth.OAuthClient;
 import org.keycloak.testframework.oauth.annotations.InjectOAuthClient;
 import org.keycloak.testframework.realm.ManagedRealm;
@@ -51,6 +54,7 @@ import org.keycloak.testframework.realm.ManagedUser;
 import org.keycloak.testframework.realm.UserConfig;
 import org.keycloak.testframework.realm.UserConfigBuilder;
 import org.keycloak.testframework.remote.providers.runonserver.FetchOnServer;
+import org.keycloak.testframework.remote.providers.runonserver.RunOnServer;
 import org.keycloak.testframework.remote.runonserver.InjectRunOnServer;
 import org.keycloak.testframework.remote.runonserver.RunOnServerClient;
 import org.keycloak.testframework.ui.annotations.InjectPage;
@@ -58,7 +62,7 @@ import org.keycloak.testframework.ui.annotations.InjectWebDriver;
 import org.keycloak.testframework.ui.page.LoginPage;
 import org.openqa.selenium.WebDriver;
 
-@KeycloakIntegrationTest
+@KeycloakIntegrationTest(config = RLMServerConfig.class)
 public class UserSessionRefreshTimePolicyTest {
 
     private static final String REALM_NAME = "default";
@@ -66,7 +70,7 @@ public class UserSessionRefreshTimePolicyTest {
     @InjectRunOnServer(permittedPackages = "org.keycloak.tests")
     RunOnServerClient runOnServer;
 
-    @InjectUser(ref = "alice", config = DefaultUserConfig.class)
+    @InjectUser(ref = "alice", config = DefaultUserConfig.class, lifecycle = LifeCycle.METHOD)
     private ManagedUser userAlice;
 
     @InjectRealm
@@ -86,14 +90,16 @@ public class UserSessionRefreshTimePolicyTest {
         oauth.realm("default");
     }
 
-    @AfterEach
-    public void onAfter() {
-        UserRepresentation user = managedRealm.admin().users().search("alice").get(0);
-        managedRealm.admin().users().get(user.getId()).logout();
-    }
-
     @Test
     public void testDisabledUserAfterInactivityPeriod() {
+        runOnServer.run((RunOnServer) session -> {
+            RealmModel realm = configureSessionContext(session);
+            UserModel user = session.users().getUserByUsername(realm, "alice");
+            EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+            UserEntity entity = em.find(UserEntity.class, user.getId());
+            assertNull(entity.getLastSessionRefreshTime());
+        });
+
         oauth.openLoginForm();
         loginPage.fillLogin("alice", "alice");
         loginPage.submit();

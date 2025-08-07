@@ -32,6 +32,7 @@ import org.keycloak.models.OfflineUserSessionModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
+import org.keycloak.models.policy.ResourcePolicyManager;
 import org.keycloak.models.sessions.infinispan.changes.SessionEntityWrapper;
 
 /**
@@ -272,7 +273,10 @@ public class UserSessionEntity extends SessionEntity {
 
         entity.setStarted(currentTime);
         entity.setLastSessionRefresh(currentTime);
-        user.setLastSessionRefreshTime(entity.getLastSessionRefresh());
+
+        if (ResourcePolicyManager.isFeatureEnabled()) {
+            user.setLastSessionRefreshTime(entity.getLastSessionRefresh());
+        }
     }
 
     public static UserSessionEntity createFromModel(UserSessionModel userSession) {

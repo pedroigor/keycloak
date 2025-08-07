@@ -26,6 +26,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.UserSessionProvider;
+import org.keycloak.models.policy.ResourcePolicyManager;
 import org.keycloak.models.sessions.infinispan.changes.SessionsChangelogBasedTransaction;
 import org.keycloak.models.sessions.infinispan.changes.Tasks;
 import org.keycloak.models.sessions.infinispan.changes.UserSessionUpdateTask;
@@ -264,7 +265,9 @@ public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvi
             }
         };
 
-        getUser().setLastSessionRefreshTime(lastSessionRefresh);
+        if (ResourcePolicyManager.isFeatureEnabled()) {
+            getUser().setLastSessionRefreshTime(lastSessionRefresh);
+        }
 
         update(task);
     }

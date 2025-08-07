@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
+import org.keycloak.common.Profile;
+import org.keycloak.common.Profile.Feature;
 import org.keycloak.component.ComponentFactory;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
@@ -36,8 +38,13 @@ import org.keycloak.provider.ProviderFactory;
 
 public class ResourcePolicyManager {
 
-    private final KeycloakSession session;
     private static final Logger log = Logger.getLogger(ResourcePolicyManager.class);
+
+    public static boolean isFeatureEnabled() {
+        return Profile.isFeatureEnabled(Feature.RESOURCE_LIFECYCLE);
+    }
+
+    private final KeycloakSession session;
 
     public ResourcePolicyManager(KeycloakSession session) {
         this.session = session;
