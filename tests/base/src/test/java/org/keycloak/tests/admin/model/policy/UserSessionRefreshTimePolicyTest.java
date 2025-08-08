@@ -60,6 +60,7 @@ import org.keycloak.testframework.remote.runonserver.RunOnServerClient;
 import org.keycloak.testframework.ui.annotations.InjectPage;
 import org.keycloak.testframework.ui.annotations.InjectWebDriver;
 import org.keycloak.testframework.ui.page.LoginPage;
+import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
 import org.openqa.selenium.WebDriver;
 
 @KeycloakIntegrationTest(config = RLMServerConfig.class)
@@ -197,6 +198,43 @@ public class UserSessionRefreshTimePolicyTest {
 
             oauth.openLoginForm();
             assertTrue(driver.getPageSource().contains("Happy days"));
+        } finally {
+            runOnServer.run((session) -> {
+                Time.setOffset(0);
+            });
+        }
+
+        runOnServer.run((session) -> {
+            RealmModel realm = configureSessionContext(session);
+            UserModel user = session.users().getUserByUsername(realm, "alice");
+            EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+            UserEntity entity = em.find(UserEntity.class, user.getId());
+            assertNotEquals(lastSessionRefreshTime, entity.getLastSessionRefreshTime());
+        });
+    }
+
+    @Test
+    public void testUpdateUserLastRefreshTimeOnRefreshToken() {
+        AccessTokenResponse tokenResponse = oauth.doPasswordGrantRequest("alice", "alice");
+        assertNotNull(tokenResponse);
+
+        Integer lastSessionRefreshTime = runOnServer.fetch((FetchOnServer) session -> {
+            RealmModel realm = configureSessionContext(session);
+            UserModel user = session.users().getUserByUsername(realm, "alice");
+            EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+            UserEntity entity = em.find(UserEntity.class, user.getId());
+            assertNotNull(entity.getLastSessionRefreshTime());
+            return entity.getLastSessionRefreshTime();
+        }, Integer.class);
+
+        assertNotNull(tokenResponse.getRefreshToken());
+
+        try {
+            runOnServer.run((session) -> {
+                Time.setOffset(Math.toIntExact(Duration.ofMinutes(10).toSeconds()));
+            });
+
+            oauth.doRefreshTokenRequest(tokenResponse.getRefreshToken());
         } finally {
             runOnServer.run((session) -> {
                 Time.setOffset(0);

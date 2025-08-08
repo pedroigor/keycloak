@@ -44,4 +44,6 @@ public interface ResourcePolicyStateProvider extends Provider {
     void deleteStatesByCompletedActions(String policyId, Set<String> deletedActionIds);
 
     void removeByUser(UserModel user);
+
+    void removeAll();
 }

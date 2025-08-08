@@ -30,14 +30,17 @@ import org.jboss.logging.Logger;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 public class JpaResourcePolicyStateProvider implements ResourcePolicyStateProvider {
 
     private final EntityManager em;
-    private static final Logger log = Logger.getLogger(JpaResourcePolicyStateProvider.class);
+    private static final Logger LOGGER = Logger.getLogger(JpaResourcePolicyStateProvider.class);
+    private final KeycloakSession session;
 
     public JpaResourcePolicyStateProvider(KeycloakSession session) {
+        this.session = session;
         this.em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }
 
@@ -63,15 +66,19 @@ public class JpaResourcePolicyStateProvider implements ResourcePolicyStateProvid
             ResourcePolicyStateEntity entity = em.find(ResourcePolicyStateEntity.class, pk);
 
             if (entity == null) {
-                log.tracev("Initial record for policyId ({0}), new_last_compl_actionId ({1}), userId ({2})", policyId, newLastCompletedActionId, resourceId);
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.tracev("Initial record for policyId ({0}), new_last_compl_actionId ({1}), userId ({2})", policyId, newLastCompletedActionId, resourceId);
+                }
                 entity = new ResourcePolicyStateEntity();
                 entity.setResourceId(resourceId);
                 entity.setPolicyId(policyId);
                 entity.setPolicyProviderId(policyProviderId);
                 em.persist(entity);
             } else {
-                log.tracev("Changing record for policyId ({0}), last_compl_actionId ({1}), new_last_compl_actionId ({2}), userId ({3})", 
-                        entity.getPolicyId(), entity.getLastCompletedActionId(), newLastCompletedActionId, resourceId);
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.tracev("Changing record for policyId ({0}), last_compl_actionId ({1}), new_last_compl_actionId ({2}), userId ({3})",
+                            entity.getPolicyId(), entity.getLastCompletedActionId(), newLastCompletedActionId, resourceId);
+                }
             }
 
             entity.setLastCompletedActionId(newLastCompletedActionId);
@@ -95,8 +102,11 @@ public class JpaResourcePolicyStateProvider implements ResourcePolicyStateProvid
         delete.where(cb.and(policyPredicate, inClausePredicate));
 
         int deletedCount = em.createQuery(delete).executeUpdate();
-        if (deletedCount > 0) {
-            log.tracev("Deleted {0} orphaned state records for policy {1}", deletedCount, policyId);
+
+        if (LOGGER.isTraceEnabled()) {
+            if (deletedCount > 0) {
+                LOGGER.tracev("Deleted {0} orphaned state records for policy {1}", deletedCount, policyId);
+            }
         }
     }
 
@@ -107,8 +117,25 @@ public class JpaResourcePolicyStateProvider implements ResourcePolicyStateProvid
         Root<ResourcePolicyStateEntity> root = delete.from(ResourcePolicyStateEntity.class);
         delete.where(cb.equal(root.get("resourceId"), user.getId()));
         int deletedCount = em.createQuery(delete).executeUpdate();
-        if (deletedCount > 0) {
-            log.tracev("Deleted {0} orphaned state records for user {1}", deletedCount, user.getId());
+
+        if (LOGGER.isTraceEnabled()) {
+            if (deletedCount > 0) {
+                LOGGER.tracev("Deleted {0} orphaned state records for user {1}", deletedCount, user.getId());
+            }
+        }
+    }
+
+    @Override
+    public void removeAll() {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaDelete<ResourcePolicyStateEntity> delete = cb.createCriteriaDelete(ResourcePolicyStateEntity.class);
+        int deletedCount = em.createQuery(delete).executeUpdate();
+
+        if (LOGGER.isTraceEnabled()) {
+            if (deletedCount > 0) {
+                RealmModel realm = session.getContext().getRealm();
+                LOGGER.tracev("Deleted {0} state records for realm {1}", deletedCount, realm.getId());
+            }
         }
     }
 

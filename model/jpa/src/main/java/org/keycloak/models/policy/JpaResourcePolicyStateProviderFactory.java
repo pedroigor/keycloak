@@ -20,9 +20,8 @@ package org.keycloak.models.policy;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.models.RealmModel.RealmRemovedEvent;
 import org.keycloak.models.UserModel.UserRemovedEvent;
-import org.keycloak.provider.ProviderEvent;
-import org.keycloak.provider.ProviderEventListener;
 
 public class JpaResourcePolicyStateProviderFactory implements ResourcePolicyStateProviderFactory {
 
@@ -34,14 +33,11 @@ public class JpaResourcePolicyStateProviderFactory implements ResourcePolicyStat
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        factory.register(new ProviderEventListener() {
-            @Override
-            public void onEvent(ProviderEvent fired) {
-                if (fired instanceof UserRemovedEvent event) {
-                    KeycloakSession session = event.getKeycloakSession();
-                    ResourcePolicyStateProvider provider = session.getProvider(ResourcePolicyStateProvider.class);
-                    provider.removeByUser(event.getUser());
-                }
+        factory.register(fired -> {
+            if (fired instanceof UserRemovedEvent event) {
+                onUserRemovedEvent(event);
+            } if (fired instanceof RealmRemovedEvent event) {
+                onRealmRemovedEvent(event);
             }
         });
     }
@@ -58,5 +54,17 @@ public class JpaResourcePolicyStateProviderFactory implements ResourcePolicyStat
 
     @Override
     public void close() {
+    }
+
+    private void onRealmRemovedEvent(RealmRemovedEvent event) {
+        KeycloakSession session = event.getKeycloakSession();
+        ResourcePolicyStateProvider provider = session.getProvider(ResourcePolicyStateProvider.class);
+        provider.removeAll();
+    }
+
+    private void onUserRemovedEvent(UserRemovedEvent event) {
+        KeycloakSession session = event.getKeycloakSession();
+        ResourcePolicyStateProvider provider = session.getProvider(ResourcePolicyStateProvider.class);
+        provider.removeByUser(event.getUser());
     }
 }
