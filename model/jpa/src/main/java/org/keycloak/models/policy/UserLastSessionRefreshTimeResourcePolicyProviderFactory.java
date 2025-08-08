@@ -25,7 +25,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
-public class UserLastAuthTimeResourcePolicyProviderFactory implements ResourcePolicyProviderFactory<UserLastAuthTimeResourcePolicyProvider> {
+public class UserLastSessionRefreshTimeResourcePolicyProviderFactory implements ResourcePolicyProviderFactory<UserLastAuthTimeResourcePolicyProvider> {
 
     public static final String ID = "user-last-auth-time-resource-policy";
 

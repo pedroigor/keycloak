@@ -38,7 +38,7 @@ import org.keycloak.models.policy.DisableUserActionProviderFactory;
 import org.keycloak.models.policy.NotifyUserActionProviderFactory;
 import org.keycloak.models.policy.ResourcePolicyManager;
 import org.keycloak.models.policy.UserActionBuilder;
-import org.keycloak.models.policy.UserLastAuthTimeResourcePolicyProviderFactory;
+import org.keycloak.models.policy.UserLastSessionRefreshTimeResourcePolicyProviderFactory;
 import org.keycloak.testframework.annotations.InjectUser;
 import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
 import org.keycloak.testframework.injection.LifeCycle;
@@ -101,7 +101,7 @@ public class UserSessionRefreshTimePolicyTest {
         runOnServer.run((session -> {
             RealmModel realm = configureSessionContext(session);
             ResourcePolicyManager manager = PolicyBuilder.create()
-                    .of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
+                    .of(UserLastSessionRefreshTimeResourcePolicyProviderFactory.ID)
                         .withActions(
                             UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
                                     .after(Duration.ofDays(5))

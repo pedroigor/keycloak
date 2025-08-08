@@ -46,7 +46,7 @@ import org.keycloak.models.policy.ResourcePolicyStateEntity;
 import org.keycloak.models.policy.ResourcePolicyStateProvider;
 import org.keycloak.models.policy.UserActionBuilder;
 import org.keycloak.models.policy.UserCreationDateResourcePolicyProviderFactory;
-import org.keycloak.models.policy.UserLastAuthTimeResourcePolicyProviderFactory;
+import org.keycloak.models.policy.UserLastSessionRefreshTimeResourcePolicyProviderFactory;
 import org.keycloak.testframework.annotations.InjectRealm;
 import org.keycloak.testframework.annotations.InjectUser;
 import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
@@ -230,7 +230,7 @@ public class ResourcePolicyManagementTest {
         runOnServer.run(session -> {
             RealmModel realm = configureSessionContext(session);
             ResourcePolicyManager manager = PolicyBuilder.create()
-                    .of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
+                    .of(UserLastSessionRefreshTimeResourcePolicyProviderFactory.ID)
                         .withActions(
                             UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
                                     .after(Duration.ofDays(5))
@@ -270,13 +270,13 @@ public class ResourcePolicyManagementTest {
         runOnServer.run(session -> {
             RealmModel realm = configureSessionContext(session);
             ResourcePolicyManager manager = PolicyBuilder.create()
-                    .of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
+                    .of(UserLastSessionRefreshTimeResourcePolicyProviderFactory.ID)
                     .withActions(
                             UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
                                     .after(Duration.ofDays(5))
                                     .withConfig("message_key", "notifier1")
                                     .build()
-                    ).of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
+                    ).of(UserLastSessionRefreshTimeResourcePolicyProviderFactory.ID)
                     .withActions(
                             UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
                                     .after(Duration.ofDays(10))
