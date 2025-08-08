@@ -17,37 +17,44 @@
 
 package org.keycloak.tests.admin.model.policy;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.policy.ResourceAction;
-import org.keycloak.models.policy.ResourcePolicy;
 import org.keycloak.models.policy.ResourcePolicyManager;
 
 public class PolicyBuilder {
 
-    public static PolicyBuilder of(String policyId) {
-        return new PolicyBuilder(policyId);
+    public static PolicyBuilder create() {
+        return new PolicyBuilder();
     }
 
+    private String providerId;
+    private final Map<String, List<ResourceAction>> actions = new HashMap<>();
 
-    private final String providerId;
-    private ResourceAction[] actions;
+    private PolicyBuilder() {
+    }
 
-    public PolicyBuilder(String providerId) {
+    public PolicyBuilder of(String providerId) {
         this.providerId = providerId;
+        return this;
     }
 
     public PolicyBuilder withActions(ResourceAction... actions) {
-        this.actions = actions;
+        this.actions.computeIfAbsent(providerId, (k) -> new ArrayList<>()).addAll(List.of(actions));
         return this;
     }
 
     public ResourcePolicyManager build(KeycloakSession session) {
         ResourcePolicyManager manager = new ResourcePolicyManager(session);
 
-        ResourcePolicy policy = manager.addPolicy(providerId);
-        manager.updateActions(policy, List.of(actions));
+        for (Entry<String, List<ResourceAction>> policy : actions.entrySet()) {
+            manager.updateActions(manager.addPolicy(policy.getKey()), policy.getValue());
+        }
 
         return manager;
     }

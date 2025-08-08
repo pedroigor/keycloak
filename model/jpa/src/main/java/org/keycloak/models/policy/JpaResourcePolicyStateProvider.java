@@ -60,7 +60,7 @@ public class JpaResourcePolicyStateProvider implements ResourcePolicyStateProvid
     }
 
     @Override
-    public void updateState(String policyId, String policyProviderId, List<String> resourceIds, String newLastCompletedActionId) {
+    public void update(String policyId, String policyProviderId, List<String> resourceIds, String newLastCompletedActionId) {
         for (String resourceId : resourceIds) {
             ResourcePolicyStateEntity.PrimaryKey pk = new ResourcePolicyStateEntity.PrimaryKey(resourceId, policyId);
             ResourcePolicyStateEntity entity = em.find(ResourcePolicyStateEntity.class, pk);
@@ -87,7 +87,7 @@ public class JpaResourcePolicyStateProvider implements ResourcePolicyStateProvid
     }
 
     @Override
-    public void deleteStatesByCompletedActions(String policyId, Set<String> deletedActionIds) {
+    public void removeByCompletedActions(String policyId, Set<String> deletedActionIds) {
         if (deletedActionIds == null || deletedActionIds.isEmpty()) {
             return;
         }

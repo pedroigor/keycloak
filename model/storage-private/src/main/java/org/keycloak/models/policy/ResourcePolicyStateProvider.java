@@ -36,14 +36,22 @@ public interface ResourcePolicyStateProvider extends Provider {
      * Updates the state for a list of resources that have just completed a new action.
      * This will perform an update for existing states or an insert for new states.
      */
-    void updateState(String policyId, String policyProviderId, List<String> resourceIds, String newLastCompletedActionId);
+    void update(String policyId, String policyProviderId, List<String> resourceIds, String newLastCompletedActionId);
 
     /**
      * Deletes the orphaned state records.
      */
-    void deleteStatesByCompletedActions(String policyId, Set<String> deletedActionIds);
+    void removeByCompletedActions(String policyId, Set<String> deletedActionIds);
 
+    /**
+     * Deletes the state records associated with the given {@code user}.
+     *
+     * @param user the user
+     */
     void removeByUser(UserModel user);
 
+    /**
+     * Deletes all state records associated with the current realm bound to the session.
+     */
     void removeAll();
 }

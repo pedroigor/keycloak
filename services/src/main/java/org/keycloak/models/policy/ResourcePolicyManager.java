@@ -101,7 +101,7 @@ public class ResourcePolicyManager {
         // delete orphaned state records - this means that we actually reset the flow for users which completed the action which is being removed
         // it seems like the best way to handle this
         if (!deletedActionIds.isEmpty()) {
-            stateProvider.deleteStatesByCompletedActions(policy.getId(), deletedActionIds);
+            stateProvider.removeByCompletedActions(policy.getId(), deletedActionIds);
         }
 
         RealmModel realm = getRealm();
@@ -189,7 +189,7 @@ public class ResourcePolicyManager {
             actionProvider.run(newResourceIds);
 
             // create state record
-            stateProvider.updateState(policy.getId(), policy.getProviderId(), newResourceIds, initialAction.getId());
+            stateProvider.update(policy.getId(), policy.getProviderId(), newResourceIds, initialAction.getId());
         }
         // </comment>
 
@@ -212,7 +212,7 @@ public class ResourcePolicyManager {
                 actionProvider.run(eligibleIds);
 
                 // Update the state for the users that were processed.
-                stateProvider.updateState(policy.getId(), policy.getProviderId(), eligibleIds, action.getId());
+                stateProvider.update(policy.getId(), policy.getProviderId(), eligibleIds, action.getId());
             }
             // </comment>
         }

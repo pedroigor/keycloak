@@ -19,6 +19,8 @@ package org.keycloak.models.policy;
 
 import java.time.Duration;
 
+import org.keycloak.common.util.KeycloakUriBuilder;
+
 public class UserActionBuilder {
 
     private final ResourceAction action;
@@ -38,6 +40,11 @@ public class UserActionBuilder {
 
     public UserActionBuilder after(Duration duration) {
         action.setAfter(duration.toMillis());
+        return this;
+    }
+
+    public UserActionBuilder withConfig(String key, String value) {
+        action.setConfig(key, value);
         return this;
     }
 }

@@ -52,9 +52,17 @@ public class NotifyUserActionProvider implements ResourceActionProvider {
             UserModel user = session.users().getUserById(realm, id);
             if (user != null) {
                 log.debugv("Disabling user {0} ({1})", user.getUsername(), user.getId());
-                user.setSingleAttribute("notification_sent", "true");
+                user.setSingleAttribute(getMessageKey(), getMessage());
             }
         }
+    }
+
+    private String getMessageKey() {
+        return actionModel.getConfig().getFirstOrDefault("message_key", "message");
+    }
+
+    private String getMessage() {
+        return actionModel.getConfig().getFirstOrDefault(getMessageKey(), "sent");
     }
 
     @Override

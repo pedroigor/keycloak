@@ -36,6 +36,7 @@ import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.UserProvider;
 import org.keycloak.models.policy.DisableUserActionProviderFactory;
 import org.keycloak.models.policy.NotifyUserActionProviderFactory;
 import org.keycloak.models.policy.ResourceAction;
@@ -46,7 +47,14 @@ import org.keycloak.models.policy.ResourcePolicyStateProvider;
 import org.keycloak.models.policy.UserActionBuilder;
 import org.keycloak.models.policy.UserCreationDateResourcePolicyProviderFactory;
 import org.keycloak.models.policy.UserLastAuthTimeResourcePolicyProviderFactory;
+import org.keycloak.testframework.annotations.InjectRealm;
+import org.keycloak.testframework.annotations.InjectUser;
 import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
+import org.keycloak.testframework.injection.LifeCycle;
+import org.keycloak.testframework.realm.ManagedRealm;
+import org.keycloak.testframework.realm.ManagedUser;
+import org.keycloak.testframework.realm.UserConfig;
+import org.keycloak.testframework.realm.UserConfigBuilder;
 import org.keycloak.testframework.remote.runonserver.InjectRunOnServer;
 import org.keycloak.testframework.remote.runonserver.RunOnServerClient;
 
@@ -57,6 +65,12 @@ public class ResourcePolicyManagementTest {
 
     @InjectRunOnServer(permittedPackages = "org.keycloak.tests")
     RunOnServerClient runOnServer;
+
+    @InjectRealm(lifecycle = LifeCycle.METHOD)
+    ManagedRealm managedRealm;
+
+    @InjectUser(ref = "alice", config = DefaultUserConfig.class, lifecycle = LifeCycle.METHOD)
+    private ManagedUser userAlice;
 
     @Test
     public void testCreatePolicy() {
@@ -132,7 +146,7 @@ public class ResourcePolicyManagementTest {
 
             // --- SIMULATE USER PROGRESS ---
             // Manually set the user's state to have completed 'notify'
-            stateProvider.updateState(policy.getId(), policy.getProviderId(), List.of(user.getId()), createdNotifyAction.getId());
+            stateProvider.update(policy.getId(), policy.getProviderId(), List.of(user.getId()), createdNotifyAction.getId());
             ResourcePolicyStateEntity.PrimaryKey pk = new ResourcePolicyStateEntity.PrimaryKey(user.getId(), policy.getId());
             assertNotNull(em.find(ResourcePolicyStateEntity.class, pk), "State should exist before the update.");
 
@@ -174,7 +188,7 @@ public class ResourcePolicyManagementTest {
                 user = session.users().getUserById(realm, user.getId());
 
                 // Verify that ONLY the first action (notify) was executed.
-                assertNotNull(user.getAttributes().get("notification_sent"), "The first action (notify) should have run.");
+                assertNotNull(user.getAttributes().get("message"), "The first action (notify) should have run.");
                 assertTrue(user.isEnabled(), "The second action (disable) should NOT have run.");
 
                 // Verify that the user's state is correctly paused after the first action.
@@ -212,53 +226,113 @@ public class ResourcePolicyManagementTest {
     }
 
     @Test
-    public void testRunPolicy() {
-        // setup
+    public void testRunSinglePolicy() {
         runOnServer.run(session -> {
             RealmModel realm = configureSessionContext(session);
-            ResourcePolicyManager manager = new ResourcePolicyManager(session);
-            ResourcePolicy policy = manager.addPolicy(UserLastAuthTimeResourcePolicyProviderFactory.ID);
+            ResourcePolicyManager manager = PolicyBuilder.create()
+                    .of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
+                        .withActions(
+                            UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
+                                    .after(Duration.ofDays(5))
+                                    .build(),
+                            UserActionBuilder.builder(DisableUserActionProviderFactory.ID)
+                                    .after(Duration.ofDays(10))
+                                    .build()
+                    ).build(session);
 
-            ResourceAction notifyAction = UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
-                    .after(Duration.ofDays(5))
-                    .build();
-
-            ResourceAction disableAction = UserActionBuilder.builder(DisableUserActionProviderFactory.ID)
-                    .after(Duration.ofDays(10))
-                    .build();
-
-            manager.updateActions(policy, List.of(notifyAction, disableAction));
-
-            UserModel user = session.users().addUser(realm, "myuser");
-            user.setEnabled(true);
-        });
-        // test run policy
-        runOnServer.run(session -> {
-            RealmModel realm = configureSessionContext(session);
-
-            UserModel user = session.users().getUserByUsername(realm, "myuser");
+            UserProvider users = session.users();
+            UserModel user = users.getUserByUsername(realm, "alice");
             assertTrue(user.isEnabled());
-            assertNull(user.getAttributes().get("notification_sent"));
+            assertNull(user.getAttributes().get("message"));
 
-            ResourcePolicyManager manager = new ResourcePolicyManager(session);
+            user.setLastSessionRefreshTime(Time.currentTime());
 
             try {
                 Time.setOffset(Math.toIntExact(Duration.ofDays(7).toSeconds()));
                 manager.runPolicies();
-
-                user = session.users().getUserByUsername(realm, "myuser");
+                user = users.getUserByUsername(realm, "alice");
                 assertTrue(user.isEnabled());
-                assertNotNull(user.getAttributes().get("notification_sent"));
+                assertNotNull(user.getAttributes().get("message"));
 
                 Time.setOffset(Math.toIntExact(Duration.ofDays(12).toSeconds()));
                 manager.runPolicies();
-
-                user = session.users().getUserByUsername(realm, "myuser");
+                user = users.getUserByUsername(realm, "alice");
                 assertFalse(user.isEnabled());
-                assertNotNull(user.getAttributes().get("notification_sent"));
+                assertNotNull(user.getAttributes().get("message"));
             } finally {
                 Time.setOffset(0);
             }
+        });
+    }
+
+    @Test
+    public void testMultiplePolicies() {
+        runOnServer.run(session -> {
+            RealmModel realm = configureSessionContext(session);
+            ResourcePolicyManager manager = PolicyBuilder.create()
+                    .of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
+                    .withActions(
+                            UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
+                                    .after(Duration.ofDays(5))
+                                    .withConfig("message_key", "notifier1")
+                                    .build()
+                    ).of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
+                    .withActions(
+                            UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
+                                    .after(Duration.ofDays(10))
+                                    .withConfig("message_key", "notifier2")
+                                    .build())
+                    .build(session);
+
+            UserProvider users = session.users();
+            UserModel user = users.getUserByUsername(realm, "alice");
+            assertTrue(user.isEnabled());
+            assertNull(user.getFirstAttribute("notifier1"));
+            assertNull(user.getFirstAttribute("notifier2"));
+
+            user.setLastSessionRefreshTime(Time.currentTime());
+
+            try {
+                Time.setOffset(Math.toIntExact(Duration.ofDays(7).toSeconds()));
+                manager.runPolicies();
+                user = users.getUserByUsername(realm, "alice");
+                assertTrue(user.isEnabled());
+                assertNotNull(user.getFirstAttribute("notifier1"));
+                assertNull(user.getFirstAttribute("notifier2"));
+                user.removeAttribute("notifier1");
+            } finally {
+                Time.setOffset(0);
+            }
+
+            try {
+                Time.setOffset(Math.toIntExact(Duration.ofDays(11).toSeconds()));
+                manager.runPolicies();
+                user = users.getUserByUsername(realm, "alice");
+                assertTrue(user.isEnabled());
+                assertNotNull(user.getFirstAttribute("notifier2"));
+                assertNull(user.getFirstAttribute("notifier1"));
+                user.removeAttribute("notifier2");
+            } finally {
+                Time.setOffset(0);
+            }
+
+            try {
+                manager.runPolicies();
+                assertNull(user.getFirstAttribute("notifier1"));
+                assertNull(user.getFirstAttribute("notifier2"));
+            } finally {
+                Time.setOffset(0);
+            }
+
+//            try {
+                //TODO: test re-run policies based on the last time the action was executed?
+//                Time.setOffset(Math.toIntExact(Duration.ofDays(40).toSeconds()));
+//                manager.runPolicies();
+//                assertNotNull(user.getFirstAttribute("notifier1"));
+//                assertNotNull(user.getFirstAttribute("notifier2"));
+//            } finally {
+//                Time.setOffset(0);
+//            }
         });
     }
 
@@ -266,5 +340,17 @@ public class ResourcePolicyManagementTest {
         RealmModel realm = session.realms().getRealmByName(REALM_NAME);
         session.getContext().setRealm(realm);
         return realm;
+    }
+
+    private static class DefaultUserConfig implements UserConfig {
+
+        @Override
+        public UserConfigBuilder configure(UserConfigBuilder user) {
+            user.username("alice");
+            user.password("alice");
+            user.name("alice", "alice");
+            user.email("master-admin@email.org");
+            return user;
+        }
     }
 }

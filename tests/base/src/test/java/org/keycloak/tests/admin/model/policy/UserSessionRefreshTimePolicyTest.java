@@ -23,14 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.time.Duration;
 
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.keycloak.common.VerificationException;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
@@ -42,14 +39,11 @@ import org.keycloak.models.policy.NotifyUserActionProviderFactory;
 import org.keycloak.models.policy.ResourcePolicyManager;
 import org.keycloak.models.policy.UserActionBuilder;
 import org.keycloak.models.policy.UserLastAuthTimeResourcePolicyProviderFactory;
-import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.testframework.annotations.InjectRealm;
 import org.keycloak.testframework.annotations.InjectUser;
 import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
 import org.keycloak.testframework.injection.LifeCycle;
 import org.keycloak.testframework.oauth.OAuthClient;
 import org.keycloak.testframework.oauth.annotations.InjectOAuthClient;
-import org.keycloak.testframework.realm.ManagedRealm;
 import org.keycloak.testframework.realm.ManagedUser;
 import org.keycloak.testframework.realm.UserConfig;
 import org.keycloak.testframework.realm.UserConfigBuilder;
@@ -73,9 +67,6 @@ public class UserSessionRefreshTimePolicyTest {
 
     @InjectUser(ref = "alice", config = DefaultUserConfig.class, lifecycle = LifeCycle.METHOD)
     private ManagedUser userAlice;
-
-    @InjectRealm
-    ManagedRealm managedRealm;
 
     @InjectWebDriver
     WebDriver driver;
@@ -109,7 +100,7 @@ public class UserSessionRefreshTimePolicyTest {
         // test run policy
         runOnServer.run((session -> {
             RealmModel realm = configureSessionContext(session);
-            ResourcePolicyManager manager = PolicyBuilder
+            ResourcePolicyManager manager = PolicyBuilder.create()
                     .of(UserLastAuthTimeResourcePolicyProviderFactory.ID)
                         .withActions(
                             UserActionBuilder.builder(NotifyUserActionProviderFactory.ID)
@@ -125,12 +116,12 @@ public class UserSessionRefreshTimePolicyTest {
             UserEntity entity = em.find(UserEntity.class, user.getId());
             assertNotNull(entity.getLastSessionRefreshTime());
             assertTrue(user.isEnabled());
-            assertNull(user.getAttributes().get("notification_sent"));
+            assertNull(user.getAttributes().get("message"));
 
             manager.runPolicies();
             user = session.users().getUserByUsername(realm, "alice");
             assertTrue(user.isEnabled());
-            assertNull(user.getAttributes().get("notification_sent"));
+            assertNull(user.getAttributes().get("message"));
 
             try {
                 manager = new ResourcePolicyManager(session);
@@ -138,7 +129,7 @@ public class UserSessionRefreshTimePolicyTest {
                 manager.runPolicies();
                 user = session.users().getUserByUsername(realm, "alice");
                 assertTrue(user.isEnabled());
-                assertNotNull(user.getAttributes().get("notification_sent"));
+                assertNotNull(user.getAttributes().get("message"));
             } finally {
                 Time.setOffset(0);
             }
