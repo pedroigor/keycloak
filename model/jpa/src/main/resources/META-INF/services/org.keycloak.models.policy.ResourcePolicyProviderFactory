@@ -17,3 +17,4 @@
 
 org.keycloak.models.policy.UserCreationDateResourcePolicyProviderFactory
 org.keycloak.models.policy.UserLastSessionRefreshTimeResourcePolicyProviderFactory
+org.keycloak.models.policy.FederatedIdentityPolicyProviderFactory

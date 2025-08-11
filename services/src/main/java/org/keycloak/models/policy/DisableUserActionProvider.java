@@ -41,14 +41,11 @@ public class DisableUserActionProvider implements ResourceActionProvider {
 
     @Override
     public void run(List<String> userIds) {
-        if (userIds == null || userIds.isEmpty()) {
-            return;
-        }
-
         RealmModel realm = session.getContext().getRealm();
 
         for (String id : userIds) {
             UserModel user = session.users().getUserById(realm, id);
+
             if (user != null && user.isEnabled()) {
                 log.debugv("Disabling user {0} ({1})", user.getUsername(), user.getId());
                 user.setEnabled(false);

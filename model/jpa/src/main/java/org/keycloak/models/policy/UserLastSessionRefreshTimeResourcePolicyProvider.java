@@ -20,6 +20,7 @@ package org.keycloak.models.policy;
 import java.time.Duration;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
@@ -29,14 +30,14 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.jpa.entities.UserEntity;
 
-public class UserLastAuthTimeResourcePolicyProvider extends AbstractUserResourcePolicyProvider {
+public class UserLastSessionRefreshTimeResourcePolicyProvider extends AbstractUserResourcePolicyProvider {
 
-    public UserLastAuthTimeResourcePolicyProvider(KeycloakSession session, ComponentModel model) {
+    public UserLastSessionRefreshTimeResourcePolicyProvider(KeycloakSession session, ComponentModel model) {
         super(session, model);
     }
 
     @Override
-    public Predicate timePredicate(long time, CriteriaBuilder cb, Root<UserEntity> userRoot) {
+    public Predicate timePredicate(long time, CriteriaBuilder cb, CriteriaQuery<String> query, Root<UserEntity> userRoot) {
         long currentTimeSeconds = Time.currentTime();
         Path<Long> lastSessionRefreshTime = userRoot.get("lastSessionRefreshTime");
         Expression<Long> lastSessionRefreshTimeExpiration = cb.sum(lastSessionRefreshTime, cb.literal(Duration.ofMillis(time).toSeconds()));

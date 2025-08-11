@@ -18,6 +18,7 @@
 package org.keycloak.models.policy;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -33,7 +34,7 @@ public class UserCreationDateResourcePolicyProvider extends AbstractUserResource
     }
 
     @Override
-    public Predicate timePredicate(long time, CriteriaBuilder cb, Root<UserEntity> userRoot) {
+    public Predicate timePredicate(long time, CriteriaBuilder cb, CriteriaQuery<String> query, Root<UserEntity> userRoot) {
         long currentTimeMillis = Time.currentTimeMillis();
         Expression<Long> timeMoment = cb.sum(userRoot.get("createdTimestamp"), cb.literal(time));
         return cb.lessThan(timeMoment, cb.literal(currentTimeMillis));

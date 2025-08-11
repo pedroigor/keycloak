@@ -25,18 +25,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
-public class UserLastSessionRefreshTimeResourcePolicyProviderFactory implements ResourcePolicyProviderFactory<UserLastSessionRefreshTimeResourcePolicyProvider> {
+public class DeleteUserActionProviderFactory implements ResourceActionProviderFactory<DeleteUserActionProvider> {
 
-    public static final String ID = "user-last-auth-time-resource-policy";
-
-    @Override
-    public ResourceType getType() {
-        return ResourceType.USERS;
-    }
+    public static final String ID = "delete-user-action-provider";
 
     @Override
-    public UserLastSessionRefreshTimeResourcePolicyProvider create(KeycloakSession session, ComponentModel model) {
-        return new UserLastSessionRefreshTimeResourcePolicyProvider(session, model);
+    public DeleteUserActionProvider create(KeycloakSession session, ComponentModel model) {
+        return new DeleteUserActionProvider(session, model);
     }
 
     @Override
@@ -57,6 +52,11 @@ public class UserLastSessionRefreshTimeResourcePolicyProviderFactory implements 
     @Override
     public String getId() {
         return ID;
+    }
+
+    @Override
+    public ResourceType getType() {
+        return ResourceType.USERS;
     }
 
     @Override

@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.policy.ResourceAction;
+import org.keycloak.models.policy.ResourcePolicy;
 import org.keycloak.models.policy.ResourcePolicyManager;
 
 public class PolicyBuilder {
@@ -34,6 +35,7 @@ public class PolicyBuilder {
     }
 
     private String providerId;
+    private Map<String, List<String>> config = new HashMap<>();
     private final Map<String, List<ResourceAction>> actions = new HashMap<>();
 
     private PolicyBuilder() {
@@ -49,11 +51,22 @@ public class PolicyBuilder {
         return this;
     }
 
+    public PolicyBuilder withConfig(String key, String value) {
+        config.put(key, List.of(value));
+        return this;
+    }
+
+    public PolicyBuilder withConfig(String key, List<String> value) {
+        config.put(key, value);
+        return this;
+    }
+
     public ResourcePolicyManager build(KeycloakSession session) {
         ResourcePolicyManager manager = new ResourcePolicyManager(session);
 
-        for (Entry<String, List<ResourceAction>> policy : actions.entrySet()) {
-            manager.updateActions(manager.addPolicy(policy.getKey()), policy.getValue());
+        for (Entry<String, List<ResourceAction>> entry : actions.entrySet()) {
+            ResourcePolicy policy = manager.addPolicy(entry.getKey(), config);
+            manager.updateActions(policy, entry.getValue());
         }
 
         return manager;

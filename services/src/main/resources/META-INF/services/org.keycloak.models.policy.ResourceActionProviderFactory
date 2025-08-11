@@ -17,4 +17,5 @@
 
 org.keycloak.models.policy.DisableUserActionProviderFactory
 org.keycloak.models.policy.NotifyUserActionProviderFactory
+org.keycloak.models.policy.DeleteUserActionProviderFactory
 

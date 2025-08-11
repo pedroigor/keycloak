@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import org.keycloak.common.Profile;
 import org.keycloak.common.Profile.Feature;
+import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentFactory;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
@@ -54,6 +55,10 @@ public class ResourcePolicyManager {
         return addPolicy(new ResourcePolicy(providerId));
     }
 
+    public ResourcePolicy addPolicy(String providerId, Map<String, List<String>> config) {
+        return addPolicy(new ResourcePolicy(providerId, config));
+    }
+
     public ResourcePolicy addPolicy(ResourcePolicy policy) {
         RealmModel realm = getRealm();
         ComponentModel model = new ComponentModel();
@@ -61,6 +66,12 @@ public class ResourcePolicyManager {
         model.setParentId(realm.getId());
         model.setProviderId(policy.getProviderId());
         model.setProviderType(ResourcePolicyProvider.class.getName());
+
+        MultivaluedHashMap<String, String> config = policy.getConfig();
+
+        if (config != null) {
+            model.setConfig(config);
+        }
 
         return new ResourcePolicy(realm.addComponentModel(model));
     }
@@ -186,7 +197,7 @@ public class ResourcePolicyManager {
         // <comment> todo: do we want to wrap it into separate tx? So we have more granular approach for handling errors & possible retries??
         if (!newResourceIds.isEmpty()) {
             // run action
-            actionProvider.run(newResourceIds);
+            runAction(actionProvider, newResourceIds);
 
             // create state record
             stateProvider.update(policy.getId(), policy.getProviderId(), newResourceIds, initialAction.getId());
@@ -209,13 +220,17 @@ public class ResourcePolicyManager {
             if (!eligibleIds.isEmpty()) {
                 // Get the action provider and run the action on the eligible users.
                 actionProvider = getActionProvider(action);
-                actionProvider.run(eligibleIds);
+                runAction(actionProvider, eligibleIds);
 
                 // Update the state for the users that were processed.
                 stateProvider.update(policy.getId(), policy.getProviderId(), eligibleIds, action.getId());
             }
             // </comment>
         }
+    }
+
+    private void runAction(ResourceActionProvider actionProvider, List<String> newResourceIds) {
+        actionProvider.run(newResourceIds == null ? List.of() : newResourceIds);
     }
 
     private ResourcePolicyProvider getPolicyProvider(ResourcePolicy policy) {

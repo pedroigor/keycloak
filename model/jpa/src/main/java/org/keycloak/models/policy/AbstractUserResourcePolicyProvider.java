@@ -40,7 +40,7 @@ public abstract class AbstractUserResourcePolicyProvider implements ResourcePoli
         this.em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }
 
-    public abstract Predicate timePredicate(long time, CriteriaBuilder cb, Root<UserEntity> userRoot);
+    public abstract Predicate timePredicate(long time, CriteriaBuilder cb, CriteriaQuery<String> query, Root<UserEntity> userRoot);
 
     @Override
     public void close() {
@@ -68,7 +68,7 @@ public abstract class AbstractUserResourcePolicyProvider implements ResourcePoli
         );
 
         // Time-based condition
-        Predicate timePredicate = timePredicate(time, cb, userRoot);
+        Predicate timePredicate = timePredicate(time, cb, query, userRoot);
 
         // NOT EXISTS condition
         Predicate notExistsPredicate = cb.not(cb.exists(subquery));
@@ -91,7 +91,7 @@ public abstract class AbstractUserResourcePolicyProvider implements ResourcePoli
         Root<UserEntity> userRoot = query.from(UserEntity.class);
 
         // Time-based condition
-        Predicate timePredicate = timePredicate(time, cb, userRoot);
+        Predicate timePredicate = timePredicate(time, cb, query, userRoot);
 
         // IN clause with candidateResourceIds
         Predicate inClausePredicate = userRoot.get("id").in(candidateResourceIds);
@@ -100,5 +100,13 @@ public abstract class AbstractUserResourcePolicyProvider implements ResourcePoli
         query.select(userRoot.get("id"));
 
         return em.createQuery(query).getResultList();
+    }
+
+    protected EntityManager getEntityManager() {
+        return em;
+    }
+
+    public ComponentModel getModel() {
+        return policyModel;
     }
 }

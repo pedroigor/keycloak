@@ -17,10 +17,15 @@
 
 package org.keycloak.models.policy;
 
+import java.util.List;
+import java.util.Map;
+
+import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentModel;
 
 public class ResourcePolicy {
 
+    private MultivaluedHashMap<String, String> config;
     private String providerId;
     private String id;
 
@@ -31,11 +36,20 @@ public class ResourcePolicy {
     public ResourcePolicy(String providerId) {
         this.providerId = providerId;
         this.id = null;
+        this.config = null;
     }
 
     public ResourcePolicy(ComponentModel c) {
         this.id = c.getId();
         this.providerId = c.getProviderId();
+        this.config = c.getConfig();
+    }
+
+    public ResourcePolicy(String providerId, Map<String, List<String>> config) {
+        this.providerId = providerId;
+        MultivaluedHashMap<String, String> c = new MultivaluedHashMap<>();
+        config.forEach(c::addAll);
+        this.config = c;
     }
 
     public String getId() {
@@ -44,5 +58,9 @@ public class ResourcePolicy {
 
     public String getProviderId() {
         return providerId;
+    }
+
+    public MultivaluedHashMap<String, String> getConfig() {
+        return config;
     }
 }

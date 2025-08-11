@@ -18,20 +18,20 @@
 package org.keycloak.models.policy;
 
 import java.util.List;
-import org.jboss.logging.Logger;
 
+import org.jboss.logging.Logger;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
-public class NotifyUserActionProvider implements ResourceActionProvider {
+public class DeleteUserActionProvider implements ResourceActionProvider {
 
     private final KeycloakSession session;
     private final ComponentModel actionModel;
-    private final Logger log = Logger.getLogger(NotifyUserActionProvider.class);
+    private final Logger log = Logger.getLogger(DeleteUserActionProvider.class);
 
-    public NotifyUserActionProvider(KeycloakSession session, ComponentModel model) {
+    public DeleteUserActionProvider(KeycloakSession session, ComponentModel model) {
         this.session = session;
         this.actionModel = model;
     }
@@ -41,25 +41,19 @@ public class NotifyUserActionProvider implements ResourceActionProvider {
     }
 
     @Override
-    public void run(List<String> userIds) {
+    public void run(List<String> ids) {
         RealmModel realm = session.getContext().getRealm();
 
-        for (String id : userIds) {
+        for (String id : ids) {
             UserModel user = session.users().getUserById(realm, id);
 
-            if (user != null) {
-                log.debugv("Disabling user {0} ({1})", user.getUsername(), user.getId());
-                user.setSingleAttribute(getMessageKey(), getMessage());
+            if (user == null) {
+                continue;
             }
+
+            log.debugv("Deleting user {0} ({1})", user.getUsername(), user.getId());
+            session.users().removeUser(realm, user);
         }
-    }
-
-    private String getMessageKey() {
-        return actionModel.getConfig().getFirstOrDefault("message_key", "message");
-    }
-
-    private String getMessage() {
-        return actionModel.getConfig().getFirstOrDefault(getMessageKey(), "sent");
     }
 
     @Override
