@@ -46,6 +46,7 @@ import org.keycloak.models.jpa.entities.UserConsentEntity;
 import org.keycloak.models.jpa.entities.UserEntity;
 import org.keycloak.models.jpa.entities.UserGroupMembershipEntity;
 import org.keycloak.models.utils.KeycloakModelUtils;
+import org.keycloak.models.uuid.UUIDProvider;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.client.ClientStorageProvider;
@@ -107,7 +108,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
     @Override
     public UserModel addUser(RealmModel realm, String id, String username, boolean addDefaultRoles, boolean addDefaultRequiredActions) {
         if (id == null) {
-            id = KeycloakModelUtils.generateId();
+            id = session.getProvider(UUIDProvider.class).generateUUID();
         }
 
         UserEntity entity = new UserEntity();
@@ -139,7 +140,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
 
     @Override
     public UserModel addUser(RealmModel realm, String username) {
-        return addUser(realm, KeycloakModelUtils.generateId(), username.toLowerCase(), true, true);
+        return addUser(realm, null, username.toLowerCase(), true, true);
     }
 
     @Override
