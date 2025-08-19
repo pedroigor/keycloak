@@ -16,3 +16,4 @@
 #
 
 org.keycloak.models.uuid.UUIDv4ProviderFactory
+org.keycloak.models.uuid.UUIDv7ProviderFactory

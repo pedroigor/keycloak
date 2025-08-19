@@ -573,7 +573,9 @@ public class UserCreateTest extends AbstractUserTest {
 
         @Override
         public KeycloakServerConfigBuilder configure(KeycloakServerConfigBuilder builder) {
-            return builder.dependency("org.keycloak.tests", "keycloak-tests-custom-providers");
+            return builder
+                    .option("spi-uuid--provider-default", "uuid-v7")
+                    .dependency("org.keycloak.tests", "keycloak-tests-custom-providers");
         }
     }
 }
