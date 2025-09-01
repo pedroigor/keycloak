@@ -1,10 +1,11 @@
 package org.keycloak.admin.ui.rest;
 
+import static org.keycloak.models.utils.KeycloakModelUtils.hasUUIDFormat;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
@@ -38,11 +39,6 @@ import org.keycloak.utils.SearchQueryUtils;
 public class BruteForceUsersResource {
     private static final Logger logger = Logger.getLogger(BruteForceUsersResource.class);
     private static final String SEARCH_ID_PARAMETER = "id:";
-    
-    // Pattern to match UUID/GUID formats (standard UUID, without hyphens, case-sensitive)
-    private static final Pattern UUID_PATTERN = Pattern.compile(
-        "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-    );
     
     private final KeycloakSession session;
     private final RealmModel realm;
@@ -94,22 +90,23 @@ public class BruteForceUsersResource {
 
         Stream<UserModel> userModels = Stream.empty();
         if (search != null) {
+            search = search.trim();
             if (search.startsWith(SEARCH_ID_PARAMETER)) {
                 // Explicit ID search with "id:" prefix
                 UserModel userModel =
-                        session.users().getUserById(realm, search.substring(SEARCH_ID_PARAMETER.length()).trim());
+                        session.users().getUserById(realm, search.substring(SEARCH_ID_PARAMETER.length()));
                 if (userModel != null) {
                     userModels = Stream.of(userModel);
                 }
-            } else if (looksLikeUuid(search)) {
+            } else if (hasUUIDFormat(search)) {
                 // Auto-detected UUID/GUID search (without "id:" prefix)
-                UserModel userModel = session.users().getUserById(realm, search.trim());
+                UserModel userModel = session.users().getUserById(realm, search);
                 if (userModel != null) {
                     userModels = Stream.of(userModel);
                 }
             } else {
                 Map<String, String> attributes = new HashMap<>();
-                attributes.put(UserModel.SEARCH, search.trim());
+                attributes.put(UserModel.SEARCH, search);
                 if (enabled != null) {
                     attributes.put(UserModel.ENABLED, enabled.toString());
                 }
@@ -238,19 +235,5 @@ public class BruteForceUsersResource {
         }
 
         return false;
-    }
-
-    /**
-     * Checks if the given search term looks like a UUID/GUID pattern.
-     * This supports standard UUID formats with or without hyphens.
-     * 
-     * @param searchTerm the search term to check
-     * @return true if the search term matches UUID/GUID pattern, false otherwise
-     */
-    private static boolean looksLikeUuid(String searchTerm) {
-        if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            return false;
-        }
-        return UUID_PATTERN.matcher(searchTerm.trim()).matches();
     }
 }

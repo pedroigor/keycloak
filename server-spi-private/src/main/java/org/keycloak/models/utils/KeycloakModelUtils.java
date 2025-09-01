@@ -90,6 +90,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.keycloak.utils.StreamsUtil.closing;
+import static org.keycloak.utils.StringUtil.isNotBlank;
 
 /**
  * Set of helper methods, which are useful in various model implementations.
@@ -100,6 +101,8 @@ import static org.keycloak.utils.StreamsUtil.closing;
 public final class KeycloakModelUtils {
 
     private static final Logger logger = Logger.getLogger(KeycloakModelUtils.class);
+
+    public static final Pattern UUID_PATTERN = Pattern.compile("[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}");
 
     public static final String AUTH_TYPE_CLIENT_SECRET = "client-secret";
     public static final String AUTH_TYPE_CLIENT_SECRET_JWT = "client-secret-jwt";
@@ -173,6 +176,15 @@ public final class KeycloakModelUtils {
         } catch (IllegalArgumentException e) {
             return false;
         }
+    }
+
+    /**
+     * Check if a string is in UUID format where white spaces are ignored.
+     * @param id The string to verify
+     * @return true if the string is in UUID format
+     */
+    public static boolean hasUUIDFormat(String id) {
+        return isNotBlank(id) && UUID_PATTERN.matcher(id).matches();
     }
 
     public static PublicKey getPublicKey(String publicKeyPem) {

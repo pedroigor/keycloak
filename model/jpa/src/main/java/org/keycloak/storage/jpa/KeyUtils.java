@@ -16,6 +16,8 @@
  */
 package org.keycloak.storage.jpa;
 
+import static org.keycloak.models.utils.KeycloakModelUtils.UUID_PATTERN;
+
 import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 import org.keycloak.models.light.LightweightUserAdapter;
@@ -28,7 +30,6 @@ public class KeyUtils {
 
     private static final Logger LOG = Logger.getLogger(KeyUtils.class);
 
-    public static final Pattern UUID_PATTERN = Pattern.compile("[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}");
     public static final Pattern SHORT_ID_PATTERN = Pattern.compile("[0-9A-Za-z_-]{22}");
 
     public static final Pattern EXPECTED_KEY_PATTERN = Pattern.compile(
