@@ -99,7 +99,7 @@ public class WorkflowsManager {
         }
     }
 
-    private WorkflowStep addStep(Workflow workflow, WorkflowStep step) {
+    private void addStep(Workflow workflow, WorkflowStep step) {
         RealmModel realm = getRealm();
         ComponentModel workflowModel = realm.getComponent(workflow.getId());
 
@@ -115,7 +115,7 @@ public class WorkflowsManager {
         stepModel.setProviderType(WorkflowStepProvider.class.getName());
         stepModel.setConfig(step.getConfig());
 
-        return new WorkflowStep(realm.addComponentModel(stepModel));
+        realm.addComponentModel(stepModel);
     }
 
     public List<Workflow> getWorkflows() {
@@ -435,84 +435,6 @@ public class WorkflowsManager {
         }
         // verify the step does have valid provider
         getStepProviderFactory(step);
-    }
-
-    public WorkflowStep addStepToWorkflow(Workflow workflow, WorkflowStep step, Integer position) {
-        Objects.requireNonNull(workflow, "workflow cannot be null");
-        Objects.requireNonNull(step, "step cannot be null");
-
-        List<WorkflowStep> existingSteps = getSteps(workflow.getId());
-
-        int targetPosition = position != null ? position : existingSteps.size();
-        if (targetPosition < 0 || targetPosition > existingSteps.size()) {
-            throw new BadRequestException("Invalid position: " + targetPosition + ". Must be between 0 and " + existingSteps.size());
-        }
-
-        // First, shift existing steps at and after the target position to make room
-        shiftStepsForInsertion(targetPosition, existingSteps);
-
-        step.setPriority(targetPosition + 1);
-        WorkflowStep addedStep = addStep(workflow, step);
-
-        log.debugf("Added step %s to workflow %s at position %d", addedStep.getId(), workflow.getId(), targetPosition);
-        return addedStep;
-    }
-
-    public void removeStepFromWorkflow(Workflow workflow, String stepId) {
-        Objects.requireNonNull(workflow, "workflow cannot be null");
-        Objects.requireNonNull(stepId, "stepId cannot be null");
-
-        RealmModel realm = getRealm();
-        ComponentModel stepComponent = realm.getComponent(stepId);
-
-        if (stepComponent == null || !stepComponent.getParentId().equals(workflow.getId())) {
-            throw new BadRequestException("Step not found or not part of workflow: " + stepId);
-        }
-
-        realm.removeComponent(stepComponent);
-
-        // Reorder remaining steps and update state
-        reorderAllSteps(workflow.getId());
-        updateScheduledStepsAfterStepChange(workflow, stepId);
-
-        log.debugf("Removed step %s from workflow %s", stepId, workflow.getId());
-    }
-
-    private void shiftStepsForInsertion(int insertPosition, List<WorkflowStep> existingSteps) {
-        RealmModel realm = getRealm();
-
-        // Shift all steps at and after the insertion position by +1 priority
-        for (int i = insertPosition; i < existingSteps.size(); i++) {
-            WorkflowStep step = existingSteps.get(i);
-            step.setPriority(step.getPriority() + 1);
-            updateStepComponent(realm, step);
-        }
-    }
-
-    private void reorderAllSteps(String workflowId) {
-        List<WorkflowStep> steps = getSteps(workflowId);
-        RealmModel realm = getRealm();
-
-        for (int i = 0; i < steps.size(); i++) {
-            WorkflowStep step = steps.get(i);
-            step.setPriority(i + 1);
-            updateStepComponent(realm, step);
-        }
-    }
-
-    private void updateStepComponent(RealmModel realm, WorkflowStep step) {
-        ComponentModel component = realm.getComponent(step.getId());
-        component.setConfig(step.getConfig());
-        realm.updateComponent(component);
-    }
-
-    private void updateScheduledStepsAfterStepChange(Workflow workflow, String stepId) {
-
-        for (ScheduledStep scheduled : workflowStateProvider.getScheduledStepsByStep(stepId)) {
-            WorkflowExecutionContext context = buildFromScheduledStep(scheduled);
-            context.restart();
-            workflowStateProvider.scheduleStep(workflow, context.getNextStep(), scheduled.resourceId(), context.getExecutionId());
-        }
     }
 
     public WorkflowStep toModel(WorkflowStepRepresentation rep) {
