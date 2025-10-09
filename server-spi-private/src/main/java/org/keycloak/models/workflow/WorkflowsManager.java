@@ -17,6 +17,20 @@
 
 package org.keycloak.models.workflow;
 
+import static java.util.Optional.ofNullable;
+import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_CONDITIONS;
+import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_ENABLED;
+import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_NAME;
+import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_RECURRING;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.stream.Stream;
+
 import jakarta.ws.rs.BadRequestException;
 import org.jboss.logging.Logger;
 import org.keycloak.common.Profile;
@@ -34,20 +48,6 @@ import org.keycloak.representations.workflows.WorkflowConditionRepresentation;
 import org.keycloak.representations.workflows.WorkflowConstants;
 import org.keycloak.representations.workflows.WorkflowRepresentation;
 import org.keycloak.representations.workflows.WorkflowStepRepresentation;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.stream.Stream;
-
-import static java.util.Optional.ofNullable;
-import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_CONDITIONS;
-import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_ENABLED;
-import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_NAME;
-import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_RECURRING;
 
 public class WorkflowsManager {
 
