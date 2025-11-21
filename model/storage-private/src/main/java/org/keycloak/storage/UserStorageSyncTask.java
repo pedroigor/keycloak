@@ -18,6 +18,8 @@ import org.keycloak.timer.TimerProvider.TimerTaskContext;
 
 import org.jboss.logging.Logger;
 
+import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult;
+
 final class UserStorageSyncTask implements ScheduledTask {
 
     private static final Logger logger = Logger.getLogger(UserStorageSyncTask.class);
@@ -140,16 +142,16 @@ final class UserStorageSyncTask implements ScheduledTask {
         // 30 seconds minimal timeout for now
         int timeout = Math.max(TASK_EXECUTION_TIMEOUT, period);
 
-        ExecutionResult<SynchronizationResult> task = clusterProvider.executeIfNotExecuted(taskKey, timeout, () -> {
+        ExecutionResult<SynchronizationResult> task = runJobInTransactionWithResult(sessionFactory, s -> clusterProvider.executeIfNotExecuted(taskKey, timeout, () -> {
             // Need to load component again in this transaction for updated data
             SynchronizationResult result = syncFunction.apply(sessionFactory, (ImportSynchronization) factory, provider);
 
             if (!result.isIgnored()) {
-                updateLastSyncInterval(session);
+                updateLastSyncInterval(s);
             }
 
             return result;
-        });
+        }));
 
         SynchronizationResult result = task.getResult();
 

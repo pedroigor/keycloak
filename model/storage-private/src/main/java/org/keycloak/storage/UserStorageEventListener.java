@@ -43,19 +43,19 @@ public final class UserStorageEventListener implements ClusterListener, Provider
     public void onEvent(ProviderEvent event) {
         if (event instanceof PostMigrationEvent) {
             runJobInTransaction(sessionFactory, session -> {
-                Stream<RealmModel> realms = session.realms().getRealmsWithProviderTypeStream(UserStorageProvider.class);
-                realms.forEach(realm -> {
-                    try {
-                        session.getContext().setRealm(realm);
-                        Stream<UserStorageProviderModel> providers = ((StorageProviderRealmModel) realm).getUserStorageProvidersStream();
-                        providers.forEachOrdered(provider -> reScheduleTasks(session, provider));
-                    } finally {
-                        session.getContext().setRealm(null);
-                    }
+                session.realms().getRealmsWithProviderTypeStream(UserStorageProvider.class)
+                        .forEach(realm -> {
+                            try {
+                                session.getContext().setRealm(realm);
+                                Stream<UserStorageProviderModel> providers = ((StorageProviderRealmModel) realm).getUserStorageProvidersStream();
+                                providers.forEachOrdered(provider -> reScheduleTasks(session, provider));
+                            } finally {
+                                session.getContext().setRealm(null);
+                            }
                 });
 
                 ClusterProvider clusterProvider = session.getProvider(ClusterProvider.class);
-                clusterProvider.registerListener(USER_STORAGE_TASK_KEY, new UserStorageEventListener(sessionFactory));
+                clusterProvider.registerListener(USER_STORAGE_TASK_KEY, this);
             });
         } else if (event instanceof StoreSyncEvent ev) {
             UserStorageProviderModel model = ev.getModel() == null ? null: new UserStorageProviderModel(ev.getModel());
