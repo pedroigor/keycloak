@@ -330,12 +330,12 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public Stream<Policy> findDependentPolicies(ResourceServer resourceServer, String resourceType, String associatedPolicyType, String configKey, String configValue) {
-        return findDependentPolicies(resourceServer, resourceType, associatedPolicyType, configKey, List.of(configValue));
+    public Stream<Policy> findDependentPolicies(ResourceServer resourceServer, String resourceType, String groupResourceType, String associatedPolicyType, String configKey, String configValue) {
+        return findDependentPolicies(resourceServer, resourceType, groupResourceType, associatedPolicyType, configKey, List.of(configValue));
     }
 
     @Override
-    public Stream<Policy> findDependentPolicies(ResourceServer resourceServer, String resourceType, String associatedPolicyType, String configKey, List<String> configValues) {
+    public Stream<Policy> findDependentPolicies(ResourceServer resourceServer, String resourceType, String groupResourceType, String associatedPolicyType, String configKey, List<String> configValues) {
         String dbProductName = entityManager.unwrap(Session.class).doReturningWork(connection -> connection.getMetaData().getDatabaseProductName());
 
         if (dbProductName.equals("Oracle")) {
@@ -372,7 +372,13 @@ public class JPAPolicyStore implements PolicyStore {
         List<Predicate> predicates = new LinkedList<>();
 
         predicates.add(cb.equal(from.get("resourceServer").get("id"), resourceServer.getId()));
-        predicates.add(scope.get("name").in(AdminPermissionsSchema.VIEW, AdminPermissionsSchema.VIEW_MEMBERS));
+
+        if (AdminPermissionsSchema.GROUPS.getType().equals(groupResourceType)) {
+            predicates.add(scope.get("name").in(AdminPermissionsSchema.VIEW_MEMBERS));
+        } else {
+            predicates.add(scope.get("name").in(AdminPermissionsSchema.VIEW));
+        }
+
         predicates.add(cb.equal(associatedPolicy.get("type"), associatedPolicyType));
         predicates.add(cb.equal(config.key(), "defaultResourceType"));
         predicates.add(cb.equal(config.value(), resourceType));
