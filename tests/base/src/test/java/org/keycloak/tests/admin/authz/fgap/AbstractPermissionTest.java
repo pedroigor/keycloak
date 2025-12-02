@@ -138,10 +138,10 @@ public abstract class AbstractPermissionTest {
         return policy;
     }
 
-    protected static GroupPolicyRepresentation createGroupPolicy(ManagedRealm realm, ManagedClient client, String name, String groupId, Logic logic) {
+    protected static GroupPolicyRepresentation createGroupPolicy(ManagedRealm realm, ManagedClient client, String name, Logic logic, String... groupIds) {
         GroupPolicyRepresentation policy = new GroupPolicyRepresentation();
         policy.setName(name);
-        policy.addGroup(groupId);
+        policy.addGroup(groupIds);
         policy.setLogic(logic);
         try (Response response = client.admin().authorization().policies().group().create(policy)) {
             assertThat(response.getStatus(), equalTo(Response.Status.CREATED.getStatusCode()));
@@ -217,6 +217,9 @@ public abstract class AbstractPermissionTest {
     }
 
     protected ScopePermissionRepresentation createGroupPermission(GroupRepresentation group, Set<String> scopes, AbstractPolicyRepresentation... policies) {
-        return createPermission(client, group.getId(), AdminPermissionsSchema.GROUPS_RESOURCE_TYPE, scopes, policies);
+        return createGroupPermission(Set.of(group), scopes, policies);
+    }
+    protected ScopePermissionRepresentation createGroupPermission(Set<GroupRepresentation> groups, Set<String> scopes, AbstractPolicyRepresentation... policies) {
+        return createPermission(client, groups.stream().map(GroupRepresentation::getId).collect(Collectors.toSet()), AdminPermissionsSchema.GROUPS_RESOURCE_TYPE, scopes, policies);
     }
 }
