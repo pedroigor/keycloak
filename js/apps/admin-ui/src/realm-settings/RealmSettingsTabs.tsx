@@ -50,6 +50,7 @@ import { KeysTab } from "./keys/KeysTab";
 import { LocalizationTab } from "./localization/LocalizationTab";
 import { ClientPoliciesTab, toClientPolicies } from "./routes/ClientPolicies";
 import { RealmSettingsTab, toRealmSettings } from "./routes/RealmSettings";
+import { ScimTab } from "./scim/ScimTab";
 import { SecurityDefenses } from "./security-defences/SecurityDefenses";
 import { UserProfileTab } from "./user-profile/UserProfileTab";
 
@@ -296,6 +297,7 @@ export const RealmSettingsTabs = () => {
   const clientPoliciesTab = useTab("client-policies");
   const userProfileTab = useTab("user-profile");
   const userRegistrationTab = useTab("user-registration");
+  const scimTab = useTab("scim");
   const { hasAccess, hasSomeAccess } = useAccess();
   const canViewOrManageEvents =
     hasAccess("view-realm") && hasSomeAccess("view-events", "manage-events");
@@ -470,6 +472,15 @@ export const RealmSettingsTabs = () => {
               {...userRegistrationTab}
             >
               <UserRegistration />
+            </Tab>
+          )}
+          {isFeatureEnabled(Feature.ScimApi) && (
+            <Tab
+              title={<TabTitleText>{t("scim")}</TabTitleText>}
+              data-testid="rs-scim-tab"
+              {...scimTab}
+            >
+              <ScimTab />
             </Tab>
           )}
         </RoutableTabs>

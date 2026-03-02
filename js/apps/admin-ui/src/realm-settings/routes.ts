@@ -18,6 +18,7 @@ import {
   RealmSettingsRoute,
   RealmSettingsRouteWithTab,
 } from "./routes/RealmSettings";
+import { ScimRoute } from "./routes/Scim";
 import { ThemeTabRoute } from "./routes/ThemesTab";
 import { UserProfileRoute } from "./routes/UserProfile";
 
@@ -41,6 +42,7 @@ const routes: AppRouteObject[] = [
   NewAttributesGroupRoute,
   EditAttributesGroupRoute,
   ThemeTabRoute,
+  ScimRoute,
 ];
 
 export default routes;
