@@ -56,7 +56,7 @@ public class SchemaTest extends AbstractScimTest {
                 .map(Schema.Attribute::getName)
                 .collect(Collectors.toSet());
 
-        assertEquals(7, attributeNames.size(), "User schema should have exactly 7 attributes");
+        assertEquals(14, attributeNames.size(), "User schema should have exactly 7 attributes");
         assertTrue(attributeNames.contains("userName"));
         assertTrue(attributeNames.contains("emails"));
         assertTrue(attributeNames.contains("name"));
@@ -64,6 +64,13 @@ public class SchemaTest extends AbstractScimTest {
         assertTrue(attributeNames.contains("nickName"));
         assertTrue(attributeNames.contains("locale"));
         assertTrue(attributeNames.contains("active"));
+        assertTrue(attributeNames.contains("profileUrl"));
+        assertTrue(attributeNames.contains("preferredLanguage"));
+        assertTrue(attributeNames.contains("displayName"));
+        assertTrue(attributeNames.contains("timezone"));
+        assertTrue(attributeNames.contains("groups"));
+        assertTrue(attributeNames.contains("title"));
+        assertTrue(attributeNames.contains("userType"));
     }
 
     @Test

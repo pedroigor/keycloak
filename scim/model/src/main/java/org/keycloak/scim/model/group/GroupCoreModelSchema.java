@@ -18,8 +18,18 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
     }
 
     @Override
-    public String getName() {
+    public String getId() {
         return Group.SCHEMA;
+    }
+
+    @Override
+    public String getName() {
+        return "Group";
+    }
+
+    @Override
+    public String getDescription() {
+        return getName();
     }
 
     @Override

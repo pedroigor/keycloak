@@ -37,7 +37,7 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
      * @return the builder
      */
     public static <M extends Model, R extends ResourceTypeRepresentation> Builder<M, R> simple(String name) {
-        return new Builder<>(name, null);
+        return (Builder<M, R>) new Builder<>(name, null).string();
     }
 
     /**
@@ -178,6 +178,10 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
         mapper.removeValue(model, value);
     }
 
+    public String getType() {
+        return type;
+    }
+
     public static class Builder<M extends Model, R extends ResourceTypeRepresentation> {
 
         private final Class<?> complexType;
@@ -264,7 +268,7 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
         }
 
         public List<Attribute<M, R>> build() {
-            Attribute<M, R> attribute = new Attribute<>(name, new AttributeMapper<>(modelSetter, representationSetter, modelRemover, modelAdder), this.name);
+            Attribute<M, R> attribute = new Attribute<>(name, new AttributeMapper<>(modelSetter, representationSetter, modelRemover, modelAdder), null);
             attribute.setModelAttributeResolver(modelAttributeResolver);
             attribute.setPrimary(primary);
             attribute.setType(type);
@@ -290,6 +294,11 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
 
         public <C> Builder<M, R> withModelAdder(TriConsumer<M, String, Set<C>> adder) {
             this.modelAdder = (m, s, objects) -> adder.accept(m, s, (Set<C>) objects);
+            return this;
+        }
+
+        public Builder<M, R> string() {
+            type = "string";
             return this;
         }
     }
