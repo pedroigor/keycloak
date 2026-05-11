@@ -42,6 +42,9 @@ public class TestKeycloakOidcIdentityProviderFactory extends KeycloakOIDCIdentit
     public static final String IGNORE_MAX_AGE_PARAM = "ignore-max-age-param";
     public static final String USE_SINGLE_REFRESH_TOKEN = "use-single-refresh-token";
     public static final String PREFERRED_USERNAME = "preferred-username";
+    public static final String STRIP_NONCE = "strip-nonce";
+
+    private static final String BROKER_NONCE_PARAM = "BROKER_NONCE";
 
     public static void setIgnoreMaxAgeParam(IdentityProviderRepresentation rep) {
         rep.getConfig().put(IGNORE_MAX_AGE_PARAM, Boolean.TRUE.toString());
@@ -65,6 +68,9 @@ public class TestKeycloakOidcIdentityProviderFactory extends KeycloakOIDCIdentit
 
                 if (preferredUsername != null) {
                     context.setUsername(preferredUsername);
+                }
+                if (Boolean.parseBoolean(model.getConfig().get(STRIP_NONCE))) {
+                    context.getContextData().remove(BROKER_NONCE_PARAM);
                 }
                 if (Boolean.valueOf(model.getConfig().get(USE_SINGLE_REFRESH_TOKEN))) {
                     // refresh token will be available only in the first login.
