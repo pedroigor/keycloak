@@ -1054,7 +1054,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         String nonce = (String) context.getContextData().get(BROKER_NONCE_PARAM);
 
         if (nonce == null) {
-            logger.warnf("OpenID Provider [%s] did not return a nonce in the ID token", getConfig().getProviderId());
+            logger.warnf("Missing nonce", getConfig().getProviderId());
             throw new IdentityBrokerException("OpenID Provider [" + getConfig().getProviderId() + "] did not return a nonce")
                     .withMessageCode(Messages.IDENTITY_PROVIDER_INVALID_RESPONSE);
         }
