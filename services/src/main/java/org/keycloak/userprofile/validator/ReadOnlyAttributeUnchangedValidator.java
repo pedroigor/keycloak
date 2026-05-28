@@ -96,12 +96,6 @@ public class ReadOnlyAttributeUnchangedValidator implements SimpleValidator {
             return true;
         }
 
-        if (existingValue != null && value == null) {
-            // if attribute exists on the user but was not provided in the request,
-            // treat as unchanged — the user is not attempting to modify it
-            return true;
-        }
-
         return ObjectUtil.isEqualOrBothNull(existingValue, value);
     }
 
