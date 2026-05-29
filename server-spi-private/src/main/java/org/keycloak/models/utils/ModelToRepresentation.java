@@ -131,6 +131,9 @@ import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.representations.idm.oid4vc.IssuedVerifiableCredentialRepresentation;
 import org.keycloak.representations.idm.oid4vc.UserVerifiableCredentialRepresentation;
 import org.keycloak.storage.StorageId;
+import org.keycloak.userprofile.UserProfile;
+import org.keycloak.userprofile.UserProfileContext;
+import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.util.JsonSerialization;
 import org.keycloak.utils.StringUtil;
 
@@ -344,6 +347,16 @@ public class ModelToRepresentation {
         }
 
         return rep;
+    }
+
+    public static UserRepresentation toRepresentation(KeycloakSession session, UserModel user, UserProfileProvider provider, boolean brief) {
+        UserProfile profile = provider.create(UserProfileContext.USER_API, user);
+        UserRepresentation rep = profile.toRepresentation(!brief);
+        RealmModel realm = session.getContext().getRealm();
+
+        return brief ?
+                ModelToRepresentation.toBriefRepresentation(user, rep, false) :
+                ModelToRepresentation.toRepresentation(session, realm, user, rep, false);
     }
 
     public static UserRepresentation toBriefRepresentation(UserModel user) {
